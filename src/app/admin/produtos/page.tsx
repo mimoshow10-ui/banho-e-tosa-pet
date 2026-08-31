@@ -147,9 +147,11 @@ export default async function AdminProdutos({ searchParams }: { searchParams: { 
         <table className="w-full text-left">
           <thead className="bg-gray-50 text-gray-600 text-sm">
             <tr>
+              <th className="p-4 font-medium w-16">Foto</th>
               <th className="p-4 font-medium w-32">SKU</th>
               <th className="p-4 font-medium">Nome do Produto</th>
-              <th className="p-4 font-medium">Preço</th>
+              <th className="p-4 font-medium">Preço Normal</th>
+              <th className="p-4 font-medium text-green-600">Promoção</th>
               <th className="p-4 font-medium">Estoque</th>
               <th className="p-4 font-medium text-right">Ações</th>
             </tr>
@@ -158,10 +160,20 @@ export default async function AdminProdutos({ searchParams }: { searchParams: { 
             {produtos && produtos.length > 0 ? (
               produtos.map((item: any) => (
                 <tr key={item.id} className="hover:bg-gray-50">
+                  <td className="p-4">
+                    {item.imagens && item.imagens.length > 0 ? (
+                      <img src={item.imagens[0]} alt="Miniatura" className="w-12 h-12 object-cover rounded border border-gray-200" />
+                    ) : (
+                      <div className="w-12 h-12 bg-gray-200 rounded border border-gray-300 flex items-center justify-center text-[9px] text-gray-400 text-center leading-tight">Sem<br/>Foto</div>
+                    )}
+                  </td>
                   <td className="p-4 font-bold text-gray-500">{item.codigo_barras || 'Sem SKU'}</td>
                   <td className="p-4 font-medium text-gray-800">{item.nome}</td>
-                  <td className="p-4 font-bold text-primary">
+                  <td className="p-4 font-bold text-gray-600">
                     R$ {Number(item.preco).toFixed(2).replace('.', ',')}
+                  </td>
+                  <td className="p-4 font-bold text-green-600">
+                    {item.preco_promocional ? `R$ ${Number(item.preco_promocional).toFixed(2).replace('.', ',')}` : '-'}
                   </td>
                   <td className="p-4 text-gray-600">{item.estoque}</td>
                   <td className="p-4 text-right">
