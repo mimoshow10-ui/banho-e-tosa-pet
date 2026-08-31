@@ -2,8 +2,15 @@ import { supabase } from '@/lib/supabase';
 import { revalidatePath } from 'next/cache';
 
 export default async function AdminConfiguracoes() {
-  // Buscar token salvo no banco
-  const { data: config } = await supabase.from('configuracoes').select('*').eq('chave', 'bling_tokens').single();
+  // Buscar token salvo no banco de forma segura (não quebra a tela se der erro de conexão)
+  let config = null;
+  try {
+    const { data } = await supabase.from('configuracoes').select('*').eq('chave', 'bling_tokens').single();
+    config = data;
+  } catch (err) {
+    console.error("Erro ao conectar no banco ao carregar a página:", err);
+  }
+  
   const isConectado = !!config?.valor?.access_token;
 
   // Ação 1: Autenticar e Salvar Token
