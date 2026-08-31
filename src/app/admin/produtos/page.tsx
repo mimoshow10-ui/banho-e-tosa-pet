@@ -60,13 +60,16 @@ export default async function AdminProdutos({ searchParams }: { searchParams: { 
             imagensBling = [prodCompleto.imagemURL];
           }
 
+          const baseSlug = prodCompleto.nome.toLowerCase().replace(/ /g, '-').normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+          const slug = `${baseSlug}-${prodCompleto.id}`;
+
           const produtoParaInserir = {
             bling_id: String(prodCompleto.id),
             codigo_barras: prodCompleto.codigo || prodCompleto.gtin,
             nome: prodCompleto.nome,
             preco: prodCompleto.preco,
             estoque: estoqueAtual,
-            slug: prodCompleto.nome.toLowerCase().replace(/ /g, '-').normalize("NFD").replace(/[\u0300-\u036f]/g, "") + '-' + Date.now(),
+            slug: slug,
             ativo: prodCompleto.situacao === 'A',
             peso_liquido: prodCompleto.pesoLiquido || 0,
             peso_bruto: prodCompleto.pesoBruto || 0,

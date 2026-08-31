@@ -23,6 +23,9 @@ export default async function EditarProduto(props: { params: Promise<{ id: strin
     const imagensTxt = formData.get('imagens') as string;
     const imagensArr = imagensTxt ? imagensTxt.split(',').map(s => s.trim()).filter(s => s) : [];
     
+    // Video URL
+    const video_url = formData.get('video_url') as string;
+
     // Extract related products
     const relacionadosTxt = formData.get('relacionados') as string;
     const relacionadosArr = relacionadosTxt ? relacionadosTxt.split(',').map(s => s.trim()).filter(s => s) : [];
@@ -32,6 +35,7 @@ export default async function EditarProduto(props: { params: Promise<{ id: strin
       preco, 
       preco_promocional,
       estoque, 
+      video_url: video_url || null,
       categoria_id: categoria_id || null, 
       imagens: imagensArr.length > 0 ? imagensArr : null,
       relacionados: relacionadosArr.length > 0 ? relacionadosArr : null
@@ -126,14 +130,32 @@ export default async function EditarProduto(props: { params: Promise<{ id: strin
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1">Imagens do Produto (Puxadas do Bling)</label>
+          <label className="block text-sm font-medium mb-1">Imagens do Produto (Links)</label>
           <textarea 
             name="imagens" 
-            defaultValue={produto.imagens ? produto.imagens.join(', ') : ''} 
+            defaultValue={produto.imagens ? produto.imagens.join('\n') : ''} 
             placeholder="Cole o link da foto aqui..." 
-            className="w-full border border-border rounded-lg p-2 h-20"
+            className="w-full border border-border rounded-lg p-2 h-24 text-sm"
           ></textarea>
-          <p className="text-xs text-gray-500 mt-1">Links separados por vírgula.</p>
+          <p className="text-xs text-gray-500 mt-1">Links separados por vírgula ou quebra de linha. Altere a ordem dos links para mudar a ordem das fotos.</p>
+          
+          {/* Miniaturas de Fotos */}
+          {produto.imagens && produto.imagens.length > 0 && (
+            <div className="flex gap-2 mt-4 overflow-x-auto pb-2">
+              {produto.imagens.map((img: string, i: number) => (
+                <div key={i} className="relative w-20 h-20 flex-shrink-0 border border-gray-300 rounded overflow-hidden">
+                  <div className="absolute top-0 left-0 bg-black/50 text-white text-[10px] px-1 z-10">{i + 1}</div>
+                  <img src={img} alt={`Foto ${i+1}`} className="w-full h-full object-cover" />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-1">URL do Vídeo (YouTube, MP4, etc)</label>
+          <input name="video_url" type="url" defaultValue={produto.video_url || ''} placeholder="Ex: https://youtube.com/watch?v=..." className="w-full border border-border rounded-lg p-2" />
+          <p className="text-xs text-gray-500 mt-1">Opcional. Se preenchido, o vídeo aparecerá abaixo das fotos na página do produto.</p>
         </div>
 
         <button type="submit" className="bg-primary text-white py-3 rounded-lg font-bold hover:bg-orange-600 transition mt-4">

@@ -80,6 +80,31 @@ export default async function ProdutoPage({ params }: { params: Promise<{ slug: 
               ))}
             </div>
           )}
+          
+          {/* VÍDEO DO PRODUTO */}
+          {produto.video_url && (
+            <div className="w-full mt-4 bg-black rounded-2xl overflow-hidden aspect-video border border-border">
+              {produto.video_url.includes('youtube.com') || produto.video_url.includes('youtu.be') ? (
+                <iframe 
+                  className="w-full h-full"
+                  src={`https://www.youtube.com/embed/${
+                    produto.video_url.includes('v=') 
+                      ? produto.video_url.split('v=')[1].split('&')[0] 
+                      : produto.video_url.split('youtu.be/')[1]?.split('?')[0]
+                  }`}
+                  title="Vídeo do Produto"
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                ></iframe>
+              ) : (
+                <video controls className="w-full h-full">
+                  <source src={produto.video_url} />
+                  Seu navegador não suporta vídeos.
+                </video>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Informações do Produto REAIS */}
