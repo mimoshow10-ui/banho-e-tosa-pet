@@ -11,6 +11,7 @@ export default async function EditarProduto(props: { params: Promise<{ id: strin
 
   async function atualizarProduto(formData: FormData) {
     'use server'
+    const id = formData.get('id') as string;
     const nome = formData.get('nome') as string;
     const preco = parseFloat(formData.get('preco') as string);
     const estoque = parseInt(formData.get('estoque') as string);
@@ -31,7 +32,7 @@ export default async function EditarProduto(props: { params: Promise<{ id: strin
       categoria_id: categoria_id || null, 
       imagens: imagensArr.length > 0 ? imagensArr : null,
       relacionados: relacionadosArr.length > 0 ? relacionadosArr : null
-    }).eq('id', params.id);
+    }).eq('id', id);
 
     revalidatePath('/admin/produtos');
     revalidatePath('/');
@@ -48,6 +49,7 @@ export default async function EditarProduto(props: { params: Promise<{ id: strin
       <h1 className="text-2xl font-bold mb-6 text-secondary">Editar Produto</h1>
       
       <form action={atualizarProduto} className="flex flex-col gap-6">
+        <input type="hidden" name="id" value={params.id} />
         <div>
           <label className="block text-sm font-medium mb-1">Nome do Produto</label>
           <input name="nome" type="text" required defaultValue={produto.nome} className="w-full border border-border rounded-lg p-2" />
