@@ -92,9 +92,16 @@ export default async function ProdutoPage({ params }: { params: Promise<{ slug: 
             R$ {Number(produto.preco).toFixed(2).replace('.', ',')}
           </div>
 
-          <p className="text-gray-600 mb-8 leading-relaxed">
-            {produto.descricao_curta || produto.descricao || 'Nenhuma descrição fornecida para este produto.'}
-          </p>
+          {produto.descricao_curta || produto.descricao ? (
+            <div 
+              className="text-gray-600 mb-8 leading-relaxed prose prose-sm max-w-none"
+              dangerouslySetInnerHTML={{ __html: produto.descricao_curta || produto.descricao }}
+            />
+          ) : (
+            <p className="text-gray-600 mb-8 leading-relaxed">
+              Nenhuma descrição fornecida para este produto.
+            </p>
+          )}
 
           {/* Variações de Tamanho */}
           {produto.tamanhos && produto.tamanhos.length > 0 && (

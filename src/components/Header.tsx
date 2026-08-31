@@ -11,11 +11,11 @@ export default function Header() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center py-4">
+        <div className="flex justify-between items-center py-2">
           {/* Logo and Search */}
-        <div className="flex items-center justify-between py-2">
+        <div className="flex items-center justify-between">
           <Link href="/">
-            <div className="relative w-64 h-24 cursor-pointer z-50">
+            <div className="relative w-48 h-16 cursor-pointer z-50">
               <Image 
                 src="/logo-luxo.jpg" 
                 alt="Banho e Tosa Pet Logo" 

@@ -55,7 +55,10 @@ export default async function AdminProdutos({ searchParams }: { searchParams: { 
 
           const externas = prodCompleto.midia?.imagens?.externas?.map((img: any) => img.link) || [];
           const internas = prodCompleto.midia?.imagens?.internas?.map((img: any) => img.link) || [];
-          const imagensBling = [...externas, ...internas];
+          let imagensBling = [...externas, ...internas];
+          if (imagensBling.length === 0 && prodCompleto.imagemURL) {
+            imagensBling = [prodCompleto.imagemURL];
+          }
 
           const produtoParaInserir = {
             bling_id: String(prodCompleto.id),
