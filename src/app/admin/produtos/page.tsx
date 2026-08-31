@@ -79,14 +79,14 @@ export default async function AdminProdutos({ searchParams }: { searchParams: { 
           const { error } = await supabase.from('produtos').upsert(produtoParaInserir, { onConflict: 'bling_id' });
           
           if (error) {
-            redirectTo = `/admin/produtos?erro=A Vercel não conseguiu salvar no Banco de Dados.`;
+            redirectTo = `/admin/produtos?erro=Banco recusou salvar: ${error.message}`;
           } else {
             redirectTo = `/admin/produtos?msg=Sucesso! O produto ${prodCompleto.nome} foi importado com estoque ${estoqueAtual}!`;
           }
         }
       }
     } catch (error) {
-      redirectTo = `/admin/produtos?erro=Erro fatal ao comunicar com o Bling.`;
+      redirectTo = `/admin/produtos?erro=Erro fatal no código do servidor: ${String(error)}`;
     }
 
     if (redirectTo) {
