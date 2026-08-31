@@ -2,7 +2,8 @@ import { supabase } from '@/lib/supabase';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 
-export default async function EditarProduto({ params }: { params: { id: string } }) {
+export default async function EditarProduto(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const { data: produto } = await supabase.from('produtos').select('*').eq('id', params.id).single();
   const { data: categorias } = await supabase.from('categorias').select('*').order('nome');
 
