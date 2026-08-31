@@ -42,7 +42,11 @@ export default function AdminLayout({
           </Link>
         </nav>
 
-        <div className="p-4 border-t border-blue-800">
+        <div className="p-4 border-t border-blue-800 flex flex-col gap-2">
+          <Link href="/" target="_blank" className="flex items-center gap-3 p-3 bg-accent text-secondary font-bold rounded-lg hover:bg-yellow-400 transition">
+            <Home size={20} />
+            <span>Visualizar Loja</span>
+          </Link>
           <Link href="/" className="flex items-center gap-3 p-3 text-red-300 hover:text-red-100 transition">
             <LogOut size={20} />
             <span>Sair do Painel</span>
