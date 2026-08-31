@@ -111,9 +111,21 @@ export default async function AdminConfiguracoes({ searchParams }: { searchParam
               <input name="client_secret" type="password" required defaultValue={creds?.client_secret} className="w-full border border-border rounded-lg p-2" />
             </div>
           </div>
-          <button type="submit" className="bg-blue-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-blue-700 transition w-fit">
-            Salvar e Testar Conexão
-          </button>
+          
+          <div className="flex gap-4 items-center mt-2">
+            <button type="submit" className="bg-blue-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-blue-700 transition">
+              1. Salvar Credenciais
+            </button>
+
+            {creds?.client_id && (
+              <a 
+                href={`https://www.bling.com.br/Api/v3/oauth/authorize?response_type=code&client_id=${creds.client_id}&state=state123`}
+                className="bg-green-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-green-700 transition inline-block"
+              >
+                2. Autorizar no Bling (Mágico)
+              </a>
+            )}
+          </div>
         </form>
       </div>
 
