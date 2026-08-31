@@ -37,7 +37,7 @@ export default async function EditarProduto(props: { params: Promise<{ id: strin
     revalidatePath('/admin/produtos');
     revalidatePath('/');
     if (categoria_id) {
-      const cat = categorias?.find(c => c.id === categoria_id);
+      const { data: cat } = await supabase.from('categorias').select('slug').eq('id', categoria_id).single();
       if (cat) revalidatePath(`/categoria/${cat.slug}`);
     }
     
