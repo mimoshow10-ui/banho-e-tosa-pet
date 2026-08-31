@@ -25,8 +25,11 @@ async function atualizarProduto(formData: FormData) {
   const relacionadosTxt = formData.get('relacionados') as string;
   const relacionadosArr = relacionadosTxt ? relacionadosTxt.split(',').map(s => s.trim()).filter(s => s) : [];
 
+  const codigo_barras = formData.get('codigo_barras') as string;
+
   const payload = { 
     nome, 
+    codigo_barras,
     preco, 
     preco_promocional,
     estoque, 
@@ -66,9 +69,15 @@ export default async function EditarProduto(props: { params: Promise<{ id: strin
       
       <form action={atualizarProduto} className="flex flex-col gap-6">
         <input type="hidden" name="id" value={params.id} />
-        <div>
-          <label className="block text-sm font-medium mb-1">Nome do Produto</label>
-          <input name="nome" type="text" required defaultValue={produto.nome} className="w-full border border-border rounded-lg p-2" />
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="md:col-span-3">
+            <label className="block text-sm font-medium mb-1">Nome do Produto</label>
+            <input name="nome" type="text" required defaultValue={produto.nome} className="w-full border border-border rounded-lg p-2" />
+          </div>
+          <div className="md:col-span-1">
+            <label className="block text-sm font-medium mb-1">SKU</label>
+            <input name="codigo_barras" type="text" defaultValue={produto.codigo_barras || ''} className="w-full border border-border rounded-lg p-2" />
+          </div>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
