@@ -10,16 +10,16 @@ export default function LoginPage() {
           <h2 className="text-2xl font-heading font-bold text-secondary mb-6">Já sou cliente</h2>
           <form className="flex flex-col gap-4">
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-1">E-mail</label>
-              <input type="email" placeholder="seu@email.com" className="w-full border border-border rounded-lg p-3 focus:outline-none focus:border-primary" />
+              <label htmlFor="login-email" className="block text-sm font-bold text-gray-700 mb-1">E-mail</label>
+              <input id="login-email" name="email" autoComplete="email" type="email" placeholder="seu@email.com" className="w-full border border-border rounded-lg p-3 focus:outline-none focus:border-primary" />
             </div>
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-1">Senha</label>
-              <input type="password" placeholder="••••••••" className="w-full border border-border rounded-lg p-3 focus:outline-none focus:border-primary" />
+              <label htmlFor="login-password" className="block text-sm font-bold text-gray-700 mb-1">Senha</label>
+              <input id="login-password" name="password" autoComplete="current-password" type="password" placeholder="••••••••" className="w-full border border-border rounded-lg p-3 focus:outline-none focus:border-primary" />
             </div>
             <div className="flex justify-between items-center text-sm mt-2">
               <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" className="accent-primary" /> Lembrar de mim
+                <input type="checkbox" name="remember" id="remember-me" className="accent-primary" /> Lembrar de mim
               </label>
               <a href="#" className="text-primary hover:underline font-bold">Esqueci a senha</a>
             </div>
@@ -39,16 +39,16 @@ export default function LoginPage() {
           </p>
           <form className="flex flex-col gap-4">
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-1">Nome Completo</label>
-              <input type="text" placeholder="João da Silva" className="w-full border border-border rounded-lg p-3 bg-white focus:outline-none focus:border-primary" />
+              <label htmlFor="register-name" className="block text-sm font-bold text-gray-700 mb-1">Nome Completo</label>
+              <input id="register-name" name="name" autoComplete="name" type="text" placeholder="João da Silva" className="w-full border border-border rounded-lg p-3 bg-white focus:outline-none focus:border-primary" />
             </div>
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-1">E-mail</label>
-              <input type="email" placeholder="seu@email.com" className="w-full border border-border rounded-lg p-3 bg-white focus:outline-none focus:border-primary" />
+              <label htmlFor="register-email" className="block text-sm font-bold text-gray-700 mb-1">E-mail</label>
+              <input id="register-email" name="email" autoComplete="email" type="email" placeholder="seu@email.com" className="w-full border border-border rounded-lg p-3 bg-white focus:outline-none focus:border-primary" />
             </div>
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-1">Crie uma Senha</label>
-              <input type="password" placeholder="Mínimo 6 caracteres" className="w-full border border-border rounded-lg p-3 bg-white focus:outline-none focus:border-primary" />
+              <label htmlFor="register-password" className="block text-sm font-bold text-gray-700 mb-1">Crie uma Senha</label>
+              <input id="register-password" name="password" autoComplete="new-password" type="password" placeholder="Mínimo 6 caracteres" className="w-full border border-border rounded-lg p-3 bg-white focus:outline-none focus:border-primary" />
             </div>
             <button type="button" className="w-full bg-accent text-text font-bold py-3 rounded-xl hover:bg-yellow-400 transition mt-4 shadow-sm">
               Criar Conta Rápida
