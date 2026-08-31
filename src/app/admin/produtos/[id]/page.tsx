@@ -14,6 +14,8 @@ export default async function EditarProduto(props: { params: Promise<{ id: strin
     const id = formData.get('id') as string;
     const nome = formData.get('nome') as string;
     const preco = parseFloat(formData.get('preco') as string);
+    const preco_promocional_str = formData.get('preco_promocional') as string;
+    const preco_promocional = preco_promocional_str ? parseFloat(preco_promocional_str) : null;
     const estoque = parseInt(formData.get('estoque') as string);
     const categoria_id = formData.get('categoria_id') as string;
     
@@ -28,6 +30,7 @@ export default async function EditarProduto(props: { params: Promise<{ id: strin
     await supabase.from('produtos').update({ 
       nome, 
       preco, 
+      preco_promocional,
       estoque, 
       categoria_id: categoria_id || null, 
       imagens: imagensArr.length > 0 ? imagensArr : null,
@@ -55,12 +58,16 @@ export default async function EditarProduto(props: { params: Promise<{ id: strin
           <input name="nome" type="text" required defaultValue={produto.nome} className="w-full border border-border rounded-lg p-2" />
         </div>
         
-        <div className="flex gap-4">
-          <div className="flex-1">
-            <label className="block text-sm font-medium mb-1">Preço (R$)</label>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium mb-1">Preço Normal (R$)</label>
             <input name="preco" type="number" step="0.01" required defaultValue={produto.preco} className="w-full border border-border rounded-lg p-2" />
           </div>
-          <div className="flex-1">
+          <div>
+            <label className="block text-sm font-bold text-green-600 mb-1">Preço Promoção (R$)</label>
+            <input name="preco_promocional" type="number" step="0.01" defaultValue={produto.preco_promocional || ''} placeholder="Opcional" className="w-full border border-green-300 rounded-lg p-2 focus:ring-green-500" />
+          </div>
+          <div>
             <label className="block text-sm font-medium mb-1">Estoque Físico</label>
             <input name="estoque" type="number" required defaultValue={produto.estoque || 0} className="w-full border border-border rounded-lg p-2" />
           </div>
