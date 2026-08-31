@@ -15,7 +15,7 @@ export default function Header() {
           {/* Logo and Search */}
         <div className="flex items-center justify-between py-2">
           <Link href="/">
-            <div className="relative w-48 h-16 cursor-pointer transform scale-150 origin-left z-50">
+            <div className="relative w-64 h-24 cursor-pointer z-50">
               <Image 
                 src="/logo-luxo.jpg" 
                 alt="Banho e Tosa Pet Logo" 
