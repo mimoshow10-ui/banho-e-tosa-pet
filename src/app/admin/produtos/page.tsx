@@ -126,30 +126,31 @@ export default async function AdminProdutos({ searchParams }: { searchParams: { 
         <div className="bg-red-100 text-red-800 p-4 rounded-lg font-bold mb-6">
           ❌ ERRO: {searchParams.erro}
         </div>
-      )}
-
-      {/* Área de Importar via Bling */}
-      <div className="bg-white rounded-xl shadow-sm border border-green-200 p-6 mb-8 relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-2 h-full bg-green-500"></div>
-        <h2 className="text-lg font-bold mb-2 text-secondary flex items-center gap-2">Puxar Produto do Bling</h2>
-        <form action={importarSKU} className="flex gap-4 items-end">
-          <div className="flex-1 max-w-sm">
-            <label className="block text-sm font-medium mb-1 text-gray-600">SKU do Produto</label>
-            <input name="sku" type="text" required placeholder="Ex: kit29" className="w-full border border-border rounded-lg p-2" />
-          </div>
-          <button type="submit" className="bg-green-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-green-700 transition h-[42px]">
-            Importar
-          </button>
-        </form>
-      </div>
-
       <div className="bg-white rounded-xl shadow-sm border border-border overflow-hidden">
+        
+        {/* Bloco de Importação */}
+        <div className="p-6 bg-gray-50 border-b border-border flex flex-col md:flex-row gap-4 items-end">
+          <div className="flex-1">
+            <h3 className="font-bold text-secondary mb-2">Importar do Bling</h3>
+            <p className="text-sm text-gray-600 mb-4">Digite o SKU (Código do Produto) exatamente como está no Bling para importar ou atualizar os dados e fotos.</p>
+            <form action={importarSKU} className="flex gap-2">
+              <input name="sku" type="text" placeholder="Ex: MS5153-H7" required className="flex-1 border border-border rounded-lg p-2" />
+              <button type="submit" className="bg-secondary text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-900 transition">
+                Importar SKU
+              </button>
+            </form>
+          </div>
+          {msg && <div className="text-green-600 font-bold bg-green-100 p-3 rounded-lg flex-1 text-center border border-green-200">{msg}</div>}
+          {erro && <div className="text-red-600 font-bold bg-red-100 p-3 rounded-lg flex-1 text-center border border-red-200">{erro}</div>}
+        </div>
+
         <table className="w-full text-left">
           <thead className="bg-gray-50 text-gray-600 text-sm">
             <tr>
               <th className="p-4 font-medium w-16">Foto</th>
               <th className="p-4 font-medium w-32">SKU</th>
               <th className="p-4 font-medium">Nome do Produto</th>
+              <th className="p-4 font-medium">Categoria</th>
               <th className="p-4 font-medium">Preço Normal</th>
               <th className="p-4 font-medium text-green-600">Promoção</th>
               <th className="p-4 font-medium">Estoque</th>
@@ -169,6 +170,7 @@ export default async function AdminProdutos({ searchParams }: { searchParams: { 
                   </td>
                   <td className="p-4 font-bold text-gray-500">{item.codigo_barras || 'Sem SKU'}</td>
                   <td className="p-4 font-medium text-gray-800">{item.nome}</td>
+                  <td className="p-4 text-gray-600">{item.categorias?.nome || 'Sem Categoria'}</td>
                   <td className="p-4 font-bold text-gray-600">
                     R$ {Number(item.preco).toFixed(2).replace('.', ',')}
                   </td>
@@ -184,7 +186,7 @@ export default async function AdminProdutos({ searchParams }: { searchParams: { 
               ))
             ) : (
               <tr>
-                <td colSpan={4} className="p-8 text-center text-gray-500">
+                <td colSpan={8} className="p-8 text-center text-gray-500">
                   Nenhum produto cadastrado no banco de dados ainda. 
                   Sincronize com o Bling ou adicione um manualmente!
                 </td>

@@ -13,9 +13,11 @@ export default async function EditarProduto(props: { params: Promise<{ id: strin
     'use server'
     const id = formData.get('id') as string;
     const nome = formData.get('nome') as string;
-    const preco = parseFloat(formData.get('preco') as string);
+    const preco_str = formData.get('preco') as string;
+    const preco = parseFloat(preco_str.replace(',', '.'));
+    
     const preco_promocional_str = formData.get('preco_promocional') as string;
-    const preco_promocional = preco_promocional_str ? parseFloat(preco_promocional_str) : null;
+    const preco_promocional = preco_promocional_str ? parseFloat(preco_promocional_str.replace(',', '.')) : null;
     const estoque = parseInt(formData.get('estoque') as string);
     const categoria_id = formData.get('categoria_id') as string;
     
