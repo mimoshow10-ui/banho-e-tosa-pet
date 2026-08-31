@@ -4,37 +4,42 @@ import { redirect } from 'next/navigation';
 
 export default async function AdminConfiguracoes({ searchParams }: { searchParams: { msg?: string, erro?: string } }) {
   
-  async function importarDireto(formData: FormData) {
+  // Buscar credenciais salvas
+  let creds = null;
+  try {
+    const { data } = await supabase.from('configuracoes').select('*').eq('chave', 'bling_credentials').single();
+    creds = data?.valor;
+  } catch (err) {}
+
+  async function salvarCredenciais(formData: FormData) {
     'use server'
     const clientId = formData.get('client_id') as string;
     const clientSecret = formData.get('client_secret') as string;
-    const code = formData.get('code') as string;
-    const sku = formData.get('sku') as string;
+    if (!clientId || !clientSecret) return;
     
-    if (!clientId || !clientSecret || !code || !sku) return;
+    await supabase.from('configuracoes').upsert({
+      chave: 'bling_credentials',
+      valor: { client_id: clientId, client_secret: clientSecret }
+    }, { onConflict: 'chave' });
+    
+    revalidatePath('/admin/configuracoes');
+    redirect('/admin/configuracoes?msg=Credenciais Salvas! Agora basta clicar em Autorizar no Bling.');
+  }
+
+  async function importarProdutoEspecifico(formData: FormData) {
+    'use server'
+    const sku = formData.get('sku') as string;
+    if (!sku) return;
 
     let redirectTo = '';
 
     try {
-      // 1. Troca o código pelo Token na hora
-      const authResponse = await fetch('https://www.bling.com.br/Api/v3/oauth/token', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'Authorization': 'Basic ' + Buffer.from(`${clientId}:${clientSecret}`).toString('base64'),
-          'Accept': '1.0'
-        },
-        body: new URLSearchParams({ grant_type: 'authorization_code', code: code })
-      });
-
-      const authData = await authResponse.json();
+      const { data: cfg } = await supabase.from('configuracoes').select('*').eq('chave', 'bling_tokens').single();
+      const token = cfg?.valor?.access_token;
       
-      if (authData.error) {
-        redirectTo = `/admin/configuracoes?erro=Código Expirado ou Inválido. Gere um novo Link de Convite no Bling.`;
+      if (!token) {
+        redirectTo = `/admin/configuracoes?erro=Token do Bling não encontrado. Faça a autorização primeiro.`;
       } else {
-        const token = authData.access_token;
-
-        // 2. Busca o Produto
         const response = await fetch(`https://www.bling.com.br/Api/v3/produtos?codigo=${sku}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -54,18 +59,17 @@ export default async function AdminConfiguracoes({ searchParams }: { searchParam
             ativo: prod.situacao === 'A'
           };
 
-          // 3. Tenta salvar no Supabase
           const { error } = await supabase.from('produtos').upsert(produtoParaInserir, { onConflict: 'bling_id' });
           
           if (error) {
-            redirectTo = `/admin/configuracoes?erro=O produto foi puxado do Bling, mas a Vercel não conseguiu salvar no Banco de Dados. Verifique as chaves do Supabase na Vercel!`;
+            redirectTo = `/admin/configuracoes?erro=A Vercel não conseguiu salvar no Banco de Dados.`;
           } else {
-            redirectTo = `/admin/configuracoes?msg=Sucesso! O produto ${prod.nome} foi importado para a vitrine!`;
+            redirectTo = `/admin/configuracoes?msg=Sucesso! O produto ${prod.nome} foi importado!`;
           }
         }
       }
     } catch (error) {
-      redirectTo = `/admin/configuracoes?erro=Erro fatal na comunicação com o Bling.`;
+      redirectTo = `/admin/configuracoes?erro=Erro fatal.`;
     }
 
     if (redirectTo) {
@@ -90,35 +94,39 @@ export default async function AdminConfiguracoes({ searchParams }: { searchParam
         </div>
       )}
 
-      <div className="bg-white rounded-xl shadow-sm border border-purple-200 p-8 mb-6 relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-2 h-full bg-purple-500"></div>
-        <h2 className="text-xl font-bold mb-2 text-secondary">Importação Direta (Modo Turbo)</h2>
-        <p className="text-sm text-gray-600 mb-6">Essa versão ignora o banco de dados na autenticação e puxa o produto na hora.</p>
+      {/* Passo 1: Salvar Senhas */}
+      <div className="bg-white rounded-xl shadow-sm border border-blue-200 p-8 mb-6 relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-2 h-full bg-blue-500"></div>
+        <h2 className="text-xl font-bold mb-2 text-secondary">Passo 1: Credenciais do Bling</h2>
         
-        <form action={importarDireto} className="flex flex-col gap-4">
+        <form action={salvarCredenciais} className="flex flex-col gap-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium mb-1">Client ID</label>
-              <input name="client_id" type="text" required className="w-full border border-border rounded-lg p-2" />
+              <input name="client_id" type="text" required defaultValue={creds?.client_id} className="w-full border border-border rounded-lg p-2" />
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Client Secret</label>
-              <input name="client_secret" type="password" required className="w-full border border-border rounded-lg p-2" />
+              <input name="client_secret" type="password" required defaultValue={creds?.client_secret} className="w-full border border-border rounded-lg p-2" />
             </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Código (URL)</label>
-              <input name="code" type="password" required className="w-full border border-border rounded-lg p-2" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">SKU do Produto</label>
-              <input name="sku" type="text" required placeholder="Ex: kit29" className="w-full border border-border rounded-lg p-2" />
-            </div>
+          <button type="submit" className="bg-blue-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-blue-700 transition w-fit">
+            Salvar Credenciais
+          </button>
+        </form>
+      </div>
+
+      {/* Passo 2: Importar Produto */}
+      <div className="bg-white rounded-xl shadow-sm border border-green-200 p-8 mb-6 relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-2 h-full bg-green-500"></div>
+        <h2 className="text-xl font-bold mb-2 text-secondary">Passo 2: Importar Produto Específico</h2>
+        <form action={importarProdutoEspecifico} className="flex flex-col gap-4">
+          <div>
+            <label className="block text-sm font-medium mb-1">SKU do Produto</label>
+            <input name="sku" type="text" required placeholder="Ex: kit29" className="w-full border border-border rounded-lg p-2 max-w-sm" />
           </div>
-          
-          <button type="submit" className="bg-purple-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-purple-700 transition w-fit mt-2">
-            Puxar Produto Imediatamente
+          <button type="submit" className="bg-green-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-green-700 transition w-fit mt-2">
+            Puxar Produto
           </button>
         </form>
       </div>
