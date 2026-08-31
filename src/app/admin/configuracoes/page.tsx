@@ -37,30 +37,12 @@ export default function AdminConfiguracoes() {
       }
 
       const accessToken = authData.access_token;
-      console.log("Token gerado com sucesso! Iniciando importação...");
+      console.log("Token gerado com sucesso! Autenticação concluída.");
 
-      // 2. Buscar Produtos no Bling com o Token gerado
-      const produtosResponse = await fetch('https://www.bling.com.br/Api/v3/produtos?limite=100', {
-        headers: { 'Authorization': `Bearer ${accessToken}` }
-      });
+      // TODO: Salvar o accessToken no banco de dados para usarmos quando VOCÊ quiser enviar algo para o Bling.
       
-      const produtosData = await produtosResponse.json();
-
-      if (produtosData.data && produtosData.data.length > 0) {
-        // Inserir os produtos no Supabase (fazemos um map básico para o nosso formato)
-        const produtosParaInserir = produtosData.data.map((prod: any) => ({
-          bling_id: String(prod.id),
-          nome: prod.nome,
-          preco: prod.preco,
-          slug: prod.nome.toLowerCase().replace(/ /g, '-').normalize("NFD").replace(/[\u0300-\u036f]/g, ""),
-          ativo: prod.situacao === 'A'
-        }));
-
-        await supabase.from('produtos').upsert(produtosParaInserir, { onConflict: 'bling_id' });
-        console.log(`${produtosParaInserir.length} produtos importados com sucesso!`);
-      }
-
-      revalidatePath('/admin/produtos');
+      // Feedback visual para a página de configurações recarregar
+      revalidatePath('/admin/configuracoes');
       
     } catch (error) {
       console.error("Erro no processo do Bling:", error);
@@ -74,8 +56,8 @@ export default function AdminConfiguracoes() {
       {/* Sincronização BLING */}
       <div className="bg-white rounded-xl shadow-sm border border-blue-200 p-8 mb-6 relative overflow-hidden">
         <div className="absolute top-0 left-0 w-2 h-full bg-blue-500"></div>
-        <h2 className="text-xl font-bold mb-2 text-secondary">Exportação / Importação do Bling</h2>
-        <p className="text-sm text-gray-600 mb-6">Conecte sua conta do Bling para puxar o catálogo automaticamente.</p>
+        <h2 className="text-xl font-bold mb-2 text-secondary">Conexão com o Bling</h2>
+        <p className="text-sm text-gray-600 mb-6">Conecte sua conta do Bling para poder exportar seus produtos e vendas quando desejar.</p>
         
         <form action={sincronizarBling} className="flex flex-col gap-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -94,7 +76,7 @@ export default function AdminConfiguracoes() {
           </div>
           
           <button type="submit" className="bg-blue-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-blue-700 transition w-fit mt-2">
-            Autenticar e Sincronizar Produtos
+            Autenticar no Bling (Não importa nada)
           </button>
         </form>
       </div>
