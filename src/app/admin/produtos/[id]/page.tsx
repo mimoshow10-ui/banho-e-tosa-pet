@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
+import CategorySelector from '@/components/CategorySelector';
 
 async function atualizarProduto(formData: FormData) {
   'use server'
@@ -101,25 +102,8 @@ export default async function EditarProduto(props: { params: Promise<{ id: strin
           </div>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-1">Categoria (ou Subcategoria)</label>
-          <select name="categoria_id" className="w-full border border-border rounded-lg p-2 bg-white" defaultValue={produto.categoria_id || ""}>
-            <option value="">Nenhuma Categoria (Fica solto na loja)</option>
-            {categorias?.map(c => {
-              const isSub = !!c.parent_id;
-              const parent = isSub ? categorias.find(p => p.id === c.parent_id) : null;
-              const nomeFinal = parent ? `${parent.nome} > ${c.nome}` : c.nome;
-              return (
-                <option key={c.id} value={c.id}>
-                  {nomeFinal}
-                </option>
-              );
-            }).sort((a, b) => {
-              const textA = a.props.children as string;
-              const textB = b.props.children as string;
-              return textA.localeCompare(textB);
-            })}
-          </select>
+        <div className="mt-6">
+          <CategorySelector categorias={categorias || []} defaultCategoriaId={produto.categoria_id} />
         </div>
 
         <div className="border-t border-border pt-6 mt-4">
