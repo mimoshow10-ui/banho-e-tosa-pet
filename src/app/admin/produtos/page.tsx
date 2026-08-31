@@ -34,14 +34,33 @@ export default async function AdminProdutos({ searchParams }: { searchParams: { 
         if (!data.data || data.data.length === 0) {
           redirectTo = `/admin/produtos?erro=Produto SKU ${sku} não encontrado no Bling.`;
         } else {
-          const prod = data.data[0];
+          const prodId = data.data[0].id;
+          
+          // Busca detalhes completos (pra ter certeza)
+          const detalhesReq = await fetch(`https://www.bling.com.br/Api/v3/produtos/${prodId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          const detalhesJson = await detalhesReq.json();
+          const prodCompleto = detalhesJson.data || data.data[0];
+
+          // Busca Estoque (Bling separa estoque da rota de produto)
+          let estoqueAtual = 0;
+          try {
+            const estoqueReq = await fetch(`https://www.bling.com.br/Api/v3/estoques/saldos?idsProdutos[]=${prodId}`, {
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const estoqueJson = await estoqueReq.json();
+            estoqueAtual = estoqueJson.data?.[0]?.saldoFisicoTotal || 0;
+          } catch(e) {}
+
           const produtoParaInserir = {
-            bling_id: String(prod.id),
-            codigo_barras: prod.codigo,
-            nome: prod.nome,
-            preco: prod.preco,
-            slug: prod.nome.toLowerCase().replace(/ /g, '-').normalize("NFD").replace(/[\u0300-\u036f]/g, "") + '-' + Date.now(),
-            ativo: prod.situacao === 'A'
+            bling_id: String(prodCompleto.id),
+            codigo_barras: prodCompleto.codigo,
+            nome: prodCompleto.nome,
+            preco: prodCompleto.preco,
+            estoque: estoqueAtual,
+            slug: prodCompleto.nome.toLowerCase().replace(/ /g, '-').normalize("NFD").replace(/[\u0300-\u036f]/g, "") + '-' + Date.now(),
+            ativo: prodCompleto.situacao === 'A'
           };
 
           const { error } = await supabase.from('produtos').upsert(produtoParaInserir, { onConflict: 'bling_id' });
@@ -49,7 +68,7 @@ export default async function AdminProdutos({ searchParams }: { searchParams: { 
           if (error) {
             redirectTo = `/admin/produtos?erro=A Vercel não conseguiu salvar no Banco de Dados.`;
           } else {
-            redirectTo = `/admin/produtos?msg=Sucesso! O produto ${prod.nome} foi importado!`;
+            redirectTo = `/admin/produtos?msg=Sucesso! O produto ${prodCompleto.nome} foi importado com estoque ${estoqueAtual}!`;
           }
         }
       }
@@ -125,7 +144,7 @@ export default async function AdminProdutos({ searchParams }: { searchParams: { 
                   </td>
                   <td className="p-4 text-gray-600">{item.estoque}</td>
                   <td className="p-4 text-right">
-                    <button className="text-blue-600 hover:underline mr-3">Editar</button>
+                    <Link href={`/admin/produtos/${item.id}`} className="text-blue-600 hover:underline mr-3 font-bold">Editar</Link>
                     <button className="text-red-600 hover:underline">Ocultar</button>
                   </td>
                 </tr>
