@@ -1,5 +1,6 @@
 import { Search, ShoppingCart, User, Heart } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function Header() {
   return (
@@ -10,12 +11,20 @@ export default function Header() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-20">
-          {/* Logo */}
-          <div className="flex-shrink-0 flex items-center">
-            <Link href="/" className="text-secondary font-heading font-bold text-2xl">
-              Mimo Show Pet
-            </Link>
+        <div className="flex justify-between items-center py-4">
+          {/* Logo and Search */}
+        <div className="flex items-center justify-between py-2">
+          <Link href="/">
+            <div className="relative w-48 h-16 cursor-pointer transform scale-150 origin-left z-50">
+              <Image 
+                src="/logo-luxo.jpg" 
+                alt="Banho e Tosa Pet Logo" 
+                fill 
+                className="object-contain" 
+                priority 
+              />
+            </div>
+          </Link>
           </div>
 
           {/* Search Bar */}
@@ -35,7 +44,7 @@ export default function Header() {
             <Link href="/favoritos" className="text-text hover:text-primary transition">
               <Heart size={24} />
             </Link>
-            <Link href="/conta" className="text-text hover:text-primary transition">
+            <Link href="/login" className="text-secondary hover:text-primary transition cursor-pointer">
               <User size={24} />
             </Link>
             <Link href="/carrinho" className="text-text hover:text-primary transition">
@@ -49,13 +58,14 @@ export default function Header() {
           </div>
         </div>
 
-        {/* Categories Menu */}
-        <nav className="hidden md:flex space-x-8 justify-center pb-4 text-text font-medium">
-          <Link href="/categoria/coleiras" className="hover:text-primary transition">Coleiras</Link>
-          <Link href="/categoria/gravatas" className="hover:text-primary transition">Gravatas</Link>
-          <Link href="/categoria/acessorios" className="hover:text-primary transition">Acessórios</Link>
+        {/* Categorias (Desktop) */}
+        <nav className="hidden md:flex justify-center gap-8 py-4 bg-white border-t border-border shadow-sm text-sm font-bold text-gray-700">
+          <Link href="/categoria/adesivos" className="hover:text-primary transition">Adesivos</Link>
+          <Link href="/categoria/gravatinhas" className="hover:text-primary transition">Gravatinhas</Link>
+          <Link href="/categoria/lacinhos" className="hover:text-primary transition">Lacinhos</Link>
           <Link href="/categoria/bandanas" className="hover:text-primary transition">Bandanas</Link>
-          <Link href="/categoria/roupinhas" className="hover:text-primary transition">Roupinhas</Link>
+          <Link href="/categoria/gargantilhas" className="hover:text-primary transition">Gargantilhas</Link>
+          <Link href="/categoria/colarinhos" className="hover:text-primary transition">Colarinhos</Link>
         </nav>
       </div>
     </header>

@@ -40,7 +40,7 @@ CREATE TABLE public.produtos (
     -- SEO (Otimização para o Google que vem do Bling)
     seo_title TEXT,
     seo_description TEXT,
-    
+    parent_id UUID REFERENCES public.produtos(id), -- Para Variações do Bling (Preços diferentes por tamanho)
     ativo BOOLEAN DEFAULT true,
     criado_em TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );

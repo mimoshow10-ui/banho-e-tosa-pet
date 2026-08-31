@@ -1,97 +1,112 @@
-import Link from 'next/link';
-import { Truck, ShieldCheck, Clock } from 'lucide-react';
+import Image from "next/image";
+import Link from "next/link";
+import { supabase } from "@/lib/supabase";
 
-export default function Home() {
+export default async function Home() {
+  // Puxar os produtos REAIS do banco de dados (que você inseriu via Painel Admin ou Bling)
+  const { data: produtos } = await supabase
+    .from('produtos')
+    .select('*')
+    .eq('ativo', true)
+    .order('criado_em', { ascending: false })
+    .limit(8);
+
   return (
-    <div className="flex flex-col gap-16 pb-16">
-      {/* Hero Section */}
-      <section className="relative h-[500px] w-full bg-gray-900 flex items-center justify-center">
-        {/* Usando uma cor solida temporaria ja que nao temos a imagem */}
-        <div className="absolute inset-0 bg-secondary/80 z-10"></div>
-        
-        <div className="relative z-20 text-center px-4">
-          <h1 className="text-5xl md:text-6xl text-white font-heading font-bold mb-4 drop-shadow-lg">
-            Seu pet merece estilo
-          </h1>
-          <p className="text-xl text-white mb-8 drop-shadow-md">
-            Acessórios premium para cães e gatos
-          </p>
-          <Link 
-            href="/categoria/coleiras" 
-            className="inline-block bg-accent hover:bg-yellow-400 text-text font-bold text-lg py-4 px-8 rounded-full transition transform hover:scale-105"
-          >
-            Comprar Agora
+    <div className="flex flex-col min-h-screen">
+      {/* Hero Section com Banner Dinâmico */}
+      <section className="w-full relative bg-gray-100">
+        <div className="w-full h-[300px] md:h-[500px] relative">
+          <Image 
+            src="/banner-pet.jpg" 
+            alt="Mimo Show Pet - Acessórios" 
+            fill 
+            className="object-cover object-center"
+            priority
+          />
+          {/* Overlay Escuro com Texto */}
+          <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center text-center px-4">
+            <h1 className="text-4xl md:text-5xl font-heading font-bold mb-6 text-white drop-shadow-lg">
+              Estilo e Conforto para o seu Melhor Amigo!
+            </h1>
+            <Link href="/categoria/todas" className="bg-primary text-text font-bold py-3 px-8 rounded-full hover:bg-orange-600 transition text-lg shadow-lg">
+              Ver Coleção Completa
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Super Promoção */}
+      <section className="py-12 px-4 max-w-7xl mx-auto w-full bg-red-50 mt-8 rounded-2xl border border-red-100">
+        <div className="flex justify-between items-end mb-8">
+          <div>
+            <h2 className="text-3xl font-heading font-black text-red-600 uppercase tracking-tight flex items-center gap-2">
+              🔥 Super Promoção
+            </h2>
+            <p className="text-red-500 font-bold text-sm mt-1">Ofertas por tempo limitado!</p>
+          </div>
+          <Link href="/promocoes" className="text-red-600 font-bold hover:underline text-sm hidden md:block">
+            Ver todas as ofertas
           </Link>
         </div>
-      </section>
-
-      {/* Benefícios */}
-      <section className="max-w-7xl mx-auto px-4 w-full">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 bg-gray-50 p-8 rounded-2xl">
-          <div className="flex flex-col items-center text-center gap-3">
-            <Truck size={40} className="text-primary" />
-            <h3 className="font-bold text-lg">Frete Rápido</h3>
-            <p className="text-gray-600 text-sm">Entrega em até 7 dias úteis</p>
-          </div>
-          <div className="flex flex-col items-center text-center gap-3">
-            <ShieldCheck size={40} className="text-primary" />
-            <h3 className="font-bold text-lg">Qualidade Garantida</h3>
-            <p className="text-gray-600 text-sm">Produtos testados e aprovados</p>
-          </div>
-          <div className="flex flex-col items-center text-center gap-3">
-            <Clock size={40} className="text-primary" />
-            <h3 className="font-bold text-lg">Atendimento 24h</h3>
-            <p className="text-gray-600 text-sm">Suporte via WhatsApp</p>
-          </div>
-        </div>
-      </section>
-
-      {/* Categorias (Grid 4 colunas) */}
-      <section className="max-w-7xl mx-auto px-4 w-full">
-        <h2 className="text-3xl font-heading font-bold mb-8 text-center text-secondary">Categorias</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-          {['Coleiras', 'Gravatas', 'Acessórios', 'Roupinhas'].map((cat, i) => (
-            <Link href={`/categoria/${cat.toLowerCase()}`} key={i} className="group cursor-pointer">
-              <div className="bg-gray-100 rounded-xl aspect-square flex items-center justify-center overflow-hidden mb-4 relative transition group-hover:shadow-lg">
-                <div className="absolute inset-0 bg-primary/10 group-hover:bg-primary/20 transition"></div>
-                <span className="text-gray-400">Imagem {cat}</span>
-              </div>
-              <h3 className="text-center font-bold text-lg group-hover:text-primary transition">{cat}</h3>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      {/* Produtos em Destaque */}
-      <section className="max-w-7xl mx-auto px-4 w-full">
-        <h2 className="text-3xl font-heading font-bold mb-8 text-center text-secondary">Produtos em Destaque</h2>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {[1, 2, 3, 4, 5, 6, 7, 8].map((item) => (
-            <div key={item} className="flex flex-col bg-white rounded-xl shadow-sm hover:shadow-md transition border border-border overflow-hidden">
-              <div className="aspect-square bg-gray-100 flex items-center justify-center relative">
-                {item === 1 && (
-                  <span className="absolute top-2 left-2 bg-success text-white text-xs font-bold px-2 py-1 rounded">Novo</span>
-                )}
-                {item === 2 && (
-                  <span className="absolute top-2 left-2 bg-accent text-text text-xs font-bold px-2 py-1 rounded">Mais Vendido</span>
-                )}
-                <span className="text-gray-400">Produto {item}</span>
-              </div>
-              <div className="p-4 flex flex-col flex-grow">
-                <h3 className="font-bold mb-1 text-sm md:text-base line-clamp-2">Coleira Premium Ajustável</h3>
-                <div className="text-yellow-400 text-xs mb-2">⭐⭐⭐⭐⭐ (4.8)</div>
-                <div className="mt-auto">
-                  <span className="text-xl font-heading font-bold text-primary">R$ 30,00</span>
+        
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          {produtos && produtos.length > 0 ? (
+            produtos.slice(0, 5).map((prod) => (
+              <Link href={`/produto/${prod.slug}`} key={`promo-${prod.id}`} className="group bg-white rounded-xl shadow-sm border border-red-200 overflow-hidden hover:shadow-md transition relative">
+                <div className="absolute top-2 right-2 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded z-10 shadow">
+                  -20% OFF
                 </div>
-                <button className="mt-4 w-full bg-secondary text-white py-2 rounded-lg font-bold hover:bg-blue-900 transition text-sm">
-                  Adicionar
-                </button>
-              </div>
-            </div>
-          ))}
+                <div className="w-full h-40 bg-gray-100 relative">
+                  {prod.imagens && prod.imagens.length > 0 ? (
+                    <Image src={prod.imagens[0]} alt={prod.nome} fill className="object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-gray-400 font-bold text-sm bg-gray-200">Sem Foto</div>
+                  )}
+                </div>
+                <div className="p-3 flex flex-col h-auto">
+                  <h3 className="font-bold text-secondary text-sm mb-2 group-hover:text-red-600 transition line-clamp-2">{prod.nome}</h3>
+                  <div className="mt-auto flex flex-col">
+                    <span className="text-xs text-gray-400 line-through">R$ {(Number(prod.preco) * 1.25).toFixed(2).replace('.', ',')}</span>
+                    <span className="font-black text-lg text-red-600">R$ {Number(prod.preco).toFixed(2).replace('.', ',')}</span>
+                  </div>
+                </div>
+              </Link>
+            ))
+          ) : null}
         </div>
       </section>
 
+      {/* Destaques puxando do Supabase */}
+      <section className="py-16 px-4 max-w-7xl mx-auto w-full">
+        <h2 className="text-3xl font-heading font-bold text-secondary text-center mb-12">Nossas Novidades</h2>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
+          {produtos && produtos.length > 0 ? (
+            produtos.map((prod) => (
+              <Link href={`/produto/${prod.slug}`} key={prod.id} className="group bg-white rounded-xl shadow-sm border border-border overflow-hidden hover:shadow-md transition">
+                <div className="w-full h-48 bg-gray-100 relative">
+                  {prod.imagens && prod.imagens.length > 0 ? (
+                    <Image src={prod.imagens[0]} alt={prod.nome} fill className="object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-gray-400 font-bold text-sm bg-gray-200">Sem Foto</div>
+                  )}
+                </div>
+                <div className="p-4 flex flex-col h-32">
+                  <h3 className="font-bold text-secondary mb-2 group-hover:text-primary transition line-clamp-2">{prod.nome}</h3>
+                  <div className="mt-auto">
+                    <span className="font-bold text-xl text-primary">R$ {Number(prod.preco).toFixed(2).replace('.', ',')}</span>
+                  </div>
+                </div>
+              </Link>
+            ))
+          ) : (
+            <div className="col-span-full text-center text-gray-500 py-8 bg-gray-50 rounded-xl border border-dashed border-gray-300">
+              <p className="text-lg font-bold mb-2">A vitrine está vazia!</p>
+              <p>Os produtos que você cadastrar no Painel Admin ou exportar do Bling aparecerão automaticamente aqui.</p>
+            </div>
+          )}
+        </div>
+      </section>
     </div>
   );
 }

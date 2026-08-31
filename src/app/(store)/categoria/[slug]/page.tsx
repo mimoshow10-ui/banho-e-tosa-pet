@@ -27,11 +27,25 @@ export default async function CategoriaPage({
             <h2 className="font-heading font-bold text-lg mb-6 text-secondary">Filtros</h2>
             
             {/* Filtro Tamanho */}
-            <div className="mb-6">
-              <h3 className="font-semibold mb-3 text-sm">Tamanho</h3>
+            {/* Filtro Público / Estampa */}
+            <div className="mb-6 border-b border-border pb-6">
+              <h3 className="font-bold mb-3 text-secondary text-sm uppercase tracking-wide">Público / Estilo</h3>
+              <div className="flex flex-col gap-2">
+                {['Macho', 'Fêmea', 'Unissex / Sortido', 'Temático (Natal, etc)'].map((estilo) => (
+                  <label key={estilo} className="flex items-center gap-2 cursor-pointer group">
+                    <input type="checkbox" className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary accent-primary" />
+                    <span className="text-sm text-gray-600 group-hover:text-primary transition">{estilo}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Filtro Quantidade / Pacote */}
+            <div className="mb-6 border-b border-border pb-6">
+              <h3 className="font-bold mb-3 text-secondary text-sm uppercase tracking-wide">Quantidade no Pacote</h3>
               <div className="flex flex-wrap gap-2">
-                {['P', 'M', 'G', 'GG'].map((t) => (
-                  <button key={t} className="w-10 h-10 border border-border rounded flex items-center justify-center hover:border-primary hover:text-primary transition text-sm">
+                {['50 un', '100 un', '250 un', '500 un'].map((t) => (
+                  <button key={t} className="px-3 py-2 border border-border rounded-lg flex items-center justify-center hover:border-primary hover:text-primary hover:bg-orange-50 transition text-sm text-gray-600">
                     {t}
                   </button>
                 ))}
@@ -40,21 +54,11 @@ export default async function CategoriaPage({
 
             {/* Filtro Preço */}
             <div className="mb-6">
-              <h3 className="font-semibold mb-3 text-sm">Faixa de Preço</h3>
-              <input type="range" min="5" max="100" className="w-full accent-primary" />
-              <div className="flex justify-between text-xs text-gray-500 mt-2">
-                <span>R$ 5</span>
-                <span>R$ 100</span>
-              </div>
-            </div>
-
-            {/* Filtro Cor */}
-            <div className="mb-6">
-              <h3 className="font-semibold mb-3 text-sm">Cor</h3>
-              <div className="flex flex-wrap gap-2">
-                {['#FF0000', '#0000FF', '#00FF00', '#000000'].map((cor) => (
-                  <button key={cor} className="w-8 h-8 rounded-full border border-gray-300" style={{ backgroundColor: cor }}></button>
-                ))}
+              <h3 className="font-bold mb-3 text-secondary text-sm uppercase tracking-wide">Faixa de Preço</h3>
+              <input type="range" min="10" max="300" className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary" />
+              <div className="flex justify-between text-xs font-bold text-gray-500 mt-3">
+                <span>R$ 10</span>
+                <span>R$ 300+</span>
               </div>
             </div>
 

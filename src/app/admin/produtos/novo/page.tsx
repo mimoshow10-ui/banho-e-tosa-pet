@@ -47,30 +47,86 @@ export default async function NovoProduto() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1">Categoria</label>
+          <label className="block text-sm font-medium mb-1">Categoria (ou Subcategoria)</label>
           <select name="categoria_id" required className="w-full border border-border rounded-lg p-2 bg-white">
-            <option value="">Selecione uma categoria...</option>
-            {categorias?.map(c => (
-              <option key={c.id} value={c.id}>{c.nome}</option>
-            ))}
+            <option value="">Selecione de onde este produto pertence...</option>
+            {categorias?.map(c => {
+              const isSub = !!c.parent_id;
+              const parent = isSub ? categorias.find(p => p.id === c.parent_id) : null;
+              const nomeFinal = parent ? `${parent.nome} > ${c.nome}` : c.nome;
+              return (
+                <option key={c.id} value={c.id}>
+                  {nomeFinal}
+                </option>
+              );
+            }).sort((a, b) => {
+              // Extract the text content from the option element for sorting
+              const textA = a.props.children;
+              const textB = b.props.children;
+              return textA.localeCompare(textB);
+            })}
           </select>
+          <p className="text-xs text-gray-400 mt-1">Crie novas categorias lá no menu "Categorias".</p>
         </div>
 
-        <div className="flex gap-4">
-          <div className="flex-1">
-            <label className="block text-sm font-medium mb-1">Tamanhos Disponíveis</label>
-            <input name="tamanhos" type="text" placeholder="Ex: P, M, G" className="w-full border border-border rounded-lg p-2" />
-          </div>
-          <div className="flex-1">
-            <label className="block text-sm font-medium mb-1">Cores</label>
-            <input name="cores" type="text" placeholder="Ex: Azul, Vermelho" className="w-full border border-border rounded-lg p-2" />
+        {/* SEÇÃO DE VARIAÇÕES (PREÇOS INDIVIDUAIS E SKUS) */}
+        <div className="border-t border-border pt-6 mt-2">
+          <h2 className="text-lg font-bold mb-2 text-secondary">Variações do Produto (Ex: Pacotes, Tamanhos)</h2>
+          <p className="text-sm text-gray-500 mb-4">
+            Aqui você cadastra as opções que aparecerão dentro do anúncio. Cada opção terá seu próprio preço, SKU e estoque!
+          </p>
+          
+          <div className="bg-gray-50 border border-border rounded-lg p-4 flex flex-col gap-4">
+            
+            {/* Variação 1 */}
+            <div className="flex gap-4 items-end bg-white p-3 border border-gray-200 rounded shadow-sm">
+              <div className="flex-1">
+                <label className="block text-xs font-bold mb-1">Nome da Variação (ex: 25 un)</label>
+                <input name="var_nome_1" type="text" placeholder="25 unidades" className="w-full border border-border rounded p-2 text-sm" />
+              </div>
+              <div className="flex-1">
+                <label className="block text-xs font-bold mb-1">SKU (Bling)</label>
+                <input name="var_sku_1" type="text" placeholder="SKU003" className="w-full border border-border rounded p-2 text-sm" />
+              </div>
+              <div className="flex-1">
+                <label className="block text-xs font-bold mb-1">Preço (R$)</label>
+                <input name="var_preco_1" type="number" placeholder="10.00" className="w-full border border-border rounded p-2 text-sm" />
+              </div>
+              <div className="w-24">
+                <label className="block text-xs font-bold mb-1">Estoque</label>
+                <input name="var_estoque_1" type="number" placeholder="100" className="w-full border border-border rounded p-2 text-sm" />
+              </div>
+            </div>
+
+            {/* Variação 2 */}
+            <div className="flex gap-4 items-end bg-white p-3 border border-gray-200 rounded shadow-sm">
+              <div className="flex-1">
+                <label className="block text-xs font-bold mb-1">Nome da Variação (ex: 50 un)</label>
+                <input name="var_nome_2" type="text" placeholder="50 unidades" className="w-full border border-border rounded p-2 text-sm" />
+              </div>
+              <div className="flex-1">
+                <label className="block text-xs font-bold mb-1">SKU (Bling)</label>
+                <input name="var_sku_2" type="text" placeholder="SKU001" className="w-full border border-border rounded p-2 text-sm" />
+              </div>
+              <div className="flex-1">
+                <label className="block text-xs font-bold mb-1">Preço (R$)</label>
+                <input name="var_preco_2" type="number" placeholder="18.00" className="w-full border border-border rounded p-2 text-sm" />
+              </div>
+              <div className="w-24">
+                <label className="block text-xs font-bold mb-1">Estoque</label>
+                <input name="var_estoque_2" type="number" placeholder="250" className="w-full border border-border rounded p-2 text-sm" />
+              </div>
+            </div>
+
+            <button type="button" className="text-sm font-bold text-blue-600 hover:underline w-fit">
+              + Adicionar mais uma variação (SKU)
+            </button>
           </div>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-1">Imagens (Até 10 URLs separadas por vírgula)</label>
-          <input name="imagens" type="text" placeholder="https://..., https://..." className="w-full border border-border rounded-lg p-2" />
-          <p className="text-xs text-gray-500 mt-1">Essas fotos virão automaticamente do Bling na exportação.</p>
+        <div className="border-t border-border pt-6">
+          <label className="block text-sm font-medium mb-1">Imagens do Anúncio Principal</label>
+          <input name="imagens" type="text" placeholder="URL da foto 1, URL da foto 2..." className="w-full border border-border rounded-lg p-2" />
         </div>
 
         <div>

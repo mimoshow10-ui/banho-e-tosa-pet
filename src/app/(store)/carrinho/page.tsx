@@ -78,18 +78,39 @@ export default function CarrinhoPage() {
               <span className="font-semibold">R$ 59,80</span>
             </div>
 
-            {/* Calcular Frete */}
+            {/* Calcular Frete & Preferência de Entrega */}
             <div className="mb-4 pb-4 border-b border-gray-200">
-              <p className="text-sm text-gray-600 mb-2">Calcular Frete</p>
-              <div className="flex gap-2">
-                <input type="text" placeholder="CEP" className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary" />
-                <button className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-bold transition">
-                  OK
-                </button>
+              <h3 className="font-bold text-gray-800 mb-4">Opções de Entrega</h3>
+              
+              <div className="grid md:grid-cols-1 gap-4">
+                {/* Campo de CEP */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">CEP *</label>
+                  <div className="flex gap-2">
+                    <input type="text" placeholder="00000-000" className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary" />
+                    <button className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-bold transition">
+                      OK
+                    </button>
+                  </div>
+                </div>
+
+                {/* Campo de Preferência de Entrega */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Preferência de Entrega *</label>
+                  <select className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary bg-white">
+                    <option value="" disabled selected>Selecione</option>
+                    <option value="correios">Correios (PAC/Sedex)</option>
+                    <option value="transportadora">Transportadora Privada</option>
+                    <option value="retirada">Retirada no Local</option>
+                    <option value="qualquer">O mais barato/rápido</option>
+                  </select>
+                </div>
               </div>
-              <div className="flex justify-between mt-3 text-sm">
+
+              {/* Resultado Simulado do Frete */}
+              <div className="flex justify-between mt-4 text-sm bg-gray-100 p-3 rounded-lg border border-gray-200">
                 <span>PAC (7 dias úteis)</span>
-                <span className="font-semibold">R$ 15,00</span>
+                <span className="font-semibold text-primary">R$ 15,00</span>
               </div>
             </div>
 
@@ -104,16 +125,24 @@ export default function CarrinhoPage() {
               </div>
             </div>
 
-            <div className="flex justify-between mb-8 items-end">
-              <span className="font-bold text-secondary text-lg">Total</span>
-              <span className="font-heading font-bold text-3xl text-primary">R$ 74,80</span>
+            <div className="flex justify-between mb-4 items-end">
+              <span className="font-bold text-secondary text-lg">Total no Cartão</span>
+              <span className="font-bold text-2xl text-gray-400 line-through">R$ 74,80</span>
             </div>
 
-            <button className="w-full bg-accent text-text font-bold text-lg py-4 rounded-xl hover:bg-yellow-400 transition shadow-sm mb-4">
-              Ir para Pagamento
-            </button>
+            <div className="flex justify-between mb-8 items-end bg-orange-50 p-4 rounded-lg border border-orange-200">
+              <div className="flex flex-col">
+                <span className="font-bold text-secondary text-lg">Total no PIX</span>
+                <span className="text-xs text-green-600 font-bold">(5% de desconto)</span>
+              </div>
+              <span className="font-heading font-bold text-3xl text-primary">R$ 71,06</span>
+            </div>
+
+            <Link href="/login" className="w-full block text-center bg-accent text-text font-bold text-lg py-4 rounded-xl hover:bg-yellow-400 transition shadow-sm mb-4">
+              Pagar com PIX ou Cartão
+            </Link>
             <p className="text-xs text-center text-gray-500">
-              Pagamento 100% seguro processado pelo Mercado Livre
+              Pagamento 100% seguro processado pelo Mercado Pago
             </p>
           </div>
         </div>

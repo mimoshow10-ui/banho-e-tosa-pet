@@ -30,7 +30,11 @@ export default function AdminLayout({
           </Link>
           <Link href="/admin/pedidos" className="flex items-center gap-3 p-3 rounded-lg hover:bg-blue-800 transition">
             <ShoppingCart size={20} />
-            <span>Pedidos (ML)</span>
+            <span>Pedidos</span>
+          </Link>
+          <Link href="/admin/marketing" className="flex items-center gap-3 p-3 rounded-lg hover:bg-blue-800 transition">
+            <Settings size={20} />
+            <span>Marketing (Banners)</span>
           </Link>
           <Link href="/admin/configuracoes" className="flex items-center gap-3 p-3 rounded-lg hover:bg-blue-800 transition">
             <Settings size={20} />

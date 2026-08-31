@@ -74,6 +74,56 @@ export default function AdminConfiguracoes() {
           </div>
         </div>
       </div>
+
+      {/* INTEGRAÇÃO LOGÍSTICA (Correios / Transportadoras) */}
+      <div className="bg-white rounded-xl shadow-sm border border-yellow-300 p-8 mb-6 relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-2 h-full bg-yellow-500"></div>
+        <h2 className="text-xl font-bold mb-2 text-secondary">Logística e Frete (Correios & Transportadoras)</h2>
+        <p className="text-sm text-gray-600 mb-6">Ative e configure os meios de entrega disponíveis para os clientes no checkout.</p>
+        
+        <form className="flex flex-col gap-6">
+          <div className="flex flex-col gap-4">
+            <label className="flex items-center gap-3 p-4 border border-border rounded-lg bg-gray-50 cursor-pointer hover:bg-gray-100 transition">
+              <input type="checkbox" defaultChecked className="w-5 h-5 text-primary rounded focus:ring-primary" />
+              <div>
+                <p className="font-bold text-gray-800">Correios (PAC e Sedex)</p>
+                <p className="text-sm text-gray-500">Cálculo automático pelo CEP de origem.</p>
+              </div>
+            </label>
+
+            <label className="flex items-center gap-3 p-4 border border-border rounded-lg bg-gray-50 cursor-pointer hover:bg-gray-100 transition">
+              <input type="checkbox" defaultChecked className="w-5 h-5 text-primary rounded focus:ring-primary" />
+              <div>
+                <p className="font-bold text-gray-800">Transportadoras Privadas (ex: Jadlog, Total Express)</p>
+                <p className="text-sm text-gray-500">Requer integração com Melhor Envio ou Kangu.</p>
+              </div>
+            </label>
+
+            <label className="flex items-center gap-3 p-4 border border-border rounded-lg bg-gray-50 cursor-pointer hover:bg-gray-100 transition">
+              <input type="checkbox" defaultChecked className="w-5 h-5 text-primary rounded focus:ring-primary" />
+              <div>
+                <p className="font-bold text-gray-800">Retirada no Local</p>
+                <p className="text-sm text-gray-500">Cliente retira os produtos direto no pet shop.</p>
+              </div>
+            </label>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">CEP de Origem (Remetente)</label>
+              <input type="text" placeholder="Ex: 01000-000" className="w-full border border-border rounded-lg p-2" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Token de API (Melhor Envio / Correios)</label>
+              <input type="password" placeholder="Insira o Token" className="w-full border border-border rounded-lg p-2" />
+            </div>
+          </div>
+
+          <button type="button" className="bg-primary text-secondary px-6 py-3 rounded-lg font-bold hover:bg-yellow-400 transition w-fit mt-2">
+            Salvar Configurações de Frete
+          </button>
+        </form>
+      </div>
     </div>
   );
 }
