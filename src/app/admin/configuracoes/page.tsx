@@ -97,7 +97,8 @@ export default async function AdminConfiguracoes({ searchParams }: { searchParam
       {/* Passo 1: Salvar Senhas */}
       <div className="bg-white rounded-xl shadow-sm border border-blue-200 p-8 mb-6 relative overflow-hidden">
         <div className="absolute top-0 left-0 w-2 h-full bg-blue-500"></div>
-        <h2 className="text-xl font-bold mb-2 text-secondary">Passo 1: Credenciais do Bling</h2>
+        <h2 className="text-xl font-bold mb-2 text-secondary">Autenticação do Bling</h2>
+        <p className="text-sm text-gray-600 mb-6">Coloque suas senhas aqui UMA ÚNICA VEZ para o sistema se conectar automaticamente.</p>
         
         <form action={salvarCredenciais} className="flex flex-col gap-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -111,22 +112,7 @@ export default async function AdminConfiguracoes({ searchParams }: { searchParam
             </div>
           </div>
           <button type="submit" className="bg-blue-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-blue-700 transition w-fit">
-            Salvar Credenciais
-          </button>
-        </form>
-      </div>
-
-      {/* Passo 2: Importar Produto */}
-      <div className="bg-white rounded-xl shadow-sm border border-green-200 p-8 mb-6 relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-2 h-full bg-green-500"></div>
-        <h2 className="text-xl font-bold mb-2 text-secondary">Passo 2: Importar Produto Específico</h2>
-        <form action={importarProdutoEspecifico} className="flex flex-col gap-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">SKU do Produto</label>
-            <input name="sku" type="text" required placeholder="Ex: kit29" className="w-full border border-border rounded-lg p-2 max-w-sm" />
-          </div>
-          <button type="submit" className="bg-green-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-green-700 transition w-fit mt-2">
-            Puxar Produto
+            Salvar e Testar Conexão
           </button>
         </form>
       </div>
