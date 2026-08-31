@@ -85,8 +85,39 @@ export default async function EditarProduto(props: { params: Promise<{ id: strin
           </select>
         </div>
 
+        <div className="border-t border-border pt-6 mt-4">
+          <h2 className="text-lg font-bold mb-4 text-secondary">Dados Importados do Bling</h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg border border-border">
+            <div>
+              <label className="block text-xs font-bold text-gray-500 mb-1">SKU / Código de Barras (GTIN)</label>
+              <input name="codigo_barras" type="text" readOnly defaultValue={produto.codigo_barras} className="w-full border border-border rounded p-2 text-sm bg-gray-100" />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-500 mb-1">Marca</label>
+              <input name="marca" type="text" readOnly defaultValue={produto.marca} className="w-full border border-border rounded p-2 text-sm bg-gray-100" />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-500 mb-1">Peso Líquido</label>
+              <input name="peso_liquido" type="text" readOnly defaultValue={produto.peso_liquido} className="w-full border border-border rounded p-2 text-sm bg-gray-100" />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-500 mb-1">Peso Bruto</label>
+              <input name="peso_bruto" type="text" readOnly defaultValue={produto.peso_bruto} className="w-full border border-border rounded p-2 text-sm bg-gray-100" />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-500 mb-1">Dimensões (L x A x P)</label>
+              <input type="text" readOnly defaultValue={`${produto.largura} x ${produto.altura} x ${produto.profundidade}`} className="w-full border border-border rounded p-2 text-sm bg-gray-100" />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-500 mb-1">NCM</label>
+              <input name="ncm" type="text" readOnly defaultValue={produto.ncm} className="w-full border border-border rounded p-2 text-sm bg-gray-100" />
+            </div>
+          </div>
+        </div>
+
         <div>
-          <label className="block text-sm font-medium mb-1">Imagens do Produto</label>
+          <label className="block text-sm font-medium mb-1">Imagens do Produto (Puxadas do Bling)</label>
           <textarea 
             name="imagens" 
             defaultValue={produto.imagens ? produto.imagens.join(', ') : ''} 

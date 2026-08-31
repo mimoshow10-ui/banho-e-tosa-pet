@@ -53,14 +53,27 @@ export default async function AdminProdutos({ searchParams }: { searchParams: { 
             estoqueAtual = estoqueJson.data?.[0]?.saldoFisicoTotal || 0;
           } catch(e) {}
 
+          const externas = prodCompleto.midia?.imagens?.externas?.map((img: any) => img.link) || [];
+          const internas = prodCompleto.midia?.imagens?.internas?.map((img: any) => img.link) || [];
+          const imagensBling = [...externas, ...internas];
+
           const produtoParaInserir = {
             bling_id: String(prodCompleto.id),
-            codigo_barras: prodCompleto.codigo,
+            codigo_barras: prodCompleto.codigo || prodCompleto.gtin,
             nome: prodCompleto.nome,
             preco: prodCompleto.preco,
             estoque: estoqueAtual,
             slug: prodCompleto.nome.toLowerCase().replace(/ /g, '-').normalize("NFD").replace(/[\u0300-\u036f]/g, "") + '-' + Date.now(),
-            ativo: prodCompleto.situacao === 'A'
+            ativo: prodCompleto.situacao === 'A',
+            peso_liquido: prodCompleto.pesoLiquido || 0,
+            peso_bruto: prodCompleto.pesoBruto || 0,
+            largura: prodCompleto.dimensoes?.largura || 0,
+            altura: prodCompleto.dimensoes?.altura || 0,
+            profundidade: prodCompleto.dimensoes?.profundidade || 0,
+            marca: prodCompleto.marca || '',
+            ncm: prodCompleto.tributacao?.ncm || '',
+            descricao_curta: prodCompleto.descricaoCurta || '',
+            imagens: imagensBling.length > 0 ? imagensBling : null
           };
 
           const { error } = await supabase.from('produtos').upsert(produtoParaInserir, { onConflict: 'bling_id' });
