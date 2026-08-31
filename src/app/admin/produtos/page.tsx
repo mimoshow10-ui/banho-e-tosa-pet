@@ -141,6 +141,7 @@ export default async function AdminProdutos({ searchParams }: { searchParams: { 
         <table className="w-full text-left">
           <thead className="bg-gray-50 text-gray-600 text-sm">
             <tr>
+              <th className="p-4 font-medium w-32">SKU</th>
               <th className="p-4 font-medium">Nome do Produto</th>
               <th className="p-4 font-medium">Preço</th>
               <th className="p-4 font-medium">Estoque</th>
@@ -151,6 +152,7 @@ export default async function AdminProdutos({ searchParams }: { searchParams: { 
             {produtos && produtos.length > 0 ? (
               produtos.map((item: any) => (
                 <tr key={item.id} className="hover:bg-gray-50">
+                  <td className="p-4 font-bold text-gray-500">{item.codigo_barras || 'Sem SKU'}</td>
                   <td className="p-4 font-medium text-gray-800">{item.nome}</td>
                   <td className="p-4 font-bold text-primary">
                     R$ {Number(item.preco).toFixed(2).replace('.', ',')}
