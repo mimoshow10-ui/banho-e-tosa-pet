@@ -3,49 +3,53 @@ import { revalidatePath } from 'next/cache';
 
 export default function AdminConfiguracoes() {
   
-  // Ação de Servidor para Gerar Token e Puxar produtos do Bling
-  async function sincronizarBling(formData: FormData) {
+  // Ação de Servidor para Importar um Produto Específico
+  async function importarProdutoEspecifico(formData: FormData) {
     'use server'
-    const clientId = formData.get('client_id') as string;
-    const clientSecret = formData.get('client_secret') as string;
-    const code = formData.get('code') as string;
+    const token = formData.get('access_token') as string;
+    const sku = formData.get('sku') as string;
     
-    if (!clientId || !clientSecret || !code) return;
+    if (!token || !sku) return;
 
-    console.log("Iniciando troca de código por Token do Bling...");
+    console.log(`Buscando o produto SKU: ${sku} no Bling...`);
 
     try {
-      // 1. Trocar o CODE pelo Access Token
-      const authResponse = await fetch('https://www.bling.com.br/Api/v3/oauth/token', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'Authorization': 'Basic ' + Buffer.from(`${clientId}:${clientSecret}`).toString('base64'),
-          'Accept': '1.0'
-        },
-        body: new URLSearchParams({
-          grant_type: 'authorization_code',
-          code: code
-        })
+      // Buscar o produto específico no Bling pelo código (SKU)
+      const response = await fetch(`https://www.bling.com.br/Api/v3/produtos?codigo=${sku}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
       });
-
-      const authData = await authResponse.json();
       
-      if (authData.error) {
-        console.error("Erro na autenticação do Bling:", authData);
-        return;
+      const data = await response.json();
+
+      if (data.data && data.data.length > 0) {
+        const prod = data.data[0];
+        
+        // Formatar para o nosso banco
+        const produtoParaInserir = {
+          bling_id: String(prod.id),
+          codigo_barras: prod.codigo,
+          nome: prod.nome,
+          preco: prod.preco,
+          slug: prod.nome.toLowerCase().replace(/ /g, '-').normalize("NFD").replace(/[\u0300-\u036f]/g, "") + '-' + Date.now(),
+          ativo: prod.situacao === 'A'
+        };
+
+        // Salvar no Supabase
+        const { error } = await supabase.from('produtos').upsert(produtoParaInserir, { onConflict: 'bling_id' });
+        
+        if (error) {
+          console.error("Erro ao salvar no banco Supabase (verifique as variáveis de ambiente):", error);
+        } else {
+          console.log(`Produto ${prod.nome} importado com sucesso!`);
+        }
+      } else {
+        console.log("Produto não encontrado no Bling com esse SKU.");
       }
 
-      const accessToken = authData.access_token;
-      console.log("Token gerado com sucesso! Autenticação concluída.");
-
-      // TODO: Salvar o accessToken no banco de dados para usarmos quando VOCÊ quiser enviar algo para o Bling.
-      
-      // Feedback visual para a página de configurações recarregar
-      revalidatePath('/admin/configuracoes');
+      revalidatePath('/admin/produtos');
       
     } catch (error) {
-      console.error("Erro no processo do Bling:", error);
+      console.error("Erro na importação:", error);
     }
   }
 
@@ -53,33 +57,30 @@ export default function AdminConfiguracoes() {
     <div className="max-w-3xl">
       <h1 className="text-3xl font-heading font-bold text-gray-800 mb-8">Configurações e Integrações</h1>
 
-      {/* Sincronização BLING */}
-      <div className="bg-white rounded-xl shadow-sm border border-blue-200 p-8 mb-6 relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-2 h-full bg-blue-500"></div>
-        <h2 className="text-xl font-bold mb-2 text-secondary">Conexão com o Bling</h2>
-        <p className="text-sm text-gray-600 mb-6">Conecte sua conta do Bling para poder exportar seus produtos e vendas quando desejar.</p>
+      {/* Importação Específica BLING */}
+      <div className="bg-white rounded-xl shadow-sm border border-green-200 p-8 mb-6 relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-2 h-full bg-green-500"></div>
+        <h2 className="text-xl font-bold mb-2 text-secondary">Importar Produto do Bling (Por SKU)</h2>
+        <p className="text-sm text-gray-600 mb-6">Traga apenas os produtos que você deseja para a vitrine informando o código deles.</p>
         
-        <form action={sincronizarBling} className="flex flex-col gap-4">
+        <form action={importarProdutoEspecifico} className="flex flex-col gap-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-1">Client ID</label>
-              <input name="client_id" type="text" required placeholder="Cole o Client ID" className="w-full border border-border rounded-lg p-2" />
+              <label className="block text-sm font-medium mb-1">SKU (Código no Bling)</label>
+              <input name="sku" type="text" required placeholder="Ex: PET-001" className="w-full border border-border rounded-lg p-2" />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Client Secret</label>
-              <input name="client_secret" type="password" required placeholder="Cole o Client Secret" className="w-full border border-border rounded-lg p-2" />
+              <label className="block text-sm font-medium mb-1">Token de Acesso (Access Token)</label>
+              <input name="access_token" type="password" required placeholder="Cole o token do Bling" className="w-full border border-border rounded-lg p-2" />
             </div>
           </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Código de Autorização (Code)</label>
-            <input name="code" type="password" required placeholder="Cole o ?code= que veio na URL" className="w-full border border-border rounded-lg p-2" />
-          </div>
           
-          <button type="submit" className="bg-blue-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-blue-700 transition w-fit mt-2">
-            Autenticar no Bling (Não importa nada)
+          <button type="submit" className="bg-green-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-green-700 transition w-fit mt-2">
+            Puxar Produto Específico
           </button>
         </form>
       </div>
+
 
       <div className="bg-white rounded-xl shadow-sm border border-border p-8 mb-6">
         <h2 className="text-xl font-bold mb-6 text-secondary border-b pb-2">Informações Gerais</h2>
