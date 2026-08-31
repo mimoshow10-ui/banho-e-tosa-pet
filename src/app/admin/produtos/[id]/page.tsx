@@ -2,56 +2,62 @@ import { supabase } from '@/lib/supabase';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 
+async function atualizarProduto(formData: FormData) {
+  'use server'
+  const id = formData.get('id') as string;
+  const nome = formData.get('nome') as string;
+  const preco_str = formData.get('preco') as string;
+  const preco = parseFloat(preco_str.replace(',', '.'));
+  
+  const preco_promocional_str = formData.get('preco_promocional') as string;
+  const preco_promocional = preco_promocional_str ? parseFloat(preco_promocional_str.replace(',', '.')) : null;
+  const estoque = parseInt(formData.get('estoque') as string);
+  const categoria_id = formData.get('categoria_id') as string;
+  
+  // Convert imagens textarea content to array
+  const imagensTxt = formData.get('imagens') as string;
+  const imagensArr = imagensTxt ? imagensTxt.split(',').map(s => s.trim()).filter(s => s) : [];
+  
+  // Video URL
+  const video_url = formData.get('video_url') as string;
+
+  // Extract related products
+  const relacionadosTxt = formData.get('relacionados') as string;
+  const relacionadosArr = relacionadosTxt ? relacionadosTxt.split(',').map(s => s.trim()).filter(s => s) : [];
+
+  const payload = { 
+    nome, 
+    preco, 
+    preco_promocional,
+    estoque, 
+    video_url: video_url || null,
+    categoria_id: categoria_id || null, 
+    imagens: imagensArr.length > 0 ? imagensArr : null,
+    relacionados: relacionadosArr.length > 0 ? relacionadosArr : null
+  };
+
+  const { error } = await supabase.from('produtos').update(payload).eq('id', id);
+  
+  if (error) {
+    redirect(`/admin/produtos?erro=Erro ao salvar: ${error.message}`);
+  }
+
+  revalidatePath('/admin/produtos');
+  revalidatePath('/');
+  if (categoria_id) {
+    const { data: cat } = await supabase.from('categorias').select('slug').eq('id', categoria_id).single();
+    if (cat) revalidatePath(`/categoria/${cat.slug}`);
+  }
+  
+  redirect('/admin/produtos?msg=Produto atualizado com sucesso!');
+}
+
 export default async function EditarProduto(props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
   const { data: produto } = await supabase.from('produtos').select('*').eq('id', params.id).single();
   const { data: categorias } = await supabase.from('categorias').select('*').order('nome');
 
   if (!produto) return <div>Produto não encontrado</div>;
-
-  async function atualizarProduto(formData: FormData) {
-    'use server'
-    const id = formData.get('id') as string;
-    const nome = formData.get('nome') as string;
-    const preco_str = formData.get('preco') as string;
-    const preco = parseFloat(preco_str.replace(',', '.'));
-    
-    const preco_promocional_str = formData.get('preco_promocional') as string;
-    const preco_promocional = preco_promocional_str ? parseFloat(preco_promocional_str.replace(',', '.')) : null;
-    const estoque = parseInt(formData.get('estoque') as string);
-    const categoria_id = formData.get('categoria_id') as string;
-    
-    // Convert imagens textarea content to array
-    const imagensTxt = formData.get('imagens') as string;
-    const imagensArr = imagensTxt ? imagensTxt.split(',').map(s => s.trim()).filter(s => s) : [];
-    
-    // Video URL
-    const video_url = formData.get('video_url') as string;
-
-    // Extract related products
-    const relacionadosTxt = formData.get('relacionados') as string;
-    const relacionadosArr = relacionadosTxt ? relacionadosTxt.split(',').map(s => s.trim()).filter(s => s) : [];
-
-    await supabase.from('produtos').update({ 
-      nome, 
-      preco, 
-      preco_promocional,
-      estoque, 
-      video_url: video_url || null,
-      categoria_id: categoria_id || null, 
-      imagens: imagensArr.length > 0 ? imagensArr : null,
-      relacionados: relacionadosArr.length > 0 ? relacionadosArr : null
-    }).eq('id', id);
-
-    revalidatePath('/admin/produtos');
-    revalidatePath('/');
-    if (categoria_id) {
-      const { data: cat } = await supabase.from('categorias').select('slug').eq('id', categoria_id).single();
-      if (cat) revalidatePath(`/categoria/${cat.slug}`);
-    }
-    
-    redirect('/admin/produtos?msg=Produto atualizado com sucesso!');
-  }
 
   return (
     <div className="max-w-2xl bg-white p-8 rounded-xl shadow-sm border border-border">
