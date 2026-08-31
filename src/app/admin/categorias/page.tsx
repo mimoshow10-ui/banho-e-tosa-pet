@@ -2,6 +2,9 @@ import { supabase } from '@/lib/supabase';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default async function AdminCategorias() {
   // Busca categorias
   const { data: categorias } = await supabase.from('categorias').select('*').order('nome');
