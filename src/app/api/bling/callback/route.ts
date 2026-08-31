@@ -1,4 +1,4 @@
-﻿import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 
 export async function GET(request: Request) {
@@ -31,7 +31,8 @@ export async function GET(request: Request) {
     const authData = await authResponse.json();
     
     if (authData.error) {
-      return NextResponse.redirect(new URL('/admin/configuracoes?erro=Código expirou. Tente autorizar novamente.', request.url));
+      const detalheErro = authData.error.description || authData.error || 'Erro desconhecido do Bling';
+      return NextResponse.redirect(new URL(`/admin/configuracoes?erro=Bling rejeitou: ${detalheErro}`, request.url));
     }
 
     await supabase.from('configuracoes').upsert({
