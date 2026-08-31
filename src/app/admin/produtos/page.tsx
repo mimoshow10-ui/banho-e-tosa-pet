@@ -8,7 +8,8 @@ import { Pencil, Trash2, Plus, ExternalLink } from 'lucide-react';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-export default async function AdminProdutos({ searchParams }: { searchParams: { msg?: string, erro?: string } }) {
+export default async function AdminProdutos(props: { searchParams: Promise<{ msg?: string, erro?: string }> }) {
+  const searchParams = await props.searchParams;
 
   // Ação de importar produto
   async function importarSKU(formData: FormData) {
@@ -142,8 +143,8 @@ export default async function AdminProdutos({ searchParams }: { searchParams: { 
               </button>
             </form>
           </div>
-          {msg && <div className="text-green-600 font-bold bg-green-100 p-3 rounded-lg flex-1 text-center border border-green-200">{msg}</div>}
-          {erro && <div className="text-red-600 font-bold bg-red-100 p-3 rounded-lg flex-1 text-center border border-red-200">{erro}</div>}
+          {searchParams.msg && <div className="text-green-600 font-bold bg-green-100 p-3 rounded-lg flex-1 text-center border border-green-200">{searchParams.msg}</div>}
+          {searchParams.erro && <div className="text-red-600 font-bold bg-red-100 p-3 rounded-lg flex-1 text-center border border-red-200">{searchParams.erro}</div>}
         </div>
 
         <table className="w-full text-left">
