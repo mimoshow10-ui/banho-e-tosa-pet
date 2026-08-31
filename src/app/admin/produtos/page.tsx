@@ -102,7 +102,7 @@ export default async function AdminProdutos(props: { searchParams: Promise<{ msg
     }
   }
 
-  const { data: produtos } = await supabase.from('produtos').select('*').order('nome');
+  const { data: produtos } = await supabase.from('produtos').select('*, categorias(nome)').order('nome');
 
   return (
     <div>

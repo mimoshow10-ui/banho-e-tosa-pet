@@ -116,8 +116,21 @@ export default async function ProdutoPage({ params }: { params: Promise<{ slug: 
             {produto.nome}
           </h1>
           
-          <div className="text-3xl font-bold text-primary mb-6">
-            R$ {Number(produto.preco).toFixed(2).replace('.', ',')}
+          <div className="mb-6 flex items-end gap-3">
+            {produto.preco_promocional > 0 ? (
+              <>
+                <span className="text-xl text-gray-400 line-through font-medium mb-1">
+                  R$ {Number(produto.preco).toFixed(2).replace('.', ',')}
+                </span>
+                <span className="text-4xl font-bold text-primary">
+                  R$ {Number(produto.preco_promocional).toFixed(2).replace('.', ',')}
+                </span>
+              </>
+            ) : (
+              <span className="text-3xl font-bold text-primary">
+                R$ {Number(produto.preco).toFixed(2).replace('.', ',')}
+              </span>
+            )}
           </div>
 
           {produto.descricao_curta || produto.descricao ? (

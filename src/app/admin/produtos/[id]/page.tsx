@@ -33,7 +33,8 @@ async function atualizarProduto(formData: FormData) {
     video_url: video_url || null,
     categoria_id: categoria_id || null, 
     imagens: imagensArr.length > 0 ? imagensArr : null,
-    relacionados: relacionadosArr.length > 0 ? relacionadosArr : null
+    relacionados: relacionadosArr.length > 0 ? relacionadosArr : null,
+    destaque_super_promocao: formData.get('super_promocao') === 'on'
   };
 
   const { error } = await supabase.from('produtos').update(payload).eq('id', id);
@@ -70,18 +71,24 @@ export default async function EditarProduto(props: { params: Promise<{ id: strin
           <input name="nome" type="text" required defaultValue={produto.nome} className="w-full border border-border rounded-lg p-2" />
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
             <label className="block text-sm font-medium mb-1">Preço Normal (R$)</label>
-            <input name="preco" type="number" step="0.01" required defaultValue={produto.preco} className="w-full border border-border rounded-lg p-2" />
+            <input name="preco" type="text" defaultValue={produto.preco} required className="w-full border border-border rounded-lg p-2" />
           </div>
           <div>
             <label className="block text-sm font-bold text-green-600 mb-1">Preço Promoção (R$)</label>
-            <input name="preco_promocional" type="number" step="0.01" defaultValue={produto.preco_promocional || ''} placeholder="Opcional" className="w-full border border-green-300 rounded-lg p-2 focus:ring-green-500" />
+            <input name="preco_promocional" type="text" defaultValue={produto.preco_promocional || ''} className="w-full border border-green-400 focus:ring-green-500 focus:border-green-500 rounded-lg p-2" />
+          </div>
+          <div className="col-span-1 flex items-center justify-center pt-6">
+            <label className="flex items-center gap-2 cursor-pointer border border-border rounded-lg p-2 bg-gray-50 w-full justify-center">
+              <input type="checkbox" name="super_promocao" defaultChecked={produto.destaque_super_promocao} className="w-4 h-4 text-primary" />
+              <span className="text-xs font-bold text-gray-700 leading-tight">Capa Super<br/>Promoção</span>
+            </label>
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Estoque Físico</label>
-            <input name="estoque" type="number" required defaultValue={produto.estoque || 0} className="w-full border border-border rounded-lg p-2" />
+            <input name="estoque" type="number" defaultValue={produto.estoque} className="w-full border border-border rounded-lg p-2 bg-gray-50" readOnly />
           </div>
         </div>
 

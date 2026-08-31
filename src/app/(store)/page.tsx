@@ -13,10 +13,16 @@ export default async function Home() {
     .eq('ativo', true)
     .order('criado_em', { ascending: false });
 
+  // Buscar destaques da super promoção
+  const { data: superPromocoes } = await supabase
+    .from('produtos')
+    .select('*')
+    .eq('destaque_super_promocao', true)
+    .order('criado_em', { ascending: false })
+    .limit(4);
+
   const produtos = todosProdutos || [];
-  
-  // Produtos com preço promocional preenchido vão para o carrossel de Super Promoção
-  const produtosPromocao = produtos.filter(p => p.preco_promocional && p.preco_promocional > 0).slice(0, 5);
+  const produtosPromocao = superPromocoes || [];
   
   // Os demais (ou até os mesmos) vão para a vitrine principal
   const produtosNovidades = produtos.slice(0, 8);
