@@ -5,6 +5,9 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Pencil, Trash2, Plus, ExternalLink } from 'lucide-react';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default async function AdminProdutos({ searchParams }: { searchParams: { msg?: string, erro?: string } }) {
 
   // Ação de importar produto
