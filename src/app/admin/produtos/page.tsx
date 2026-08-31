@@ -126,6 +126,8 @@ export default async function AdminProdutos({ searchParams }: { searchParams: { 
         <div className="bg-red-100 text-red-800 p-4 rounded-lg font-bold mb-6">
           ❌ ERRO: {searchParams.erro}
         </div>
+      )}
+
       <div className="bg-white rounded-xl shadow-sm border border-border overflow-hidden">
         
         {/* Bloco de Importação */}
