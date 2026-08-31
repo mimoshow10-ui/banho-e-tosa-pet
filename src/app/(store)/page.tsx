@@ -2,6 +2,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 
+export const revalidate = 0;
+
 export default async function Home() {
   // Puxar os produtos REAIS do banco de dados (que você inseriu via Painel Admin ou Bling)
   const { data: produtos } = await supabase
