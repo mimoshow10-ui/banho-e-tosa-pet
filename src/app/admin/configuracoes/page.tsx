@@ -24,17 +24,21 @@ export default async function AdminConfiguracoes({ searchParams }: { searchParam
     const clientSecret = formData.get('client_secret') as string;
     if (!clientId || !clientSecret) return;
     
-    const { error } = await supabase.from('configuracoes').upsert({
-      chave: 'bling_credentials',
-      valor: { client_id: clientId, client_secret: clientSecret }
-    }, { onConflict: 'chave' });
-    
-    revalidatePath('/admin/configuracoes');
+    try {
+      const { error } = await supabase.from('configuracoes').upsert({
+        chave: 'bling_credentials',
+        valor: { client_id: clientId, client_secret: clientSecret }
+      }, { onConflict: 'chave' });
+      
+      revalidatePath('/admin/configuracoes');
 
-    if (error) {
-      redirect(`/admin/configuracoes?erro=O banco de dados recusou salvar. Erro: ${error.message}`);
-    } else {
-      redirect('/admin/configuracoes?msg=Credenciais Salvas! Agora basta clicar em Autorizar no Bling.');
+      if (error) {
+        redirect(`/admin/configuracoes?erro=O banco de dados recusou salvar. Erro: ${error.message}`);
+      } else {
+        redirect('/admin/configuracoes?msg=Credenciais Salvas! Agora basta clicar em Autorizar no Bling.');
+      }
+    } catch (err) {
+      redirect(`/admin/configuracoes?erro=Erro fatal de conexão (URL inválida ou banco offline): ${String(err)}`);
     }
   }
 
@@ -93,6 +97,12 @@ export default async function AdminConfiguracoes({ searchParams }: { searchParam
   return (
     <div className="max-w-3xl">
       <h1 className="text-3xl font-heading font-bold text-gray-800 mb-8">Configurações e Integrações</h1>
+
+      {dbError && (
+        <div className="bg-red-100 text-red-800 p-4 rounded-lg font-bold mb-6">
+          ❌ FALHA GRAVE DE CONEXÃO COM A VERCEL: {dbError}
+        </div>
+      )}
 
       {searchParams.msg && (
         <div className="bg-green-100 text-green-800 p-4 rounded-lg font-bold mb-6">
