@@ -9,10 +9,14 @@ export default async function AdminConfiguracoes({ searchParams }: { searchParam
   
   // Buscar credenciais salvas
   let creds = null;
+  let dbError = null;
   try {
-    const { data } = await supabase.from('configuracoes').select('*').eq('chave', 'bling_credentials').single();
+    const { data, error } = await supabase.from('configuracoes').select('*').eq('chave', 'bling_credentials').single();
+    if (error) dbError = error.message;
     creds = data?.valor;
-  } catch (err) {}
+  } catch (err) {
+    dbError = String(err);
+  }
 
   async function salvarCredenciais(formData: FormData) {
     'use server'
@@ -20,13 +24,18 @@ export default async function AdminConfiguracoes({ searchParams }: { searchParam
     const clientSecret = formData.get('client_secret') as string;
     if (!clientId || !clientSecret) return;
     
-    await supabase.from('configuracoes').upsert({
+    const { error } = await supabase.from('configuracoes').upsert({
       chave: 'bling_credentials',
       valor: { client_id: clientId, client_secret: clientSecret }
     }, { onConflict: 'chave' });
     
     revalidatePath('/admin/configuracoes');
-    redirect('/admin/configuracoes?msg=Credenciais Salvas! Agora basta clicar em Autorizar no Bling.');
+
+    if (error) {
+      redirect(`/admin/configuracoes?erro=O banco de dados recusou salvar. Erro: ${error.message}`);
+    } else {
+      redirect('/admin/configuracoes?msg=Credenciais Salvas! Agora basta clicar em Autorizar no Bling.');
+    }
   }
 
   async function importarProdutoEspecifico(formData: FormData) {
