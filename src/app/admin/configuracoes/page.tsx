@@ -13,6 +13,8 @@ export default async function AdminConfiguracoes({ searchParams }: { searchParam
     
     if (!clientId || !clientSecret || !code || !sku) return;
 
+    let redirectTo = '';
+
     try {
       // 1. Troca o código pelo Token na hora
       const authResponse = await fetch('https://www.bling.com.br/Api/v3/oauth/token', {
@@ -28,44 +30,47 @@ export default async function AdminConfiguracoes({ searchParams }: { searchParam
       const authData = await authResponse.json();
       
       if (authData.error) {
-        redirect(`/admin/configuracoes?erro=Código Expirado ou Inválido. Gere um novo Link de Convite no Bling.`);
+        redirectTo = `/admin/configuracoes?erro=Código Expirado ou Inválido. Gere um novo Link de Convite no Bling.`;
+      } else {
+        const token = authData.access_token;
+
+        // 2. Busca o Produto
+        const response = await fetch(`https://www.bling.com.br/Api/v3/produtos?codigo=${sku}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        const data = await response.json();
+
+        if (!data.data || data.data.length === 0) {
+          redirectTo = `/admin/configuracoes?erro=Produto SKU ${sku} não encontrado no Bling.`;
+        } else {
+          const prod = data.data[0];
+          const produtoParaInserir = {
+            bling_id: String(prod.id),
+            codigo_barras: prod.codigo,
+            nome: prod.nome,
+            preco: prod.preco,
+            slug: prod.nome.toLowerCase().replace(/ /g, '-').normalize("NFD").replace(/[\u0300-\u036f]/g, "") + '-' + Date.now(),
+            ativo: prod.situacao === 'A'
+          };
+
+          // 3. Tenta salvar no Supabase
+          const { error } = await supabase.from('produtos').upsert(produtoParaInserir, { onConflict: 'bling_id' });
+          
+          if (error) {
+            redirectTo = `/admin/configuracoes?erro=O produto foi puxado do Bling, mas a Vercel não conseguiu salvar no Banco de Dados. Verifique as chaves do Supabase na Vercel!`;
+          } else {
+            redirectTo = `/admin/configuracoes?msg=Sucesso! O produto ${prod.nome} foi importado para a vitrine!`;
+          }
+        }
       }
-
-      const token = authData.access_token;
-
-      // 2. Busca o Produto
-      const response = await fetch(`https://www.bling.com.br/Api/v3/produtos?codigo=${sku}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      
-      const data = await response.json();
-
-      if (!data.data || data.data.length === 0) {
-        redirect(`/admin/configuracoes?erro=Produto SKU ${sku} não encontrado no Bling.`);
-      }
-
-      const prod = data.data[0];
-      const produtoParaInserir = {
-        bling_id: String(prod.id),
-        codigo_barras: prod.codigo,
-        nome: prod.nome,
-        preco: prod.preco,
-        slug: prod.nome.toLowerCase().replace(/ /g, '-').normalize("NFD").replace(/[\u0300-\u036f]/g, "") + '-' + Date.now(),
-        ativo: prod.situacao === 'A'
-      };
-
-      // 3. Tenta salvar no Supabase
-      const { error } = await supabase.from('produtos').upsert(produtoParaInserir, { onConflict: 'bling_id' });
-      
-      if (error) {
-        redirect(`/admin/configuracoes?erro=O produto foi puxado do Bling, mas a Vercel não conseguiu salvar no Banco de Dados. Verifique as chaves do Supabase na Vercel!`);
-      }
-
-      revalidatePath('/admin/produtos');
-      redirect(`/admin/configuracoes?msg=Sucesso! O produto ${prod.nome} foi importado para a vitrine!`);
-      
     } catch (error) {
-      redirect(`/admin/configuracoes?erro=Erro fatal na comunicação com o Bling.`);
+      redirectTo = `/admin/configuracoes?erro=Erro fatal na comunicação com o Bling.`;
+    }
+
+    if (redirectTo) {
+      revalidatePath('/admin/produtos');
+      redirect(redirectTo);
     }
   }
 
