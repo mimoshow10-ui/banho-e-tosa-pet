@@ -5,13 +5,20 @@ import { supabase } from "@/lib/supabase";
 export const revalidate = 0;
 
 export default async function Home() {
-  // Puxar os produtos REAIS do banco de dados (que você inseriu via Painel Admin ou Bling)
-  const { data: produtos } = await supabase
+  // Puxar todos os produtos ativos ordenados por novidade
+  const { data: todosProdutos } = await supabase
     .from('produtos')
     .select('*')
     .eq('ativo', true)
-    .order('criado_em', { ascending: false })
-    .limit(8);
+    .order('criado_em', { ascending: false });
+
+  const produtos = todosProdutos || [];
+  
+  // Produtos com preço promocional preenchido vão para o carrossel de Super Promoção
+  const produtosPromocao = produtos.filter(p => p.preco_promocional && p.preco_promocional > 0).slice(0, 5);
+  
+  // Os demais (ou até os mesmos) vão para a vitrine principal
+  const produtosNovidades = produtos.slice(0, 8);
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -38,53 +45,56 @@ export default async function Home() {
       </section>
 
       {/* Super Promoção */}
-      <section className="py-12 px-4 max-w-7xl mx-auto w-full bg-red-50 mt-8 rounded-2xl border border-red-100">
-        <div className="flex justify-between items-end mb-8">
-          <div>
-            <h2 className="text-3xl font-heading font-black text-red-600 uppercase tracking-tight flex items-center gap-2">
-              🔥 Super Promoção
-            </h2>
-            <p className="text-red-500 font-bold text-sm mt-1">Ofertas por tempo limitado!</p>
+      {produtosPromocao.length > 0 && (
+        <section className="py-12 px-4 max-w-7xl mx-auto w-full bg-red-50 mt-8 rounded-2xl border border-red-100">
+          <div className="flex justify-between items-end mb-8">
+            <div>
+              <h2 className="text-3xl font-heading font-black text-red-600 uppercase tracking-tight flex items-center gap-2">
+                🔥 Super Promoção
+              </h2>
+              <p className="text-red-500 font-bold text-sm mt-1">Ofertas por tempo limitado!</p>
+            </div>
+            <Link href="/promocoes" className="text-red-600 font-bold hover:underline text-sm hidden md:block">
+              Ver todas as ofertas
+            </Link>
           </div>
-          <Link href="/promocoes" className="text-red-600 font-bold hover:underline text-sm hidden md:block">
-            Ver todas as ofertas
-          </Link>
-        </div>
-        
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          {produtos && produtos.length > 0 ? (
-            produtos.slice(0, 5).map((prod) => (
-              <Link href={`/produto/${prod.slug}`} key={`promo-${prod.id}`} className="group bg-white rounded-xl shadow-sm border border-red-200 overflow-hidden hover:shadow-md transition relative">
-                <div className="absolute top-2 right-2 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded z-10 shadow">
-                  -20% OFF
-                </div>
-                <div className="w-full h-40 bg-gray-100 relative">
-                  {prod.imagens && prod.imagens.length > 0 ? (
-                    <Image src={prod.imagens[0]} alt={prod.nome} fill className="object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-400 font-bold text-sm bg-gray-200">Sem Foto</div>
-                  )}
-                </div>
-                <div className="p-3 flex flex-col h-auto">
-                  <h3 className="font-bold text-secondary text-sm mb-2 group-hover:text-red-600 transition line-clamp-2">{prod.nome}</h3>
-                  <div className="mt-auto flex flex-col">
-                    <span className="text-xs text-gray-400 line-through">R$ {(Number(prod.preco) * 1.25).toFixed(2).replace('.', ',')}</span>
-                    <span className="font-black text-lg text-red-600">R$ {Number(prod.preco).toFixed(2).replace('.', ',')}</span>
+          
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            {produtosPromocao.map((prod) => {
+              const desconto = Math.round(((prod.preco - prod.preco_promocional) / prod.preco) * 100);
+              return (
+                <Link href={`/produto/${prod.slug}`} key={`promo-${prod.id}`} className="group bg-white rounded-xl shadow-sm border border-red-200 overflow-hidden hover:shadow-md transition relative">
+                  <div className="absolute top-2 right-2 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded z-10 shadow">
+                    -{desconto}% OFF
                   </div>
-                </div>
-              </Link>
-            ))
-          ) : null}
-        </div>
-      </section>
+                  <div className="w-full h-40 bg-gray-100 relative">
+                    {prod.imagens && prod.imagens.length > 0 ? (
+                      <Image src={prod.imagens[0]} alt={prod.nome} fill className="object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-gray-400 font-bold text-sm bg-gray-200">Sem Foto</div>
+                    )}
+                  </div>
+                  <div className="p-3 flex flex-col h-auto">
+                    <h3 className="font-bold text-secondary text-sm mb-2 group-hover:text-red-600 transition line-clamp-2">{prod.nome}</h3>
+                    <div className="mt-auto flex flex-col">
+                      <span className="text-xs text-gray-400 line-through">R$ {Number(prod.preco).toFixed(2).replace('.', ',')}</span>
+                      <span className="font-black text-lg text-red-600">R$ {Number(prod.preco_promocional).toFixed(2).replace('.', ',')}</span>
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {/* Destaques puxando do Supabase */}
       <section className="py-16 px-4 max-w-7xl mx-auto w-full">
         <h2 className="text-3xl font-heading font-bold text-secondary text-center mb-12">Nossas Novidades</h2>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
-          {produtos && produtos.length > 0 ? (
-            produtos.map((prod) => (
+          {produtosNovidades && produtosNovidades.length > 0 ? (
+            produtosNovidades.map((prod) => (
               <Link href={`/produto/${prod.slug}`} key={prod.id} className="group bg-white rounded-xl shadow-sm border border-border overflow-hidden hover:shadow-md transition">
                 <div className="w-full h-48 bg-gray-100 relative">
                   {prod.imagens && prod.imagens.length > 0 ? (
