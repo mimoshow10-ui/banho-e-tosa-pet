@@ -36,7 +36,7 @@ async function atualizarProduto(formData: FormData) {
     video_url: video_url || null,
     categoria_id: categoria_id || null, 
     imagens: imagensArr.length > 0 ? imagensArr : null,
-    relacionados: relacionadosArr.length > 0 ? relacionadosArr : null,
+    produtos_relacionados: relacionadosArr.length > 0 ? relacionadosArr : null,
     destaque_super_promocao: formData.get('super_promocao') === 'on'
   };
 
