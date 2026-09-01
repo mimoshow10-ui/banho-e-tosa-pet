@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Pencil, Trash2, Plus, ExternalLink } from 'lucide-react';
+import ImportBlingForm from '@/components/ImportBlingForm';
 
 import { importarSKU } from './actions';
 export const dynamic = 'force-dynamic';
@@ -45,7 +46,8 @@ export default async function AdminProdutos(props: { searchParams: Promise<{ msg
         <div className="p-6 bg-gray-50 border-b border-border flex flex-col md:flex-row gap-4 items-end">
           <div className="flex-1">
             <h3 className="font-bold text-secondary mb-2">Importar do Bling</h3>
-            <p className="text-sm text-gray-600 mb-4">O formulário de importação foi ocultado temporariamente para testes.</p>
+            <p className="text-sm text-gray-600 mb-4">Digite o SKU (Código do Produto) exatamente como está no Bling para importar ou atualizar os dados e fotos.</p>
+            <ImportBlingForm />
           </div>
           {searchParams.msg && <div className="text-green-600 font-bold bg-green-100 p-3 rounded-lg flex-1 text-center border border-green-200">{searchParams.msg}</div>}
           {searchParams.erro && <div className="text-red-600 font-bold bg-red-100 p-3 rounded-lg flex-1 text-center border border-red-200">{searchParams.erro}</div>}
@@ -70,7 +72,7 @@ export default async function AdminProdutos(props: { searchParams: Promise<{ msg
                 <tr key={item.id} className="hover:bg-gray-50">
                   <td className="p-4">
                     {item.imagens && item.imagens.length > 0 ? (
-                      <img src={item.imagens[0]} alt="Miniatura" className="w-12 h-12 object-cover rounded border border-gray-200" />
+                      <img src={typeof item.imagens[0] === 'string' ? item.imagens[0].split(/[\r\n]+/)[0] : ''} alt="Miniatura" className="w-12 h-12 object-cover rounded border border-gray-200" />
                     ) : (
                       <div className="w-12 h-12 bg-gray-200 rounded border border-gray-300 flex items-center justify-center text-[9px] text-gray-400 text-center leading-tight">Sem<br/>Foto</div>
                     )}
