@@ -16,27 +16,27 @@ export async function importarSKU(formData: FormData) {
     if (!token) {
       redirectTo = '/admin/produtos?erro=Token do Bling não encontrado. Vá nas Configurações e autorize o app.';
     } else {
-      const response = await fetch(https://www.bling.com.br/Api/v3/produtos?codigo=\, {
-        headers: { 'Authorization': \Bearer \\ }
+      const response = await fetch(`https://www.bling.com.br/Api/v3/produtos?codigo=${sku}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
       });
       
       const data = await response.json();
 
       if (!data.data || data.data.length === 0) {
-        redirectTo = \/admin/produtos?erro=Produto SKU \ não encontrado no Bling.\;
+        redirectTo = `/admin/produtos?erro=Produto SKU ${sku} não encontrado no Bling.`;
       } else {
         const prodId = data.data[0].id;
         
-        const detalhesReq = await fetch(\https://www.bling.com.br/Api/v3/produtos/\\, {
-          headers: { 'Authorization': \Bearer \\ }
+        const detalhesReq = await fetch(`https://www.bling.com.br/Api/v3/produtos/${prodId}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
         });
         const detalhesJson = await detalhesReq.json();
         const prodCompleto = detalhesJson.data || data.data[0];
 
         let estoqueAtual = 0;
         try {
-          const estoqueReq = await fetch(\https://www.bling.com.br/Api/v3/estoques/saldos?idsProdutos[]=\\, {
-            headers: { 'Authorization': \Bearer \\ }
+          const estoqueReq = await fetch(`https://www.bling.com.br/Api/v3/estoques/saldos?idsProdutos[]=${prodId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
           });
           const estoqueJson = await estoqueReq.json();
           estoqueAtual = estoqueJson.data?.[0]?.saldoFisicoTotal || 0;
@@ -56,7 +56,7 @@ export async function importarSKU(formData: FormData) {
         }
 
         const baseSlug = prodCompleto.nome.toLowerCase().replace(/ /g, '-').normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-        const slug = \\-\\;
+        const slug = `${baseSlug}-${prodCompleto.id}`;
 
         const produtoParaInserir = {
           bling_id: String(prodCompleto.id),
@@ -80,14 +80,14 @@ export async function importarSKU(formData: FormData) {
         const { error } = await supabase.from('produtos').upsert(produtoParaInserir, { onConflict: 'bling_id' });
         
         if (error) {
-          redirectTo = \/admin/produtos?erro=Banco recusou salvar: \\;
+          redirectTo = `/admin/produtos?erro=Banco recusou salvar: ${error.message}`;
         } else {
-          redirectTo = \/admin/produtos?msg=Produto \ importado com sucesso!\;
+          redirectTo = `/admin/produtos?msg=Produto ${sku} importado com sucesso!`;
         }
       }
     }
   } catch (error: any) {
-    redirectTo = \/admin/produtos?erro=Erro fatal: \\;
+    redirectTo = `/admin/produtos?erro=Erro fatal: ${error.message}`;
   }
   
   redirect(redirectTo);

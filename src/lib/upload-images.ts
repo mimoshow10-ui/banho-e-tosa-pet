@@ -20,8 +20,8 @@ export async function uploadBlingImagesToSupabase(blingUrls: string[], productId
       const buffer = await response.arrayBuffer();
 
       const fileExt = 'jpg';
-      const fileName = produto___.;
-      const filePath = ${productId}/;
+      const fileName = `produto_${productId}_${i}_${Date.now()}.${fileExt}`;
+      const filePath = `${productId}/${fileName}`;
 
       const { data, error } = await supabase.storage
         .from('produtos-imagens')
