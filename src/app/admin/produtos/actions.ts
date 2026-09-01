@@ -1,10 +1,11 @@
-﻿'use server'
+'use server'
 
 import { supabase } from '@/lib/supabase';
 import { redirect } from 'next/navigation';
 
 export async function importarSKU(formData: FormData) {
-  const sku = formData.get('sku') as string;
+  const rawSku = formData.get('sku') as string;
+  const sku = rawSku ? rawSku.trim() : '';
   if (!sku) return;
 
   let redirectTo = '';

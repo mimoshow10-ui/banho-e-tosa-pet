@@ -77,7 +77,7 @@ export default async function Home() {
                   </div>
                   <div className="w-full h-40 bg-gray-100 relative">
                     {prod.imagens && prod.imagens.length > 0 ? (
-                      <Image src={prod.imagens[0]} alt={prod.nome} fill className="object-cover" />
+                      <Image src={typeof prod.imagens[0] === 'string' ? prod.imagens[0].split(/[\r\n]+/)[0] : prod.imagens[0]} alt={prod.nome} fill className="object-cover" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-gray-400 font-bold text-sm bg-gray-200">Sem Foto</div>
                     )}
@@ -111,7 +111,7 @@ export default async function Home() {
               <Link href={`/produto/${prod.slug}`} key={prod.id} className="group bg-white rounded-xl shadow-sm border border-border overflow-hidden hover:shadow-md transition">
                 <div className="w-full h-48 bg-gray-100 relative">
                   {prod.imagens && prod.imagens.length > 0 ? (
-                    <Image src={prod.imagens[0]} alt={prod.nome} fill className="object-cover" />
+                    <Image src={typeof prod.imagens[0] === 'string' ? prod.imagens[0].split(/[\r\n]+/)[0] : prod.imagens[0]} alt={prod.nome} fill className="object-cover" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-gray-400 font-bold text-sm bg-gray-200">Sem Foto</div>
                   )}
