@@ -23,7 +23,9 @@ export async function importarSKU(formData: FormData) {
       
       const data = await response.json();
 
-      if (!data.data || data.data.length === 0) {
+      if (response.status === 401 || data?.error?.type === 'invalid_token') {
+        redirectTo = `/admin/produtos?erro=Token do Bling expirado. Vá em Configurações e autorize o aplicativo novamente!`;
+      } else if (!data.data || data.data.length === 0) {
         redirectTo = `/admin/produtos?erro=Produto SKU ${sku} não encontrado no Bling.`;
       } else {
         const prodId = data.data[0].id;
