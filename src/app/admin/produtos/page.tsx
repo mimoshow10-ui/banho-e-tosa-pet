@@ -6,8 +6,6 @@ import Image from 'next/image';
 import { Pencil, Trash2, Plus, ExternalLink } from 'lucide-react';
 
 import { importarSKU } from './actions';
-import ImportBlingForm from '@/components/ImportBlingForm';
-
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
@@ -47,8 +45,7 @@ export default async function AdminProdutos(props: { searchParams: Promise<{ msg
         <div className="p-6 bg-gray-50 border-b border-border flex flex-col md:flex-row gap-4 items-end">
           <div className="flex-1">
             <h3 className="font-bold text-secondary mb-2">Importar do Bling</h3>
-            <p className="text-sm text-gray-600 mb-4">Digite o SKU (Código do Produto) exatamente como está no Bling para importar ou atualizar os dados e fotos.</p>
-            <ImportBlingForm />
+            <p className="text-sm text-gray-600 mb-4">O formulário de importação foi ocultado temporariamente para testes.</p>
           </div>
           {searchParams.msg && <div className="text-green-600 font-bold bg-green-100 p-3 rounded-lg flex-1 text-center border border-green-200">{searchParams.msg}</div>}
           {searchParams.erro && <div className="text-red-600 font-bold bg-red-100 p-3 rounded-lg flex-1 text-center border border-red-200">{searchParams.erro}</div>}
