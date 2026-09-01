@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import CountdownTimer from "@/components/CountdownTimer";
 
 export const revalidate = 0;
 export const dynamic = 'force-dynamic';
@@ -86,6 +87,11 @@ export default async function Home() {
                     <div className="mt-auto flex flex-col">
                       <span className="text-xs text-gray-400 line-through">R$ {Number(prod.preco).toFixed(2).replace('.', ',')}</span>
                       <span className="font-black text-lg text-red-600">R$ {Number(prod.preco_promocional).toFixed(2).replace('.', ',')}</span>
+                      {prod.promocao_expira_em && (
+                        <div className="mt-2 scale-90 origin-left">
+                          <CountdownTimer targetDate={prod.promocao_expira_em} />
+                        </div>
+                      )}
                     </div>
                   </div>
                 </Link>

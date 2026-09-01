@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
+import CountdownTimer from '@/components/CountdownTimer';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 
@@ -125,6 +126,11 @@ export default async function ProdutoPage({ params }: { params: Promise<{ slug: 
                 <span className="text-4xl font-bold text-primary">
                   R$ {Number(produto.preco_promocional).toFixed(2).replace('.', ',')}
                 </span>
+                {produto.promocao_expira_em && (
+                  <div className="ml-4">
+                    <CountdownTimer targetDate={produto.promocao_expira_em} />
+                  </div>
+                )}
               </>
             ) : (
               <span className="text-3xl font-bold text-primary">
