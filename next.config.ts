@@ -11,7 +11,7 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'orgbling.s3.amazonaws.com',
+        hostname: '**',
       },
     ],
   },
