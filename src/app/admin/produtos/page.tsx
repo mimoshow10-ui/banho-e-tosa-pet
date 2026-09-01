@@ -61,6 +61,12 @@ export default async function AdminProdutos(props: { searchParams: Promise<{ msg
             imagensBling = [prodCompleto.imagemURL];
           }
 
+          const { uploadBlingImagesToSupabase } = await import('@/lib/upload-images');
+          let imagensPermanentes = null;
+          if (imagensBling.length > 0) {
+            imagensPermanentes = await uploadBlingImagesToSupabase(imagensBling, String(prodCompleto.id));
+          }
+
           const baseSlug = prodCompleto.nome.toLowerCase().replace(/ /g, '-').normalize("NFD").replace(/[\u0300-\u036f]/g, "");
           const slug = `${baseSlug}-${prodCompleto.id}`;
 
@@ -80,7 +86,7 @@ export default async function AdminProdutos(props: { searchParams: Promise<{ msg
             marca: prodCompleto.marca || '',
             ncm: prodCompleto.tributacao?.ncm || '',
             descricao_curta: prodCompleto.descricaoCurta || '',
-            imagens: imagensBling.length > 0 ? imagensBling : null
+            imagens: imagensPermanentes && imagensPermanentes.length > 0 ? imagensPermanentes : null
           };
 
           const { error } = await supabase.from('produtos').upsert(produtoParaInserir, { onConflict: 'bling_id' });
