@@ -17,7 +17,7 @@ async function atualizarProduto(formData: FormData) {
   
   // Convert imagens textarea content to array
   const imagensTxt = formData.get('imagens') as string;
-  const imagensArr = imagensTxt ? imagensTxt.split(',').map(s => s.trim()).filter(s => s) : [];
+  const imagensArr = imagensTxt ? imagensTxt.split(/[\r\n,]+/).map(s => s.trim()).filter(s => s) : [];
   
   // Video URL
   const video_url = formData.get('video_url') as string;
@@ -46,7 +46,7 @@ async function atualizarProduto(formData: FormData) {
   const { error } = await supabase.from('produtos').update(payload).eq('id', id);
   
   if (error) {
-    redirect(`/admin/produtos?erro=Erro ao salvar: ${error.message}`);
+    redirect(`/admin/produtos/${id}?erro=Erro ao salvar: ${error.message}`);
   }
 
   revalidatePath('/admin/produtos');
@@ -56,22 +56,30 @@ async function atualizarProduto(formData: FormData) {
     if (cat) revalidatePath(`/categoria/${cat.slug}`);
   }
   
-  redirect('/admin/produtos?msg=Produto atualizado com sucesso!');
+  redirect(`/admin/produtos/${id}?msg=Produto atualizado com sucesso!`);
 }
 
 export default async function EditarProduto(props: { params: Promise<{ id: string }> }) {
-  const params = await props.params;
-  const { data: produto } = await supabase.from('produtos').select('*').eq('id', params.id).single();
-  const { data: categorias } = await supabase.from('categorias').select('*').order('nome');
+  const { id } = await props.params;
 
-  if (!produto) return <div>Produto não encontrado</div>;
+  const { data: produto } = await supabase.from('produtos').select('*').eq('id', id).single();
+  const { data: categorias } = await supabase.from('categorias').select('*');
 
+  if (!produto) {
+    return <div className="p-8 font-bold text-red-600">Produto no encontrado!</div>;
+  }
+
+  if (produto && produto.imagens) {
+    if (produto.imagens.length === 1 && typeof produto.imagens[0] === 'string' && produto.imagens[0].match(/[\r\n]/)) {
+      produto.imagens = produto.imagens[0].split(/[\r\n,]+/).map((s: string) => s.trim()).filter((s: string) => s);
+    }
+  }
   return (
     <div className="max-w-2xl bg-white p-8 rounded-xl shadow-sm border border-border">
       <h1 className="text-2xl font-bold mb-6 text-secondary">Editar Produto</h1>
       
       <form action={atualizarProduto} className="flex flex-col gap-6">
-        <input type="hidden" name="id" value={params.id} />
+        <input type="hidden" name="id" value={id} />
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="md:col-span-3">
             <label className="block text-sm font-medium mb-1">Nome do Produto</label>
