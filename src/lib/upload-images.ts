@@ -13,7 +13,12 @@ export async function uploadBlingImagesToSupabase(blingUrls: string[], productId
     }
 
     try {
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8'
+        }
+      });
       if (!response.ok) {
         throw new Error(`Servidor da imagem retornou status ${response.status} (${response.statusText}).`);
       }
@@ -51,7 +56,7 @@ export async function uploadBlingImagesToSupabase(blingUrls: string[], productId
   }
 
   if (blingUrls.length > 0 && permanentUrls.length === 0) {
-    throw new Error(`O Bling enviou ${blingUrls.length} URLs de fotos, mas TODAS falharam ao baixar. Detalhes: ${errors.join(' | ')}`);
+    console.error(`O Bling enviou ${blingUrls.length} URLs de fotos, mas TODAS falharam ao baixar. Detalhes: ${errors.join(' | ')}`);
   }
 
   return permanentUrls;

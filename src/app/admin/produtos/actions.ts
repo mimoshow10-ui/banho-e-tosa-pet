@@ -104,6 +104,8 @@ export async function importarSKU(formData: FormData) {
         } else {
           if (imagensBling.length === 0 && (!prodExistente?.imagens || prodExistente.imagens.length === 0)) {
             redirectTo = `/admin/produtos?msg=Produto ${sku} importado, MAS O BLING NÃO ENVIOU FOTOS. (Dica: A foto deve estar cadastrada como 'URL Externa' no Bling, não como anexo interno)`;
+          } else if (imagensBling.length > 0 && (!imagensPermanentes || imagensPermanentes.length === 0) && (!prodExistente?.imagens || prodExistente.imagens.length === 0)) {
+            redirectTo = `/admin/produtos?msg=Produto ${sku} importado sem fotos. As URLs no Bling estão quebradas ou bloqueadas (ex: links temporários da Tray).`;
           } else {
             redirectTo = `/admin/produtos?msg=Produto ${sku} importado com sucesso!`;
           }
