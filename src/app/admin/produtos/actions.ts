@@ -122,14 +122,14 @@ export async function importarSKU(formData: FormData) {
             });
             const varJson = await varReq.json();
             
-            if (varJson.data && varJson.data.length > 0) {
+            if (varJson.data && varJson.data.length > 0 && varJson.data.length <= 20) {
               const parentPhotos = parentResult.imagensPermanentes && parentResult.imagensPermanentes.length > 0
                 ? parentResult.imagensPermanentes
                 : null;
               for (const child of varJson.data) {
                 await fetchAndUpsertBlingProduct(child, parentResult.id, parentPhotos);
               }
-              redirectTo = `/admin/produtos?msg=Produto PAI ${sku} e suas variações importadas com sucesso!`;
+              redirectTo = `/admin/produtos?msg=Produto PAI ${sku} e suas ${varJson.data.length} variações importadas com sucesso!`;
             } else {
               if (parentResult.imagensBling.length === 0 && (!parentResult.prodExistente?.imagens || parentResult.prodExistente.imagens.length === 0)) {
                 redirectTo = `/admin/produtos?msg=Produto ${sku} importado, MAS O BLING NÃO ENVIOU FOTOS.`;
