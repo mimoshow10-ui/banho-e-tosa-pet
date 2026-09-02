@@ -1,14 +1,16 @@
-import { Search, ShoppingCart, User, Heart } from 'lucide-react';
+﻿import { Search, ShoppingCart, User, Heart } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { supabase } from '@/lib/supabase';
+import TopBar from './TopBar';
 
-export default function Header() {
+export default async function Header() {
+  const { data: configs } = await supabase.from('configuracoes').select('*');
+  const topbar = configs?.find(c => c.chave === 'marketing_topbar')?.valor || { texto: 'Frete grátis acima de R', visibilidade: 'todas', cor: 'bg-primary' };
+
   return (
     <header className="w-full bg-white shadow-sm sticky top-0 z-50">
-      {/* Top Banner */}
-      <div className="w-full bg-primary text-white text-center py-2 text-sm font-semibold">
-        Frete grátis acima de R$50
-      </div>
+      <TopBar topbar={topbar} />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-2">
@@ -40,33 +42,23 @@ export default function Header() {
           </div>
 
           {/* Icons */}
-          <div className="flex items-center space-x-6">
-            <Link href="/favoritos" className="text-text hover:text-primary transition">
-              <Heart size={24} />
-            </Link>
-            <Link href="/login" className="text-secondary hover:text-primary transition cursor-pointer">
+          <div className="flex items-center gap-6 text-secondary">
+            <Link href="/minhaconta" className="flex flex-col items-center hover:text-primary transition">
               <User size={24} />
+              <span className="text-xs font-bold mt-1">Conta</span>
             </Link>
-            <Link href="/carrinho" className="text-text hover:text-primary transition">
-              <div className="relative">
-                <ShoppingCart size={24} />
-                <span className="absolute -top-2 -right-2 bg-accent text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
-                  0
-                </span>
-              </div>
+            <Link href="/favoritos" className="flex flex-col items-center hover:text-primary transition relative">
+              <Heart size={24} />
+              <span className="absolute -top-1 -right-2 bg-red-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">0</span>
+              <span className="text-xs font-bold mt-1">Favoritos</span>
+            </Link>
+            <Link href="/carrinho" className="flex flex-col items-center hover:text-primary transition relative">
+              <ShoppingCart size={24} />
+              <span className="absolute -top-1 -right-2 bg-red-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">0</span>
+              <span className="text-xs font-bold mt-1">Carrinho</span>
             </Link>
           </div>
         </div>
-
-        {/* Categorias (Desktop) */}
-        <nav className="hidden md:flex justify-center gap-8 py-4 bg-white border-t border-border shadow-sm text-sm font-bold text-gray-700">
-          <Link href="/categoria/adesivos" className="hover:text-primary transition">Adesivos</Link>
-          <Link href="/categoria/gravatinhas" className="hover:text-primary transition">Gravatinhas</Link>
-          <Link href="/categoria/lacinhos" className="hover:text-primary transition">Lacinhos</Link>
-          <Link href="/categoria/bandanas" className="hover:text-primary transition">Bandanas</Link>
-          <Link href="/categoria/gargantilhas" className="hover:text-primary transition">Gargantilhas</Link>
-          <Link href="/categoria/colarinhos" className="hover:text-primary transition">Colarinhos</Link>
-        </nav>
       </div>
     </header>
   );

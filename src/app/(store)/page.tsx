@@ -2,11 +2,15 @@ import Image from "next/image";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import CountdownTimer from "@/components/CountdownTimer";
+import BannerCarousel from "@/components/BannerCarousel";
 
 export const revalidate = 0;
 export const dynamic = 'force-dynamic';
 
 export default async function Home() {
+  const { data: configs } = await supabase.from('configuracoes').select('*');
+  const banners = configs?.find(c => c.chave === 'marketing_banners')?.valor?.urls || ['/banner-pet.jpg'];
+
   // Puxar todos os produtos ativos ordenados por novidade
   const { data: todosProdutos } = await supabase
     .from('produtos')
@@ -32,24 +36,16 @@ export default async function Home() {
     <div className="flex flex-col min-h-screen">
       {/* Hero Section com Banner Dinâmico */}
       <section className="w-full relative bg-gray-100">
-        <div className="w-full h-[300px] md:h-[500px] relative">
-          <Image 
-            src="/banner-pet.jpg" 
-            alt="Mimo Show Pet - Acessórios" 
-            fill 
-            className="object-cover object-center"
-            priority
-          />
+        <BannerCarousel banners={banners} />
           {/* Overlay Escuro com Texto */}
-          <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center text-center px-4">
+          <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center text-center px-4 pointer-events-none">
             <h1 className="text-4xl md:text-5xl font-heading font-bold mb-6 text-white drop-shadow-lg">
               Estilo e Conforto para o seu Melhor Amigo!
             </h1>
-            <Link href="/categoria/todas" className="bg-primary text-text font-bold py-3 px-8 rounded-full hover:bg-orange-600 transition text-lg shadow-lg">
+            <Link href="/categoria/todas" className="bg-primary text-text font-bold py-3 px-8 rounded-full hover:bg-orange-600 transition text-lg shadow-lg pointer-events-auto">
               Ver Coleção Completa
             </Link>
           </div>
-        </div>
       </section>
 
       {/* Super Promoção */}
