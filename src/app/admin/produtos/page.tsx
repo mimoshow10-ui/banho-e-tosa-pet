@@ -24,6 +24,10 @@ export default async function AdminProdutos(props: { searchParams: Promise<{ msg
   }
   const { data: produtos, error } = await query;
 
+  // Descobrir quais produtos são PAI (têm filhos)
+  const { data: filhos } = await supabase.from('produtos').select('parent_id').not('parent_id', 'is', null);
+  const paiIds = new Set((filhos || []).map((f: any) => f.parent_id));
+
   return (
     <div className="flex flex-col gap-8">
       {error && (
@@ -104,7 +108,14 @@ export default async function AdminProdutos(props: { searchParams: Promise<{ msg
                     )}
                   </td>
                   <td className="p-4 font-bold text-gray-500">{item.codigo_barras || 'Sem SKU'}</td>
-                  <td className="p-4 font-medium text-gray-800">{item.nome}</td>
+                  <td className="p-4 font-medium text-gray-800">
+                    <div className="flex items-center gap-2">
+                      {paiIds.has(item.id) && (
+                        <span title="Produto Pai (tem variações)" className="text-yellow-400 text-lg leading-none">★</span>
+                      )}
+                      {item.nome}
+                    </div>
+                  </td>
                   <td className="p-4 text-gray-600">{item.categorias?.nome || 'Sem Categoria'}</td>
                   <td className="p-4 font-bold text-gray-600">
                     R$ {Number(item.preco).toFixed(2).replace('.', ',')}
