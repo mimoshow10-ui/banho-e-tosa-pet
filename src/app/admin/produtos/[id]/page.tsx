@@ -56,7 +56,7 @@ async function atualizarProduto(formData: FormData) {
     if (cat) revalidatePath(`/categoria/${cat.slug}`);
   }
   
-  redirect(`/admin/produtos/${id}?msg=Produto atualizado com sucesso!`);
+  redirect(`/admin/produtos?msg=Produto atualizado com sucesso!`);
 }
 
 export default async function EditarProduto(props: { params: Promise<{ id: string }> }) {
