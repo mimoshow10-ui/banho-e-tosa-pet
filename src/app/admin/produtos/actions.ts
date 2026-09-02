@@ -108,11 +108,16 @@ export async function importarSKU(formData: FormData) {
       }
     }
   } catch (error: any) {
+    if (error.message === 'NEXT_REDIRECT') {
+      throw error;
+    }
     console.error('Erro geral ao importar SKU:', error);
     redirectTo = `/admin/produtos?erro=Erro Fatal Code: ${encodeURIComponent(error.message)}`;
   }
   
-  redirect(redirectTo);
+  if (redirectTo) {
+    redirect(redirectTo);
+  }
 }
 
 export async function excluirProduto(id: string) {
