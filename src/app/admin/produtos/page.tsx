@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Pencil, Trash2, Plus, ExternalLink } from 'lucide-react';
 import ImportBlingForm from '@/components/ImportBlingForm';
+import DeleteProductButton from './DeleteProductButton';
 
 import { importarSKU } from './actions';
 export const dynamic = 'force-dynamic';
@@ -87,9 +88,9 @@ export default async function AdminProdutos(props: { searchParams: Promise<{ msg
                     {item.preco_promocional ? `R$ ${Number(item.preco_promocional).toFixed(2).replace('.', ',')}` : '-'}
                   </td>
                   <td className="p-4 text-gray-600">{item.estoque}</td>
-                  <td className="p-4 text-right">
-                    <Link href={`/admin/produtos/${item.id}`} className="text-blue-600 hover:underline mr-3 font-bold">Editar</Link>
-                    <button className="text-red-600 hover:underline">Ocultar</button>
+                  <td className="p-4 text-right flex items-center justify-end">
+                    <Link href={`/admin/produtos/${item.id}`} className="text-blue-600 hover:underline font-bold">Editar</Link>
+                    <DeleteProductButton id={item.id} nome={item.nome} />
                   </td>
                 </tr>
               ))
