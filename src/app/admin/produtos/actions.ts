@@ -37,7 +37,7 @@ export async function importarSKU(formData: FormData) {
           return;
         }
 
-        async function fetchAndUpsertBlingProduct(prodCompletoBase: any, parent_id: string | null = null): Promise<{id: string, imagensBling: any[], imagensPermanentes: any[], prodExistente: any} | null> {
+        async function fetchAndUpsertBlingProduct(prodCompletoBase: any, parent_id: string | null = null, parentImagens: any[] | null = null): Promise<{id: string, imagensBling: any[], imagensPermanentes: any[], prodExistente: any} | null> {
           const prodId = prodCompletoBase.id;
           const detalhesReq = await fetch(`https://api.bling.com.br/Api/v3/produtos/${prodId}`, {
             headers: { 'Authorization': `Bearer ${token}` }
@@ -94,7 +94,13 @@ export async function importarSKU(formData: FormData) {
             marca: prodCompleto.marca || '',
             ncm: prodCompleto.tributacao?.ncm || '',
             descricao_curta: prodCompleto.descricaoCurta || '',
-            imagens: (imagensPermanentes && imagensPermanentes.length > 0) ? imagensPermanentes : (prodExistente?.imagens || null),
+            imagens: (imagensPermanentes && imagensPermanentes.length > 0)
+              ? imagensPermanentes
+              : (prodExistente?.imagens && prodExistente.imagens.length > 0)
+                ? prodExistente.imagens
+                : (parentImagens && parentImagens.length > 0)
+                  ? parentImagens
+                  : null,
             parent_id: parent_id
           };
 
@@ -117,8 +123,11 @@ export async function importarSKU(formData: FormData) {
             const varJson = await varReq.json();
             
             if (varJson.data && varJson.data.length > 0) {
+              const parentPhotos = parentResult.imagensPermanentes && parentResult.imagensPermanentes.length > 0
+                ? parentResult.imagensPermanentes
+                : null;
               for (const child of varJson.data) {
-                await fetchAndUpsertBlingProduct(child, parentResult.id);
+                await fetchAndUpsertBlingProduct(child, parentResult.id, parentPhotos);
               }
               redirectTo = `/admin/produtos?msg=Produto PAI ${sku} e suas variações importadas com sucesso!`;
             } else {
