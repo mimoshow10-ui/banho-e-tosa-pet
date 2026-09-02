@@ -2,6 +2,7 @@
 
 import { supabase } from '@/lib/supabase';
 import { redirect } from 'next/navigation';
+import { revalidatePath } from 'next/cache';
 
 export async function importarSKU(formData: FormData) {
   const rawSku = formData.get('sku') as string;
@@ -45,11 +46,21 @@ export async function importarSKU(formData: FormData) {
           estoqueAtual = estoqueJson.data?.[0]?.saldoFisicoTotal || 0;
         } catch(e) {}
 
+        let imagensBling = [];
         const externas = prodCompleto.midia?.imagens?.externas?.map((img: any) => img.link) || [];
         const internas = prodCompleto.midia?.imagens?.internas?.map((img: any) => img.link) || [];
-        let imagensBling = [...externas, ...internas];
+        imagensBling = [...externas, ...internas];
+
+        if (imagensBling.length === 0 && Array.isArray(prodCompleto.midia)) {
+          imagensBling = prodCompleto.midia.map((m: any) => m.url || m.link).filter(Boolean);
+        }
+
         if (imagensBling.length === 0 && prodCompleto.imagemURL) {
           imagensBling = [prodCompleto.imagemURL];
+        }
+
+        if (imagensBling.length === 0) {
+          throw new Error('DebugMidia: ' + JSON.stringify(prodCompleto.midia || prodCompleto));
         }
 
         const { uploadBlingImagesToSupabase } = await import('@/lib/upload-images');
@@ -95,4 +106,14 @@ export async function importarSKU(formData: FormData) {
   }
   
   redirect(redirectTo);
+}
+
+export async function excluirProduto(id: string) {
+  const { error } = await supabase.from('produtos').delete().eq('id', id);
+  if (error) {
+    redirect(`/admin/produtos?erro=Erro ao excluir produto: ${error.message}`);
+  }
+  revalidatePath('/admin/produtos');
+  revalidatePath('/', 'layout');
+  redirect(`/admin/produtos?msg=Produto excluído com sucesso!`);
 }
