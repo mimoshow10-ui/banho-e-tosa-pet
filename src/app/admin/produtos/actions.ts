@@ -102,7 +102,11 @@ export async function importarSKU(formData: FormData) {
         if (error) {
           redirectTo = `/admin/produtos?erro=Banco recusou salvar: ${error.message}`;
         } else {
-          redirectTo = `/admin/produtos?msg=Produto ${sku} importado com sucesso!`;
+          if (imagensBling.length === 0 && (!prodExistente?.imagens || prodExistente.imagens.length === 0)) {
+            redirectTo = `/admin/produtos?msg=Produto ${sku} importado, MAS O BLING NÃO ENVIOU FOTOS. (Dica: A foto deve estar cadastrada como 'URL Externa' no Bling, não como anexo interno)`;
+          } else {
+            redirectTo = `/admin/produtos?msg=Produto ${sku} importado com sucesso!`;
+          }
         }
       }
     }

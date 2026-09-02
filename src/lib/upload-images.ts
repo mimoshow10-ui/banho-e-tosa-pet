@@ -14,8 +14,7 @@ export async function uploadBlingImagesToSupabase(blingUrls: string[], productId
     try {
       const response = await fetch(url);
       if (!response.ok) {
-        console.error('Falha ao baixar imagem do Bling:', url);
-        continue;
+        throw new Error(`Servidor da imagem retornou status ${response.status} (${response.statusText}). O link da imagem no Bling pode estar quebrado ou bloqueado.`);
       }
       const buffer = await response.arrayBuffer();
 
@@ -31,8 +30,7 @@ export async function uploadBlingImagesToSupabase(blingUrls: string[], productId
         });
 
       if (error) {
-        console.error('Erro no upload para o Supabase:', error.message);
-        continue;
+        throw new Error(`Falha no banco de dados Supabase ao salvar a imagem: ${error.message}`);
       }
 
       const { data: publicUrlData } = supabase.storage
@@ -40,9 +38,14 @@ export async function uploadBlingImagesToSupabase(blingUrls: string[], productId
         .getPublicUrl(filePath);
 
       permanentUrls.push(publicUrlData.publicUrl);
-    } catch (e) {
+    } catch (e: any) {
       console.error('Exceção no processamento da imagem:', e);
+      throw new Error(`Falha no download/upload da imagem ${url}: ${e.message || e}`);
     }
+  }
+
+  if (blingUrls.length > 0 && permanentUrls.length === 0) {
+    throw new Error(`O Bling enviou ${blingUrls.length} URLs de fotos, mas o nosso sistema falhou ao tentar baixar todas elas. Certifique-se de que as URLs de imagem cadastradas no Bling são válidas, públicas e começam com https://`);
   }
 
   return permanentUrls;
