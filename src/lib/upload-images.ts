@@ -1,4 +1,4 @@
-﻿import { supabase } from './supabase';
+import { supabase } from './supabase';
 
 export async function uploadBlingImagesToSupabase(blingUrls: string[], productId: string): Promise<string[]> {
   const permanentUrls: string[] = [];
@@ -6,7 +6,7 @@ export async function uploadBlingImagesToSupabase(blingUrls: string[], productId
   for (let i = 0; i < blingUrls.length; i++) {
     const url = blingUrls[i];
     
-    if (url.includes('supabase.co/storage/v1/object/public/produtos-imagens')) {
+    if (url.includes('supabase.co/storage/v1/object/public/produtos-fotos')) {
       permanentUrls.push(url);
       continue;
     }
@@ -24,7 +24,7 @@ export async function uploadBlingImagesToSupabase(blingUrls: string[], productId
       const filePath = `${productId}/${fileName}`;
 
       const { data, error } = await supabase.storage
-        .from('produtos-imagens')
+        .from('produtos-fotos')
         .upload(filePath, buffer, {
           contentType: response.headers.get('content-type') || 'image/jpeg',
           upsert: true
@@ -36,7 +36,7 @@ export async function uploadBlingImagesToSupabase(blingUrls: string[], productId
       }
 
       const { data: publicUrlData } = supabase.storage
-        .from('produtos-imagens')
+        .from('produtos-fotos')
         .getPublicUrl(filePath);
 
       permanentUrls.push(publicUrlData.publicUrl);
