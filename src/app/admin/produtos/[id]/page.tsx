@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabase';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import CategorySelector from '@/components/CategorySelector';
+import ImageManager from '@/components/ImageManager';
 
 async function atualizarProduto(formData: FormData) {
   'use server'
@@ -157,26 +158,8 @@ export default async function EditarProduto(props: { params: Promise<{ id: strin
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1">Imagens do Produto (Links)</label>
-          <textarea 
-            name="imagens" 
-            defaultValue={produto.imagens ? produto.imagens.join('\n') : ''} 
-            placeholder="Cole o link da foto aqui..." 
-            className="w-full border border-border rounded-lg p-2 h-24 text-sm"
-          ></textarea>
-          <p className="text-xs text-gray-500 mt-1">Links separados por vírgula ou quebra de linha. Altere a ordem dos links para mudar a ordem das fotos.</p>
-          
-          {/* Miniaturas de Fotos */}
-          {produto.imagens && produto.imagens.length > 0 && (
-            <div className="flex gap-2 mt-4 overflow-x-auto pb-2">
-              {produto.imagens.map((img: string, i: number) => (
-                <div key={i} className="relative w-20 h-20 flex-shrink-0 border border-gray-300 rounded overflow-hidden">
-                  <div className="absolute top-0 left-0 bg-black/50 text-white text-[10px] px-1 z-10">{i + 1}</div>
-                  <img src={img} alt={`Foto ${i+1}`} className="w-full h-full object-cover" />
-                </div>
-              ))}
-            </div>
-          )}
+          <label className="block text-sm font-medium mb-3">Imagens do Produto</label>
+          <ImageManager initialImages={produto.imagens || []} />
         </div>
 
         <div>

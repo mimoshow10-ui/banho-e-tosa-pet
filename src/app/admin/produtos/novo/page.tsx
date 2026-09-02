@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
+import ImageManager from '@/components/ImageManager';
 
 export default async function NovoProduto() {
   const { data: categorias } = await supabase.from('categorias').select('*').order('nome');
@@ -13,12 +14,16 @@ export default async function NovoProduto() {
     const categoria_id = formData.get('categoria_id') as string;
     const slug = nome.toLowerCase().replace(/ /g, '-').normalize("NFD").replace(/[\u0300-\u036f]/g, "") + '-' + Date.now();
     
+    const imagensTxt = formData.get('imagens') as string;
+    const imagens = imagensTxt ? imagensTxt.split(/[\r\n,]+/).map(s => s.trim()).filter(s => s) : null;
+    
     await supabase.from('produtos').insert([{ 
       nome, 
       preco, 
       estoque, 
       categoria_id, 
-      slug 
+      slug,
+      imagens
     }]);
 
     revalidatePath('/admin/produtos');
@@ -125,8 +130,8 @@ export default async function NovoProduto() {
         </div>
 
         <div className="border-t border-border pt-6">
-          <label className="block text-sm font-medium mb-1">Imagens do Anúncio Principal</label>
-          <input name="imagens" type="text" placeholder="URL da foto 1, URL da foto 2..." className="w-full border border-border rounded-lg p-2" />
+          <label className="block text-sm font-medium mb-3">Imagens do Anúncio Principal</label>
+          <ImageManager initialImages={[]} />
         </div>
 
         <div>
