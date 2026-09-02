@@ -117,30 +117,15 @@ export async function importarSKU(formData: FormData) {
           redirectTo = `/admin/produtos?erro=Banco recusou salvar o produto PAI.`;
         } else {
           try {
-            const varReq = await fetch(`https://api.bling.com.br/Api/v3/produtos?idProdutoPai=${produtoBuscado.id}`, {
-              headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const varJson = await varReq.json();
-            
-            if (varJson.data && varJson.data.length > 0 && varJson.data.length <= 20) {
-              const parentPhotos = parentResult.imagensPermanentes && parentResult.imagensPermanentes.length > 0
-                ? parentResult.imagensPermanentes
-                : null;
-              for (const child of varJson.data) {
-                await fetchAndUpsertBlingProduct(child, parentResult.id, parentPhotos);
-              }
-              redirectTo = `/admin/produtos?msg=Produto PAI ${sku} e suas ${varJson.data.length} variações importadas com sucesso!`;
+            if (parentResult.imagensBling.length === 0 && (!parentResult.prodExistente?.imagens || parentResult.prodExistente.imagens.length === 0)) {
+              redirectTo = `/admin/produtos?msg=Produto ${sku} importado, MAS O BLING NÃO ENVIOU FOTOS.`;
+            } else if (parentResult.imagensBling.length > 0 && (!parentResult.imagensPermanentes || parentResult.imagensPermanentes.length === 0) && (!parentResult.prodExistente?.imagens || parentResult.prodExistente.imagens.length === 0)) {
+              redirectTo = `/admin/produtos?msg=Produto ${sku} importado sem fotos. As URLs no Bling estão quebradas.`;
             } else {
-              if (parentResult.imagensBling.length === 0 && (!parentResult.prodExistente?.imagens || parentResult.prodExistente.imagens.length === 0)) {
-                redirectTo = `/admin/produtos?msg=Produto ${sku} importado, MAS O BLING NÃO ENVIOU FOTOS.`;
-              } else if (parentResult.imagensBling.length > 0 && (!parentResult.imagensPermanentes || parentResult.imagensPermanentes.length === 0) && (!parentResult.prodExistente?.imagens || parentResult.prodExistente.imagens.length === 0)) {
-                redirectTo = `/admin/produtos?msg=Produto ${sku} importado sem fotos. As URLs no Bling estão quebradas.`;
-              } else {
-                redirectTo = `/admin/produtos?msg=Produto ${sku} importado com sucesso!`;
-              }
+              redirectTo = `/admin/produtos?msg=Produto ${sku} importado com sucesso!`;
             }
           } catch (e) {
-            redirectTo = `/admin/produtos?msg=Produto ${sku} importado com sucesso (sem variações).`;
+            redirectTo = `/admin/produtos?msg=Produto ${sku} importado com sucesso!`;
           }
         }
       }
