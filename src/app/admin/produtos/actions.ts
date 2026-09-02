@@ -26,7 +26,7 @@ export async function importarSKU(formData: FormData) {
       if (response.status === 401 || data?.error?.type === 'invalid_token') {
         redirectTo = `/admin/produtos?erro=Token do Bling expirado. Vá em Configurações e autorize o aplicativo novamente!`;
       } else if (!data.data || data.data.length === 0) {
-        redirectTo = `/admin/produtos?erro=Produto SKU ${sku} não encontrado no Bling.`;
+        redirectTo = `/admin/produtos?erro=Bling Retornou: ${encodeURIComponent(JSON.stringify(data))}`;
       } else {
         const prodId = data.data[0].id;
         
@@ -90,7 +90,8 @@ export async function importarSKU(formData: FormData) {
       }
     }
   } catch (error: any) {
-    redirectTo = `/admin/produtos?erro=Erro fatal: ${error.message}`;
+    console.error('Erro geral ao importar SKU:', error);
+    redirectTo = `/admin/produtos?erro=Erro Fatal Code: ${encodeURIComponent(error.message)}`;
   }
   
   redirect(redirectTo);
