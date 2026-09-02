@@ -17,7 +17,7 @@ export async function importarSKU(formData: FormData) {
     if (!token) {
       redirectTo = '/admin/produtos?erro=Token do Bling não encontrado. Vá nas Configurações e autorize o app.';
     } else {
-      const response = await fetch(`https://www.bling.com.br/Api/v3/produtos?codigo=${sku}`, {
+      const response = await fetch(`https://www.bling.com.br/Api/v3/produtos?criterio=${sku}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       
