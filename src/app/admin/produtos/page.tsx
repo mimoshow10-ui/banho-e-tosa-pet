@@ -11,10 +11,15 @@ import { importarSKU } from './actions';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-export default async function AdminProdutos(props: { searchParams: Promise<{ msg?: string, erro?: string }> }) {
+export default async function AdminProdutos(props: { searchParams: Promise<{ msg?: string, erro?: string, q?: string }> }) {
   const searchParams = await props.searchParams;
+  const q = searchParams.q || '';
 
-  const { data: produtos } = await supabase.from('produtos').select('*, categorias(nome)').order('nome');
+  let query = supabase.from('produtos').select('*, categorias(nome)').order('nome');
+  if (q) {
+    query = query.or(`nome.ilike.%${q}%,codigo_barras.ilike.%${q}%`);
+  }
+  const { data: produtos } = await query;
 
   return (
     <div>
@@ -52,6 +57,17 @@ export default async function AdminProdutos(props: { searchParams: Promise<{ msg
           </div>
           {searchParams.msg && <div className="text-green-600 font-bold bg-green-100 p-3 rounded-lg flex-1 text-center border border-green-200">{searchParams.msg}</div>}
           {searchParams.erro && <div className="text-red-600 font-bold bg-red-100 p-3 rounded-lg flex-1 text-center border border-red-200">{searchParams.erro}</div>}
+        </div>
+
+        {/* Bloco de Busca / Filtro */}
+        <div className="p-4 bg-white border-b border-border flex flex-col md:flex-row gap-4 items-center">
+          <form action="/admin/produtos" method="GET" className="flex w-full gap-2">
+            <input type="text" name="q" defaultValue={q} placeholder="Pesquisar por Nome ou SKU..." className="flex-1 border border-border rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+            <button type="submit" className="bg-gray-100 text-gray-700 font-bold py-2 px-6 rounded-lg hover:bg-gray-200 transition shadow-sm text-sm border border-gray-300">Filtrar</button>
+            {q && (
+               <Link href="/admin/produtos" className="bg-red-100 text-red-600 font-bold py-2 px-4 rounded-lg hover:bg-red-200 transition shadow-sm text-sm border border-red-200">Limpar</Link>
+            )}
+          </form>
         </div>
 
         <table className="w-full text-left">
