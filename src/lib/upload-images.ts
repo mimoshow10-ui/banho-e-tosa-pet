@@ -2,6 +2,7 @@ import { supabase } from './supabase';
 
 export async function uploadBlingImagesToSupabase(blingUrls: string[], productId: string): Promise<string[]> {
   const permanentUrls: string[] = [];
+  const errors: string[] = [];
 
   for (let i = 0; i < blingUrls.length; i++) {
     const url = blingUrls[i];
@@ -14,7 +15,7 @@ export async function uploadBlingImagesToSupabase(blingUrls: string[], productId
     try {
       const response = await fetch(url);
       if (!response.ok) {
-        throw new Error(`Servidor da imagem retornou status ${response.status} (${response.statusText}). O link da imagem no Bling pode estar quebrado ou bloqueado.`);
+        throw new Error(`Servidor da imagem retornou status ${response.status} (${response.statusText}).`);
       }
       const buffer = await response.arrayBuffer();
 
@@ -44,12 +45,13 @@ export async function uploadBlingImagesToSupabase(blingUrls: string[], productId
       permanentUrls.push(publicUrlData.publicUrl);
     } catch (e: any) {
       console.error('Exceção no processamento da imagem:', e);
-      throw new Error(`Falha no download/upload da imagem ${url}: ${e.message || e}`);
+      errors.push(`URL ${url}: ${e.message || e}`);
+      continue;
     }
   }
 
   if (blingUrls.length > 0 && permanentUrls.length === 0) {
-    throw new Error(`O Bling enviou ${blingUrls.length} URLs de fotos, mas o nosso sistema falhou ao tentar baixar todas elas. Certifique-se de que as URLs de imagem cadastradas no Bling são válidas, públicas e começam com https://`);
+    throw new Error(`O Bling enviou ${blingUrls.length} URLs de fotos, mas TODAS falharam ao baixar. Detalhes: ${errors.join(' | ')}`);
   }
 
   return permanentUrls;
