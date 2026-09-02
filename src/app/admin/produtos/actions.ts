@@ -17,7 +17,7 @@ export async function importarSKU(formData: FormData) {
     if (!token) {
       redirectTo = '/admin/produtos?erro=Token do Bling não encontrado. Vá nas Configurações e autorize o app.';
     } else {
-      const response = await fetch(`https://www.bling.com.br/Api/v3/produtos?criterio=${sku}`, {
+      const response = await fetch(`https://api.bling.com.br/Api/v3/produtos?criterio=${sku}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       
@@ -30,7 +30,7 @@ export async function importarSKU(formData: FormData) {
       } else {
         const prodId = data.data[0].id;
         
-        const detalhesReq = await fetch(`https://www.bling.com.br/Api/v3/produtos/${prodId}`, {
+        const detalhesReq = await fetch(`https://api.bling.com.br/Api/v3/produtos/${prodId}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const detalhesJson = await detalhesReq.json();
@@ -38,7 +38,7 @@ export async function importarSKU(formData: FormData) {
 
         let estoqueAtual = 0;
         try {
-          const estoqueReq = await fetch(`https://www.bling.com.br/Api/v3/estoques/saldos?idsProdutos[]=${prodId}`, {
+          const estoqueReq = await fetch(`https://api.bling.com.br/Api/v3/estoques/saldos?idsProdutos[]=${prodId}`, {
             headers: { 'Authorization': `Bearer ${token}` }
           });
           const estoqueJson = await estoqueReq.json();
