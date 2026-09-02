@@ -8,6 +8,9 @@ import ImportBlingForm from '@/components/ImportBlingForm';
 import DeleteProductButton from './DeleteProductButton';
 
 import { importarSKU } from './actions';
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
@@ -19,10 +22,16 @@ export default async function AdminProdutos(props: { searchParams: Promise<{ msg
   if (q) {
     query = query.or(`nome.ilike.%${q}%,codigo_barras.ilike.%${q}%`);
   }
-  const { data: produtos } = await query;
+  const { data: produtos, error } = await query;
 
   return (
-    <div>
+    <div className="flex flex-col gap-8">
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
+          <strong className="font-bold">Erro do Supabase!</strong>
+          <span className="block sm:inline"> {error.message} - {error.details} - {error.hint}</span>
+        </div>
+      )}
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-heading font-bold text-gray-800">Produtos</h1>
         <Link 

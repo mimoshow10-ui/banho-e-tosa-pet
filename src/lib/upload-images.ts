@@ -36,10 +36,7 @@ export async function uploadBlingImagesToSupabase(blingUrls: string[], productId
         });
 
       if (error) {
-        console.error(`Falha no Supabase Storage: ${error.message}. Fazendo fallback para Base64.`);
-        const base64 = Buffer.from(buffer).toString('base64');
-        const mime = response.headers.get('content-type') || 'image/jpeg';
-        permanentUrls.push(`data:${mime};base64,${base64}`);
+        console.error(`Falha no Supabase Storage: ${error.message}.`);
         continue;
       }
 
