@@ -37,77 +37,101 @@ export async function importarSKU(formData: FormData) {
           return;
         }
 
-        const prodId = produtoBuscado.id;
-        
-        const detalhesReq = await fetch(`https://api.bling.com.br/Api/v3/produtos/${prodId}`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const detalhesJson = await detalhesReq.json();
-        const prodCompleto = detalhesJson.data || data.data[0];
-
-        let estoqueAtual = 0;
-        try {
-          const estoqueReq = await fetch(`https://api.bling.com.br/Api/v3/estoques/saldos?idsProdutos[]=${prodId}`, {
+        async function fetchAndUpsertBlingProduct(prodCompletoBase: any, parent_id: string | null = null): Promise<{id: string, imagensBling: any[], imagensPermanentes: any[], prodExistente: any} | null> {
+          const prodId = prodCompletoBase.id;
+          const detalhesReq = await fetch(`https://api.bling.com.br/Api/v3/produtos/${prodId}`, {
             headers: { 'Authorization': `Bearer ${token}` }
           });
-          const estoqueJson = await estoqueReq.json();
-          estoqueAtual = estoqueJson.data?.[0]?.saldoFisicoTotal || 0;
-        } catch(e) {}
+          const detalhesJson = await detalhesReq.json();
+          const prodCompleto = detalhesJson.data || prodCompletoBase;
 
-        let imagensBling = [];
-        const externas = prodCompleto.midia?.imagens?.externas?.map((img: any) => img.link) || [];
-        const internas = prodCompleto.midia?.imagens?.internas?.map((img: any) => img.link) || [];
-        imagensBling = [...externas, ...internas];
+          let estoqueAtual = 0;
+          try {
+            const estoqueReq = await fetch(`https://api.bling.com.br/Api/v3/estoques/saldos?idsProdutos[]=${prodId}`, {
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const estoqueJson = await estoqueReq.json();
+            estoqueAtual = estoqueJson.data?.[0]?.saldoFisicoTotal || 0;
+          } catch(e) {}
 
-        if (imagensBling.length === 0 && Array.isArray(prodCompleto.midia)) {
-          imagensBling = prodCompleto.midia.map((m: any) => m.url || m.link).filter(Boolean);
+          let imagensBling: any[] = [];
+          const externas = prodCompleto.midia?.imagens?.externas?.map((img: any) => img.link) || [];
+          const internas = prodCompleto.midia?.imagens?.internas?.map((img: any) => img.link) || [];
+          imagensBling = [...externas, ...internas];
+
+          if (imagensBling.length === 0 && Array.isArray(prodCompleto.midia)) {
+            imagensBling = prodCompleto.midia.map((m: any) => m.url || m.link).filter(Boolean);
+          }
+
+          if (imagensBling.length === 0 && prodCompleto.imagemURL) {
+            imagensBling = [prodCompleto.imagemURL];
+          }
+
+          const { data: prodExistente } = await supabase.from('produtos').select('id, imagens').eq('bling_id', String(prodCompleto.id)).single();
+
+          const { uploadBlingImagesToSupabase } = await import('@/lib/upload-images');
+          let imagensPermanentes: any[] | null = null;
+          if (imagensBling.length > 0) {
+            imagensPermanentes = await uploadBlingImagesToSupabase(imagensBling, String(prodCompleto.id));
+          }
+
+          const baseSlug = prodCompleto.nome.toLowerCase().replace(/ /g, '-').normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+          const slug = `${baseSlug}-${prodCompleto.id}`;
+
+          const produtoParaInserir = {
+            bling_id: String(prodCompleto.id),
+            codigo_barras: prodCompleto.codigo || prodCompleto.gtin,
+            nome: prodCompleto.nome,
+            preco: prodCompleto.preco,
+            estoque: estoqueAtual,
+            slug: slug,
+            ativo: prodCompleto.situacao === 'A',
+            peso_liquido: prodCompleto.pesoLiquido || 0,
+            peso_bruto: prodCompleto.pesoBruto || 0,
+            largura: prodCompleto.dimensoes?.largura || 0,
+            altura: prodCompleto.dimensoes?.altura || 0,
+            profundidade: prodCompleto.dimensoes?.profundidade || 0,
+            marca: prodCompleto.marca || '',
+            ncm: prodCompleto.tributacao?.ncm || '',
+            descricao_curta: prodCompleto.descricaoCurta || '',
+            imagens: (imagensPermanentes && imagensPermanentes.length > 0) ? imagensPermanentes : (prodExistente?.imagens || null),
+            parent_id: parent_id
+          };
+
+          const { data: upsertedData, error } = await supabase.from('produtos').upsert(produtoParaInserir, { onConflict: 'bling_id' }).select('id').single();
+          if (error) {
+            console.error("Upsert error:", error);
+            return null;
+          }
+          return { id: upsertedData.id, imagensBling, imagensPermanentes, prodExistente };
         }
 
-        if (imagensBling.length === 0 && prodCompleto.imagemURL) {
-          imagensBling = [prodCompleto.imagemURL];
-        }
-
-        const { data: prodExistente } = await supabase.from('produtos').select('imagens').eq('bling_id', String(prodCompleto.id)).single();
-
-        const { uploadBlingImagesToSupabase } = await import('@/lib/upload-images');
-        let imagensPermanentes = null;
-        if (imagensBling.length > 0) {
-          imagensPermanentes = await uploadBlingImagesToSupabase(imagensBling, String(prodCompleto.id));
-        }
-
-        const baseSlug = prodCompleto.nome.toLowerCase().replace(/ /g, '-').normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-        const slug = `${baseSlug}-${prodCompleto.id}`;
-
-        const produtoParaInserir = {
-          bling_id: String(prodCompleto.id),
-          codigo_barras: prodCompleto.codigo || prodCompleto.gtin,
-          nome: prodCompleto.nome,
-          preco: prodCompleto.preco,
-          estoque: estoqueAtual,
-          slug: slug,
-          ativo: prodCompleto.situacao === 'A',
-          peso_liquido: prodCompleto.pesoLiquido || 0,
-          peso_bruto: prodCompleto.pesoBruto || 0,
-          largura: prodCompleto.dimensoes?.largura || 0,
-          altura: prodCompleto.dimensoes?.altura || 0,
-          profundidade: prodCompleto.dimensoes?.profundidade || 0,
-          marca: prodCompleto.marca || '',
-          ncm: prodCompleto.tributacao?.ncm || '',
-          descricao_curta: prodCompleto.descricaoCurta || '',
-          imagens: (imagensPermanentes && imagensPermanentes.length > 0) ? imagensPermanentes : (prodExistente?.imagens || null)
-        };
-
-        const { error } = await supabase.from('produtos').upsert(produtoParaInserir, { onConflict: 'bling_id' });
-        
-        if (error) {
-          redirectTo = `/admin/produtos?erro=Banco recusou salvar: ${error.message}`;
+        const parentResult = await fetchAndUpsertBlingProduct(produtoBuscado, null);
+        if (!parentResult) {
+          redirectTo = `/admin/produtos?erro=Banco recusou salvar o produto PAI.`;
         } else {
-          if (imagensBling.length === 0 && (!prodExistente?.imagens || prodExistente.imagens.length === 0)) {
-            redirectTo = `/admin/produtos?msg=Produto ${sku} importado, MAS O BLING NÃO ENVIOU FOTOS. (Dica: A foto deve estar cadastrada como 'URL Externa' no Bling, não como anexo interno)`;
-          } else if (imagensBling.length > 0 && (!imagensPermanentes || imagensPermanentes.length === 0) && (!prodExistente?.imagens || prodExistente.imagens.length === 0)) {
-            redirectTo = `/admin/produtos?msg=Produto ${sku} importado sem fotos. As URLs no Bling estão quebradas ou bloqueadas (ex: links temporários da Tray).`;
-          } else {
-            redirectTo = `/admin/produtos?msg=Produto ${sku} importado com sucesso!`;
+          try {
+            const varReq = await fetch(`https://api.bling.com.br/Api/v3/produtos?idProdutoPai=${produtoBuscado.id}`, {
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const varJson = await varReq.json();
+            
+            if (varJson.data && varJson.data.length > 0) {
+              for (const child of varJson.data) {
+                await fetchAndUpsertBlingProduct(child, parentResult.id);
+              }
+              redirectTo = `/admin/produtos?msg=Produto PAI ${sku} e suas variações importadas com sucesso!`;
+            } else {
+              if (parentResult.imagensBling.length === 0 && (!parentResult.prodExistente?.imagens || parentResult.prodExistente.imagens.length === 0)) {
+                redirectTo = `/admin/produtos?msg=Produto ${sku} importado, MAS O BLING NÃO ENVIOU FOTOS.`;
+              } else if (parentResult.imagensBling.length > 0 && (!parentResult.imagensPermanentes || parentResult.imagensPermanentes.length === 0) && (!parentResult.prodExistente?.imagens || parentResult.prodExistente.imagens.length === 0)) {
+                redirectTo = `/admin/produtos?msg=Produto ${sku} importado sem fotos. As URLs no Bling estão quebradas.`;
+              } else {
+                redirectTo = `/admin/produtos?msg=Produto ${sku} importado com sucesso!`;
+              }
+            }
+          } catch (e) {
+            redirectTo = `/admin/produtos?msg=Produto ${sku} importado com sucesso (sem variações).`;
           }
         }
       }

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
 import CountdownTimer from '@/components/CountdownTimer';
+import VariationSelector from '@/components/VariationSelector';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 
@@ -58,6 +59,16 @@ export default async function ProdutoPage({ params }: { params: Promise<{ slug: 
   if (!produto) {
     notFound(); 
   }
+
+  // Buscar todos os irmãos (variações) ou ele mesmo
+  const familyId = produto.parent_id || produto.id;
+  
+  const { data: family } = await supabase
+    .from('produtos')
+    .select('id, nome, slug, imagens, preco, preco_promocional, estoque, ativo')
+    .or(`id.eq.${familyId},parent_id.eq.${familyId}`)
+    .eq('ativo', true)
+    .order('id');
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-12">
@@ -138,6 +149,8 @@ export default async function ProdutoPage({ params }: { params: Promise<{ slug: 
               </span>
             )}
           </div>
+
+          <VariationSelector currentSlug={produto.slug} family={family || []} />
 
           {produto.descricao_curta || produto.descricao ? (
             <div 
