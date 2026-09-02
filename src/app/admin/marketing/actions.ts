@@ -1,4 +1,4 @@
-﻿'use server'
+'use server'
 
 import { supabase } from '@/lib/supabase';
 import { revalidatePath } from 'next/cache';
@@ -34,21 +34,21 @@ export async function salvarBanners(formData: FormData) {
 
   // Faz upload dos novos arquivos
   for (let i = 0; i < 10; i++) {
-    const file = formData.get(\anner_file_\\) as File;
+    const file = formData.get(`banner_file_${i}`) as File;
     if (file && file.size > 0) {
       const buffer = await file.arrayBuffer();
       const ext = file.name.split('.').pop();
-      const fileName = \anner_\_\.\\;
+      const fileName = `banner_${Date.now()}_${i}.${ext}`;
       
       const { data, error } = await supabase.storage
         .from('produtos-fotos')
-        .upload(\anners/\\, buffer, {
+        .upload(`banners/${fileName}`, buffer, {
           contentType: file.type,
           upsert: true
         });
 
       if (data) {
-        const { data: pubData } = supabase.storage.from('produtos-fotos').getPublicUrl(\anners/\\);
+        const { data: pubData } = supabase.storage.from('produtos-fotos').getPublicUrl(`banners/${fileName}`);
         urlsFiltradas.push(pubData.publicUrl);
       }
     }

@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useState } from 'react';
 import { salvarBanners } from './actions';
@@ -48,7 +48,7 @@ export default function BannersForm({ urlsAtuais }: { urlsAtuais: string[] }) {
           <h3 className="font-bold text-sm mb-3">Adicionar Novos Banners</h3>
           <div className="flex flex-col gap-3">
             {Array.from({ length: novos }).map((_, i) => (
-              <input key={i} type="file" name={\anner_file_\\} accept="image/*" className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer border border-gray-200 rounded p-2" />
+              <input key={i} type="file" name={`banner_file_${i}`} accept="image/*" className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer border border-gray-200 rounded p-2" />
             ))}
           </div>
           

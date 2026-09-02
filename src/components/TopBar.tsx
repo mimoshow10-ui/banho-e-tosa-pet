@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { usePathname } from 'next/navigation';
 
@@ -13,7 +13,7 @@ export default function TopBar({ topbar }: { topbar: any }) {
   }
 
   return (
-    <div className={\w-full \ text-white text-center py-2 text-sm font-semibold\}>
+    <div className={`w-full ${topbar.cor} text-white text-center py-2 text-sm font-semibold`}>
       {topbar.texto}
     </div>
   );

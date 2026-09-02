@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
@@ -21,11 +21,11 @@ export default function BannerCarousel({ banners }: { banners: string[] }) {
       {banners.map((url, i) => (
         <div 
           key={i} 
-          className={\bsolute inset-0 transition-opacity duration-1000 \\}
+          className={`absolute inset-0 transition-opacity duration-1000 ${i === current ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}
         >
           <img 
             src={url} 
-            alt={\Banner \\} 
+            alt={`Banner ${i+1}`} 
             className="w-full h-full object-cover object-center"
           />
         </div>
@@ -37,7 +37,7 @@ export default function BannerCarousel({ banners }: { banners: string[] }) {
             <button 
               key={i} 
               onClick={() => setCurrent(i)}
-              className={\w-3 h-3 rounded-full transition-colors \\}
+              className={`w-3 h-3 rounded-full transition-colors ${i === current ? 'bg-primary' : 'bg-white/50 hover:bg-white/80'}`}
             />
           ))}
         </div>
