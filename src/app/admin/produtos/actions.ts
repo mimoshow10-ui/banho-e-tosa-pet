@@ -96,13 +96,3 @@ export async function importarSKU(formData: FormData) {
   
   redirect(redirectTo);
 }
-
-export async function excluirProduto(id: string) {
-  const { error } = await supabase.from('produtos').delete().eq('id', id);
-  if (error) {
-    redirect(/admin/produtos?erro=Erro ao excluir produto: \);
-  }
-  revalidatePath('/admin/produtos');
-  revalidatePath('/', 'layout');
-  redirect(/admin/produtos?msg=Produto excluído com sucesso!);
-}
