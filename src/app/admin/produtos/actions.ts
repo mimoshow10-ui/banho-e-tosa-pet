@@ -59,9 +59,7 @@ export async function importarSKU(formData: FormData) {
           imagensBling = [prodCompleto.imagemURL];
         }
 
-        if (imagensBling.length === 0) {
-          throw new Error('DebugMidia: ' + JSON.stringify(prodCompleto.midia || prodCompleto));
-        }
+        const { data: prodExistente } = await supabase.from('produtos').select('imagens').eq('bling_id', String(prodCompleto.id)).single();
 
         const { uploadBlingImagesToSupabase } = await import('@/lib/upload-images');
         let imagensPermanentes = null;
@@ -88,7 +86,7 @@ export async function importarSKU(formData: FormData) {
           marca: prodCompleto.marca || '',
           ncm: prodCompleto.tributacao?.ncm || '',
           descricao_curta: prodCompleto.descricaoCurta || '',
-          imagens: imagensPermanentes && imagensPermanentes.length > 0 ? imagensPermanentes : null
+          imagens: (imagensPermanentes && imagensPermanentes.length > 0) ? imagensPermanentes : (prodExistente?.imagens || null)
         };
 
         const { error } = await supabase.from('produtos').upsert(produtoParaInserir, { onConflict: 'bling_id' });
