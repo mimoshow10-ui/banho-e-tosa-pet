@@ -51,6 +51,12 @@ async function atualizarProduto(formData: FormData) {
 
   revalidatePath('/admin/produtos');
   revalidatePath('/');
+  
+  const { data: prodExistente } = await supabase.from('produtos').select('slug').eq('id', id).single();
+  if (prodExistente) {
+    revalidatePath(`/produto/${prodExistente.slug}`);
+  }
+
   if (categoria_id) {
     const { data: cat } = await supabase.from('categorias').select('slug').eq('id', categoria_id).single();
     if (cat) revalidatePath(`/categoria/${cat.slug}`);
