@@ -18,7 +18,7 @@ export async function importarSKU(formData: FormData) {
     if (!token) {
       redirectTo = '/admin/produtos?erro=Token do Bling não encontrado. Vá nas Configurações e autorize o app.';
     } else {
-      const response = await fetch(`https://api.bling.com.br/Api/v3/produtos?criterio=${sku}`, {
+      const response = await fetch(`https://api.bling.com.br/Api/v3/produtos?codigo=${sku}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       
@@ -27,13 +27,12 @@ export async function importarSKU(formData: FormData) {
       if (response.status === 401 || data?.error?.type === 'invalid_token') {
         redirectTo = `/admin/produtos?erro=Token do Bling expirado. Vá em Configurações e autorize o aplicativo novamente!`;
       } else if (!data.data || data.data.length === 0) {
-        redirectTo = `/admin/produtos?erro=Bling Retornou nenhum resultado para a busca.`;
+        redirectTo = `/admin/produtos?erro=Bling não encontrou nenhum produto com o SKU exato: '${sku}'. Verifique a digitação.`;
       } else {
         const produtoBuscado = data.data.find((p: any) => (p.codigo && p.codigo.toLowerCase() === sku.toLowerCase()) || String(p.id) === sku);
         
         if (!produtoBuscado) {
-          const encontrados = data.data.map((p: any) => p.codigo).join(', ');
-          redirectTo = `/admin/produtos?erro=O Bling não encontrou o SKU exato '${sku}'. Produtos parecidos encontrados: ${encontrados}`;
+          redirectTo = `/admin/produtos?erro=Produto encontrado na busca, mas o código não bate exatamente com '${sku}'. Encontrado: ${data.data[0]?.codigo}`;
           redirect(redirectTo);
           return;
         }
