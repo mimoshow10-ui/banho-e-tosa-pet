@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
+import { notFound } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -12,93 +13,167 @@ export default async function CategoriaPage({
 }) {
   const { slug } = await params;
   
-  // Buscar a categoria no banco de dados pelo slug
-  const { data: categoria } = await supabase.from('categorias').select('*').eq('slug', slug).single();
-  
-  let produtos = [];
-  let categoriaNome = slug.charAt(0).toUpperCase() + slug.slice(1).replace('-', ' ');
+  // Buscar a categoria/grupo/subgrupo pelo slug
+  const { data: catAtual } = await supabase.from('categorias').select('*').eq('slug', slug).single();
 
-  if (categoria) {
-    categoriaNome = categoria.nome;
-    const { data } = await supabase.from('produtos').select('*').eq('categoria_id', categoria.id).eq('ativo', true);
-    if (data) produtos = data;
+  if (!catAtual && slug !== 'todas') {
+    return notFound();
   }
+
+  let produtos: any[] = [];
+  let subgrupos: any[] = [];
+  let grupoPai: any = null;
+
+  if (slug === 'todas') {
+    const { data } = await supabase.from('produtos').select('*').eq('ativo', true).order('criado_em', { ascending: false });
+    if (data) produtos = data;
+  } else if (catAtual) {
+    const isGrupo = !catAtual.parent_id;
+
+    if (isGrupo) {
+      // 1. É um Grupo Principal — buscar seus Subgrupos
+      const { data: subs } = await supabase
+        .from('categorias')
+        .select('*')
+        .eq('parent_id', catAtual.id)
+        .order('nome');
+
+      subgrupos = subs || [];
+
+      // Buscar produtos que pertencem diretamente ao grupo OU a um dos seus subgrupos
+      const idsRelacionados = [catAtual.id, ...subgrupos.map(s => s.id)];
+      const { data } = await supabase
+        .from('produtos')
+        .select('*')
+        .in('categoria_id', idsRelacionados)
+        .eq('ativo', true)
+        .order('criado_em', { ascending: false });
+
+      if (data) produtos = data;
+    } else {
+      // 2. É um Subgrupo — buscar o Grupo Pai
+      const { data: pai } = await supabase
+        .from('categorias')
+        .select('*')
+        .eq('id', catAtual.parent_id)
+        .single();
+
+      grupoPai = pai;
+
+      // Buscar produtos pertencentes estritamente a este Subgrupo
+      const { data } = await supabase
+        .from('produtos')
+        .select('*')
+        .eq('categoria_id', catAtual.id)
+        .eq('ativo', true)
+        .order('criado_em', { ascending: false });
+
+      if (data) produtos = data;
+    }
+  }
+
+  const tituloExibido = slug === 'todas' ? 'Todos os Produtos' : catAtual?.nome || slug;
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
-      {/* Breadcrumb */}
-      <nav className="text-sm text-gray-500 mb-8">
+      {/* Breadcrumb Hierárquico */}
+      <nav className="text-sm text-gray-500 mb-6 flex items-center gap-2">
         <Link href="/" className="hover:text-primary transition">Home</Link>
-        <span className="mx-2">&gt;</span>
-        <span className="text-text font-semibold">{categoriaNome}</span>
+        <span>&gt;</span>
+        {grupoPai ? (
+          <>
+            <Link href={`/categoria/${grupoPai.slug}`} className="hover:text-primary transition font-medium text-gray-700">
+              {grupoPai.nome}
+            </Link>
+            <span>&gt;</span>
+            <span className="text-secondary font-bold">{catAtual?.nome}</span>
+          </>
+        ) : (
+          <span className="text-secondary font-bold">{tituloExibido}</span>
+        )}
       </nav>
 
-      <div className="flex flex-col lg:flex-row gap-8">
-        
-        {/* Sidebar de Filtros (Mantida visualmente por enquanto) */}
-        <aside className="w-full lg:w-64 flex-shrink-0">
-          <div className="bg-white p-6 rounded-xl border border-border shadow-sm">
-            <h2 className="font-heading font-bold text-lg mb-6 text-secondary">Filtros</h2>
-            <p className="text-sm text-gray-500 italic">Filtros em construção</p>
+      {/* Se for um Grupo e tiver Subgrupos, exibe Pílulas de Subgrupos */}
+      {subgrupos.length > 0 && (
+        <div className="mb-8 bg-purple-50/50 p-4 rounded-2xl border border-purple-100">
+          <h3 className="font-bold text-xs uppercase tracking-wide text-purple-900 mb-3">
+            Subgrupos em {catAtual?.nome}:
+          </h3>
+          <div className="flex flex-wrap gap-2">
+            {subgrupos.map((sub) => (
+              <Link
+                key={sub.id}
+                href={`/categoria/${sub.slug}`}
+                className="bg-white border border-purple-200 hover:border-purple-500 text-purple-900 hover:text-purple-700 px-4 py-2 rounded-full text-xs font-bold transition shadow-2xs flex items-center gap-1.5"
+              >
+                <span>🏷️ {sub.nome}</span>
+              </Link>
+            ))}
           </div>
-        </aside>
+        </div>
+      )}
 
-        {/* Grid de Produtos */}
-        <main className="flex-1">
-          {/* Header do Grid (Ordenação e Resultados) */}
-          <div className="flex flex-col sm:flex-row justify-between items-center mb-6 pb-4 border-b border-border">
-            <h1 className="text-2xl font-heading font-bold text-secondary">{categoriaNome}</h1>
-            <div className="flex items-center gap-4 mt-4 sm:mt-0">
-              <span className="text-sm text-gray-500">{produtos.length} produtos</span>
-              <select className="border border-border rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-primary">
-                <option>Mais Relevantes</option>
-                <option>Menor Preço</option>
-                <option>Maior Preço</option>
-              </select>
-            </div>
+      {/* Grid de Produtos */}
+      <main className="flex-1">
+        <div className="flex flex-col sm:flex-row justify-between items-center mb-6 pb-4 border-b border-border">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-heading font-bold text-secondary">{tituloExibido}</h1>
+            {grupoPai && (
+              <p className="text-xs text-gray-500 mt-0.5">Subgrupo pertencente a <strong>{grupoPai.nome}</strong></p>
+            )}
           </div>
+          <div className="flex items-center gap-4 mt-4 sm:mt-0">
+            <span className="text-sm font-medium text-gray-500">{produtos.length} produtos encontrados</span>
+          </div>
+        </div>
 
-          {/* Grid Real */}
-          {produtos.length > 0 ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-              {produtos.map((prod: any) => (
-                <div key={prod.id} className="flex flex-col bg-white rounded-xl shadow-sm hover:shadow-md transition border border-border overflow-hidden">
+        {/* Grid de Cards de Produto */}
+        {produtos.length > 0 ? (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {produtos.map((prod: any) => {
+              const foto = prod.imagens?.[0] ? (typeof prod.imagens[0] === 'string' ? prod.imagens[0].split(/[\r\n,]+/)[0] : prod.imagens[0]) : null;
+              const preco = prod.preco_promocional && Number(prod.preco_promocional) < Number(prod.preco) ? prod.preco_promocional : prod.preco;
+
+              return (
+                <div key={prod.id} className="flex flex-col bg-white rounded-2xl shadow-2xs hover:shadow-md transition border border-gray-200 overflow-hidden group">
                   <Link href={`/produto/${prod.slug}`}>
-                    <div className="aspect-square bg-gray-100 flex items-center justify-center relative overflow-hidden">
-                      {prod.imagens && prod.imagens.length > 0 ? (
-                        <Image src={prod.imagens[0]} alt={prod.nome} fill className="object-cover" />
+                    <div className="aspect-square bg-gray-100 relative overflow-hidden">
+                      {foto ? (
+                        <Image src={foto} alt={prod.nome} fill className="object-cover group-hover:scale-105 transition duration-300" />
                       ) : (
-                        <span className="text-gray-400 text-sm font-bold">Sem Foto</span>
+                        <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs font-bold">Sem Foto</div>
                       )}
                     </div>
                   </Link>
-                  <div className="p-4 flex flex-col flex-grow">
+                  <div className="p-4 flex flex-col flex-1 justify-between">
                     <Link href={`/produto/${prod.slug}`}>
-                      <h3 className="font-bold mb-1 text-sm md:text-base line-clamp-2 hover:text-primary transition text-secondary">
+                      <h3 className="font-bold mb-2 text-xs md:text-sm line-clamp-2 hover:text-primary transition text-secondary">
                         {prod.nome}
                       </h3>
                     </Link>
-                    <div className="mt-auto pt-2">
-                      <span className="text-xl font-heading font-bold text-primary">
-                        R$ {Number(prod.preco).toFixed(2).replace('.', ',')}
+                    <div className="mt-auto">
+                      <span className="text-lg md:text-xl font-heading font-bold text-primary block">
+                        R$ {Number(preco).toFixed(2).replace('.', ',')}
                       </span>
+                      <Link
+                        href={`/produto/${prod.slug}`}
+                        className="mt-3 w-full bg-secondary text-white py-2 rounded-xl font-bold hover:bg-blue-900 transition text-xs flex items-center justify-center gap-1"
+                      >
+                        Ver Produto
+                      </Link>
                     </div>
-                    <button className="mt-4 w-full bg-secondary text-white py-2 rounded-lg font-bold hover:bg-blue-900 transition text-sm">
-                      Comprar
-                    </button>
                   </div>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="bg-gray-50 p-12 text-center rounded-xl border border-dashed border-gray-300">
-              <p className="text-gray-500 font-bold text-lg mb-2">Nenhum produto encontrado nesta categoria.</p>
-              <p className="text-gray-400 text-sm">Vá no Painel Admin e adicione produtos a esta categoria.</p>
-            </div>
-          )}
-
-        </main>
-      </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="bg-gray-50 p-12 text-center rounded-2xl border border-dashed border-gray-300">
+            <p className="text-gray-600 font-bold text-lg mb-2">Nenhum produto cadastrado aqui no momento.</p>
+            <p className="text-gray-400 text-xs">Acesse o Painel Admin para vincular produtos a este Grupo ou Subgrupo.</p>
+          </div>
+        )}
+      </main>
     </div>
   );
 }

@@ -49,20 +49,20 @@ export default function CountdownTimer({ targetDate, onExpire }: { targetDate: s
   if (!timeLeft) return null;
 
   return (
-    <div className="flex items-center gap-2 mt-2 bg-red-50 p-2 rounded-lg border border-red-100 inline-flex">
-      <span className="text-red-600 font-bold text-xs uppercase tracking-wider">Termina em:</span>
-      <div className="flex gap-1 text-red-600 font-mono font-bold text-xs">
+    <div className="flex items-center gap-2.5 mt-2 bg-red-50 p-2.5 rounded-xl border border-red-100 inline-flex shadow-2xs">
+      <span className="text-red-600 font-bold text-sm uppercase tracking-wider">Termina em:</span>
+      <div className="flex gap-1.5 text-red-600 font-mono font-black text-sm md:text-base">
         {timeLeft.days > 0 && (
           <>
-            <div className="bg-white px-1.5 py-0.5 rounded shadow-sm">{timeLeft.days}d</div>
+            <div className="bg-white px-2 py-1 rounded-lg shadow-2xs">{timeLeft.days}d</div>
             <span>:</span>
           </>
         )}
-        <div className="bg-white px-1.5 py-0.5 rounded shadow-sm">{timeLeft.hours.toString().padStart(2, '0')}h</div>
+        <div className="bg-white px-2 py-1 rounded-lg shadow-2xs">{timeLeft.hours.toString().padStart(2, '0')}h</div>
         <span>:</span>
-        <div className="bg-white px-1.5 py-0.5 rounded shadow-sm">{timeLeft.minutes.toString().padStart(2, '0')}m</div>
+        <div className="bg-white px-2 py-1 rounded-lg shadow-2xs">{timeLeft.minutes.toString().padStart(2, '0')}m</div>
         <span>:</span>
-        <div className="bg-white px-1.5 py-0.5 rounded shadow-sm">{timeLeft.seconds.toString().padStart(2, '0')}s</div>
+        <div className="bg-white px-2 py-1 rounded-lg shadow-2xs">{timeLeft.seconds.toString().padStart(2, '0')}s</div>
       </div>
     </div>
   );

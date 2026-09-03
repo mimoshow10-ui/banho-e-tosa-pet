@@ -15,76 +15,88 @@ export default function CategorySelector({
   categorias: Categoria[];
   defaultCategoriaId: string | null;
 }) {
-  const categoriasPrincipais = categorias.filter((c) => !c.parent_id);
-  const subcategorias = categorias.filter((c) => c.parent_id);
+  const grupos = categorias.filter((c) => !c.parent_id);
+  const subgrupos = categorias.filter((c) => c.parent_id);
 
-  let initialMainId = '';
-  let initialSubId = '';
+  let initialGrupoId = '';
+  let initialSubgrupoId = '';
 
   if (defaultCategoriaId) {
     const defaultCat = categorias.find((c) => c.id === defaultCategoriaId);
     if (defaultCat) {
       if (defaultCat.parent_id) {
-        initialSubId = defaultCat.id;
-        initialMainId = defaultCat.parent_id;
+        initialSubgrupoId = defaultCat.id;
+        initialGrupoId = defaultCat.parent_id;
       } else {
-        initialMainId = defaultCat.id;
+        initialGrupoId = defaultCat.id;
       }
     }
   }
 
-  const [mainId, setMainId] = useState(initialMainId);
-  const [subId, setSubId] = useState(initialSubId);
+  const [grupoId, setGrupoId] = useState(initialGrupoId);
+  const [subgrupoId, setSubgrupoId] = useState(initialSubgrupoId);
 
-  const subcategoriasAtuais = subcategorias.filter((c) => c.parent_id === mainId);
+  // Filtra APENAS os subgrupos que pertencem ao grupo selecionado
+  const subgruposFiltrados = subgrupos.filter((c) => c.parent_id === grupoId);
 
   return (
-    <>
-      <input type="hidden" name="categoria_id" value={subId || mainId || ''} />
+    <div className="space-y-4">
+      {/* Campo oculto que envia o ID final para o backend */}
+      <input type="hidden" name="categoria_id" value={subgrupoId || grupoId || ''} />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium mb-1">Grupo</label>
+          <label className="block text-xs font-bold text-gray-700 mb-1">
+            Grupo do Produto *
+          </label>
           <select
-            className="w-full border border-border rounded-lg p-2 bg-white"
-            value={mainId}
+            className="w-full border border-gray-300 rounded-xl p-3 bg-white text-sm font-bold text-secondary focus:outline-none focus:ring-2 focus:ring-primary"
+            value={grupoId}
             onChange={(e) => {
-              setMainId(e.target.value);
-              setSubId(''); 
+              setGrupoId(e.target.value);
+              setSubgrupoId(''); // Reseta o subgrupo ao trocar de grupo
             }}
+            required
           >
-            <option value="">Nenhum Grupo</option>
-            {categoriasPrincipais.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.nome}
+            <option value="">Selecione o Grupo do produto...</option>
+            {grupos.map((g) => (
+              <option key={g.id} value={g.id}>
+                {g.nome}
               </option>
             ))}
           </select>
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1">Sub-Grupo</label>
+          <label className="block text-xs font-bold text-gray-700 mb-1">
+            Subgrupo (Opcional)
+          </label>
           <select
-            className="w-full border border-border rounded-lg p-2 bg-white disabled:opacity-50"
-            value={subId}
-            onChange={(e) => setSubId(e.target.value)}
-            disabled={!mainId || subcategoriasAtuais.length === 0}
+            className="w-full border border-gray-300 rounded-xl p-3 bg-white text-sm font-medium text-secondary focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50 disabled:bg-gray-50"
+            value={subgrupoId}
+            onChange={(e) => setSubgrupoId(e.target.value)}
+            disabled={!grupoId || subgruposFiltrados.length === 0}
           >
             <option value="">
-              {!mainId
-                ? 'Selecione um Grupo primeiro'
-                : subcategoriasAtuais.length === 0
-                ? 'Nenhum Sub-Grupo cadastrado'
-                : 'Nenhum (Deixar apenas no Grupo)'}
+              {!grupoId
+                ? '← Escolha o Grupo primeiro'
+                : subgruposFiltrados.length === 0
+                ? 'Nenhum Subgrupo neste Grupo'
+                : 'Nenhum Subgrupo (Vincular apenas ao Grupo)'}
             </option>
-            {subcategoriasAtuais.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.nome}
+            {subgruposFiltrados.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.nome}
               </option>
             ))}
           </select>
+          {grupoId && subgruposFiltrados.length > 0 && (
+            <p className="text-[11px] text-purple-700 font-medium mt-1">
+              ✓ {subgruposFiltrados.length} subgrupo(s) disponível(is) para este Grupo.
+            </p>
+          )}
         </div>
       </div>
-    </>
+    </div>
   );
 }
