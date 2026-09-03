@@ -7,9 +7,27 @@ import BannerCarousel from "@/components/BannerCarousel";
 export const revalidate = 0;
 export const dynamic = 'force-dynamic';
 
+// Emojis para as categorias
+const CATEGORIA_EMOJI: Record<string, string> = {
+  'adesivos': '🎨',
+  'gravatinhas': '👔',
+  'lacinhos': '🎀',
+  'bandanas': '🧣',
+  'gargantilhas': '📿',
+  'colarinhos': '🐾',
+  'piercings': '✨',
+};
+
 export default async function Home() {
   const { data: configs } = await supabase.from('configuracoes').select('*');
   const banners = configs?.find(c => c.chave === 'marketing_banners')?.valor?.urls || ['/banner-pet.jpg'];
+
+  // Categorias para pílulas
+  const { data: categorias } = await supabase
+    .from('categorias')
+    .select('id, nome, slug')
+    .is('parent_id', null)
+    .order('nome');
 
   // Puxar todos os produtos ativos ordenados por novidade
   const { data: todosProdutos } = await supabase
@@ -28,8 +46,6 @@ export default async function Home() {
 
   const produtos = todosProdutos || [];
   const produtosPromocao = superPromocoes || [];
-  
-  // Os demais (ou até os mesmos) vão para a vitrine principal
   const produtosNovidades = produtos.slice(0, 8);
 
   return (
@@ -48,9 +64,34 @@ export default async function Home() {
           </div>
       </section>
 
+      {/* Grupos de Categoria */}
+      {categorias && categorias.length > 0 && (
+        <section className="py-8 px-4 max-w-7xl mx-auto w-full">
+          <div className="flex flex-wrap gap-3 justify-center">
+            {categorias.map(cat => (
+              <Link
+                key={cat.id}
+                href={`/categoria/${cat.slug}`}
+                className="flex items-center gap-2 bg-white border-2 border-border rounded-full px-5 py-2.5 font-bold text-secondary hover:border-primary hover:text-primary hover:shadow-md transition text-sm"
+              >
+                <span className="text-lg">{CATEGORIA_EMOJI[cat.slug] || '🐶'}</span>
+                {cat.nome}
+              </Link>
+            ))}
+            <Link
+              href="/categoria/todas"
+              className="flex items-center gap-2 bg-primary text-white border-2 border-primary rounded-full px-5 py-2.5 font-bold hover:bg-orange-600 hover:border-orange-600 transition text-sm"
+            >
+              <span className="text-lg">🛍️</span>
+              Ver Tudo
+            </Link>
+          </div>
+        </section>
+      )}
+
       {/* Super Promoção */}
       {produtosPromocao.length > 0 && (
-        <section className="py-12 px-4 max-w-7xl mx-auto w-full bg-red-50 mt-8 rounded-2xl border border-red-100">
+        <section className="py-12 px-4 max-w-7xl mx-auto w-full bg-red-50 mt-4 rounded-2xl border border-red-100">
           <div className="flex justify-between items-end mb-8">
             <div>
               <h2 className="text-3xl font-heading font-black text-red-600 uppercase tracking-tight flex items-center gap-2">
@@ -97,7 +138,7 @@ export default async function Home() {
         </section>
       )}
 
-      {/* Destaques puxando do Supabase */}
+      {/* Novidades */}
       <section className="py-16 px-4 max-w-7xl mx-auto w-full">
         <h2 className="text-3xl font-heading font-bold text-secondary text-center mb-12">Nossas Novidades</h2>
         
