@@ -1,65 +1,299 @@
-﻿import { supabase } from '@/lib/supabase';
-import { salvarTopBar } from './actions';
+import { supabase } from '@/lib/supabase';
+import { salvarTopBar, salvarPopup } from './actions';
 import BannersForm from './BannersForm';
+import { Megaphone, Layout, Sparkles, Sliders, Image as ImageIcon, Info, Upload, CheckCircle2, Clock } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
-export default async function AdminMarketing({ searchParams }: { searchParams: { msg?: string, erro?: string } }) {
+export default async function AdminMarketing({
+  searchParams,
+}: {
+  searchParams: Promise<{ msg?: string; erro?: string }>;
+}) {
+  const params = await searchParams;
+
   const { data: configs } = await supabase.from('configuracoes').select('*');
-  
-  const topbar = configs?.find(c => c.chave === 'marketing_topbar')?.valor || { texto: 'Frete grátis acima de R', visibilidade: 'todas', cor: 'bg-primary' };
+
+  const topbar = configs?.find(c => c.chave === 'marketing_topbar')?.valor || { texto: 'Frete grátis acima de R$ 99,00', visibilidade: 'todas', cor: 'bg-primary' };
   const banners = configs?.find(c => c.chave === 'marketing_banners')?.valor?.urls || ['/banner-pet.jpg'];
+  const popup = configs?.find(c => c.chave === 'marketing_popup')?.valor || {
+    ativo: false,
+    imagem_url: '',
+    link_destino: '',
+    titulo: 'Ganhe 10% OFF na Primeira Compra!',
+    subtitulo: 'Use o cupom BEMVINDO10 no seu carrinho.',
+    gatilho: 'tempo',
+    tempo_exibicao_segundos: 3,
+    onde_exibir: 'home',
+    frequencia: 'uma_vez_por_sessao'
+  };
 
   return (
-    <div className="max-w-4xl">
-      <h1 className="text-3xl font-heading font-bold text-gray-800 mb-8">Marketing e Promoções</h1>
+    <div className="max-w-5xl space-y-8 font-sans">
+      <div className="flex items-center justify-between border-b border-border pb-4">
+        <div>
+          <h1 className="text-3xl font-heading font-bold text-secondary flex items-center gap-3">
+            <Megaphone size={32} className="text-primary" />
+            Marketing, Banners e Pop-ups
+          </h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Gerencie avisos de topo, carrossel de banners e pop-ups promocionais com guia de dimensões para designers.
+          </p>
+        </div>
+      </div>
 
-      {searchParams.msg && <div className="mb-4 bg-green-100 text-green-800 p-4 rounded-lg font-bold">{searchParams.msg}</div>}
-      {searchParams.erro && <div className="mb-4 bg-red-100 text-red-800 p-4 rounded-lg font-bold">{searchParams.erro}</div>}
+      {params.msg && (
+        <div className="bg-green-100 border border-green-300 text-green-800 p-4 rounded-xl font-bold text-sm flex items-center gap-2">
+          <CheckCircle2 size={18} />
+          {params.msg}
+        </div>
+      )}
 
-      <div className="flex flex-col gap-8">
+      {params.erro && (
+        <div className="bg-red-100 border border-red-300 text-red-800 p-4 rounded-xl font-bold text-sm">
+          ⚠️ {params.erro}
+        </div>
+      )}
+
+      {/* ── GUIA DE TAMANHOS DE BANNERS PARA O DESIGNER ── */}
+      <div className="bg-gradient-to-r from-purple-900 to-indigo-900 text-white p-6 rounded-2xl shadow-md space-y-4">
+        <div className="flex items-center gap-2 border-b border-purple-700/60 pb-3">
+          <Info size={22} className="text-amber-300" />
+          <h2 className="text-lg font-bold">Guia de Dimensões Recomendadas para o Designer</h2>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+          
+          <div className="bg-white/10 p-4 rounded-xl border border-white/10 space-y-1">
+            <span className="bg-amber-400 text-purple-950 font-black px-2 py-0.5 rounded text-[10px] uppercase block w-fit mb-1">
+              💻 Carrossel Desktop
+            </span>
+            <p className="text-base font-mono font-bold text-amber-200">1920 x 500 px</p>
+            <p className="text-purple-200">Proporção 16:4. Formatos: PNG, JPG ou WebP. Tamanho máximo ideal: até 500 KB.</p>
+          </div>
+
+          <div className="bg-white/10 p-4 rounded-xl border border-white/10 space-y-1">
+            <span className="bg-amber-400 text-purple-950 font-black px-2 py-0.5 rounded text-[10px] uppercase block w-fit mb-1">
+              📱 Carrossel Mobile
+            </span>
+            <p className="text-base font-mono font-bold text-amber-200">800 x 800 px</p>
+            <p className="text-purple-200">Quadrado (1:1) ou 1080 x 1080 px para telas de alta densidade.</p>
+          </div>
+
+          <div className="bg-white/10 p-4 rounded-xl border border-white/10 space-y-1">
+            <span className="bg-amber-400 text-purple-950 font-black px-2 py-0.5 rounded text-[10px] uppercase block w-fit mb-1">
+              🖼️ Pop-up Promocional
+            </span>
+            <p className="text-base font-mono font-bold text-amber-200">800 x 800 px</p>
+            <p className="text-purple-200">Ou 600 x 800 px (Vertical 3:4) para pop-ups de janela modal.</p>
+          </div>
+
+        </div>
+      </div>
+
+      <div className="space-y-8">
         
-        {/* TOP BAR */}
-        <div className="bg-white rounded-xl shadow-sm border border-border p-8">
-          <div className="flex items-center gap-2 mb-6 border-b pb-2">
-            <h2 className="text-xl font-bold text-secondary">Barra de Aviso do Topo (Top Bar)</h2>
+        {/* ── TOP BAR (BARRA DE AVISO DO TOPO) ── */}
+        <div className="bg-white rounded-2xl shadow-xs border border-gray-200 p-6 space-y-4">
+          <div className="flex items-center gap-2 border-b border-gray-100 pb-3">
+            <Layout size={20} className="text-primary" />
+            <h2 className="text-lg font-bold text-secondary">1. Barra de Aviso do Topo (Top Bar)</h2>
           </div>
           
-          <form action={salvarTopBar} className="flex flex-col gap-4">
+          <form action={salvarTopBar} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="md:col-span-2">
+              <label className="block text-xs font-bold text-gray-700 mb-1">Frase de Destaque da Barra *</label>
+              <input
+                type="text"
+                name="texto"
+                defaultValue={topbar.texto}
+                className="w-full border border-gray-300 rounded-xl p-2.5 text-sm bg-white focus:ring-2 focus:ring-primary focus:outline-none"
+                required
+              />
+            </div>
+
             <div>
-              <label className="block text-sm font-bold mb-1">Frase da Barra</label>
-              <input type="text" name="texto" defaultValue={topbar.texto} className="w-full border border-border rounded p-2 text-sm bg-white" required />
+              <label className="block text-xs font-bold text-gray-700 mb-1">Onde Exibir?</label>
+              <select name="visibilidade" defaultValue={topbar.visibilidade} className="w-full border border-gray-300 rounded-xl p-2.5 text-sm bg-white font-bold">
+                <option value="todas">Em todas as páginas</option>
+                <option value="home">Somente na Página Inicial (Home)</option>
+                <option value="nenhuma">Desativar (Esconder barra)</option>
+              </select>
             </div>
 
-            <div className="flex gap-4">
-              <div className="flex-1">
-                <label className="block text-sm font-bold mb-1">Onde exibir?</label>
-                <select name="visibilidade" defaultValue={topbar.visibilidade} className="w-full border border-border rounded p-2 text-sm bg-white">
-                  <option value="todas">Em todas as páginas</option>
-                  <option value="home">Somente na Página Inicial (Home)</option>
-                  <option value="nenhuma">Desativar (Esconder barra)</option>
-                </select>
-              </div>
-              <div className="w-48">
-                <label className="block text-sm font-bold mb-1">Cor de Fundo</label>
-                <select name="cor" defaultValue={topbar.cor} className="w-full border border-border rounded p-2 text-sm bg-white">
-                  <option value="bg-primary">Laranja Padrão</option>
-                  <option value="bg-secondary">Azul Escuro</option>
-                  <option value="bg-green-600">Verde</option>
-                  <option value="bg-red-600">Vermelho</option>
-                  <option value="bg-black">Preto</option>
-                </select>
-              </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1">Cor de Fundo da Barra</label>
+              <select name="cor" defaultValue={topbar.cor} className="w-full border border-gray-300 rounded-xl p-2.5 text-sm bg-white font-bold">
+                <option value="bg-primary">Laranja Padrão (Tema da Loja)</option>
+                <option value="bg-secondary">Azul Marinho Escuro</option>
+                <option value="bg-purple-700">Roxo Promocional</option>
+                <option value="bg-green-600">Verde Oferta</option>
+                <option value="bg-red-600">Vermelho Urgência</option>
+                <option value="bg-black">Preto Minimalista</option>
+              </select>
             </div>
 
-            <button type="submit" className="bg-primary text-white py-2 px-6 rounded-lg font-bold hover:bg-orange-600 transition self-start mt-2">
+            <button type="submit" className="bg-primary text-white py-2.5 px-6 rounded-xl font-bold hover:bg-orange-600 transition md:col-span-2 shadow-xs w-fit">
               Salvar Barra do Topo
             </button>
           </form>
         </div>
 
-        {/* BANNERS PRINCIPAIS */}
+        {/* ── BANNERS DO CARROSSEL ── */}
         <BannersForm urlsAtuais={banners} />
+
+        {/* ── POP-UP PROMOCIONAL MODAL (NOVO) ── */}
+        <div className="bg-white rounded-2xl shadow-xs border border-gray-200 p-6 space-y-6">
+          <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+            <div className="flex items-center gap-2">
+              <Sparkles size={20} className="text-purple-600" />
+              <h2 className="text-lg font-bold text-secondary">3. Pop-up Promocional Modal</h2>
+            </div>
+            <span className={`text-xs font-bold px-3 py-1 rounded-full ${popup.ativo ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-500'}`}>
+              {popup.ativo ? 'POP-UP ATIVO' : 'INATIVO'}
+            </span>
+          </div>
+
+          <form action={salvarPopup} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            
+            {/* Status Ativo/Inativo */}
+            <div className="flex items-center gap-2 md:col-span-2 bg-purple-50 p-3.5 rounded-xl border border-purple-100">
+              <input
+                id="popup_ativo"
+                name="ativo"
+                type="checkbox"
+                defaultChecked={popup.ativo}
+                className="w-4 h-4 accent-purple-600 cursor-pointer"
+              />
+              <label htmlFor="popup_ativo" className="text-sm font-bold text-purple-950 cursor-pointer">
+                Ativar Pop-up Promocional na Loja
+              </label>
+            </div>
+
+            {/* Imagem do Pop-up (Upload ou URL) */}
+            <div className="md:col-span-2 space-y-2">
+              <label className="block text-xs font-bold text-gray-700">
+                Imagem / Banner do Pop-up (Recomendado: 800x800 px ou 600x800 px)
+              </label>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <input
+                    name="popup_file"
+                    type="file"
+                    accept="image/*"
+                    className="w-full border border-gray-300 rounded-xl p-2 text-xs bg-white"
+                  />
+                  <p className="text-[11px] text-gray-400 mt-1">Selecione uma foto no seu computador.</p>
+                </div>
+                <div>
+                  <input
+                    name="imagem_url"
+                    type="text"
+                    defaultValue={popup.imagem_url || ''}
+                    placeholder="Ou cole a URL da imagem (https://...)"
+                    className="w-full border border-gray-300 rounded-xl p-2.5 text-xs bg-white"
+                  />
+                </div>
+              </div>
+
+              {popup.imagem_url && (
+                <div className="mt-2 w-32 h-32 relative bg-gray-100 rounded-xl overflow-hidden border border-gray-200 shadow-2xs">
+                  <img src={popup.imagem_url} alt="Prévia do Pop-up" className="w-full h-full object-cover" />
+                </div>
+              )}
+            </div>
+
+            {/* Link de Destino ao Clicar no Pop-up */}
+            <div className="md:col-span-2">
+              <label className="block text-xs font-bold text-gray-700 mb-1">
+                Link de Destino ao Clicar no Pop-up (Opcional)
+              </label>
+              <input
+                name="link_destino"
+                type="text"
+                defaultValue={popup.link_destino || ''}
+                placeholder="Ex: /categoria/lacinhos ou /produto/nome-do-produto"
+                className="w-full border border-gray-300 rounded-xl p-2.5 text-sm bg-white"
+              />
+            </div>
+
+            {/* Título e Subtítulo Alternativo */}
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1">Título Alternativo (Sem imagem)</label>
+              <input
+                name="titulo"
+                type="text"
+                defaultValue={popup.titulo || ''}
+                placeholder="Ex: Ganhe 10% OFF na 1ª compra!"
+                className="w-full border border-gray-300 rounded-xl p-2.5 text-sm bg-white"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1">Subtítulo / Descrição Alternativa</label>
+              <input
+                name="subtitulo"
+                type="text"
+                defaultValue={popup.subtitulo || ''}
+                placeholder="Ex: Use o cupom BEMVINDO10 no carrinho."
+                className="w-full border border-gray-300 rounded-xl p-2.5 text-sm bg-white"
+              />
+            </div>
+
+            {/* Gatilhos de Exibição */}
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1">Gatilho de Exibição (Quando Abrir?)</label>
+              <select name="gatilho" defaultValue={popup.gatilho || 'tempo'} className="w-full border border-gray-300 rounded-xl p-2.5 text-sm bg-white font-bold">
+                <option value="tempo">Após X Segundos na página</option>
+                <option value="imediato">Imediato (Ao carregar a página)</option>
+                <option value="saida">Ao tentar sair do site (Exit Intent)</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1">Tempo de Espera (Segundos)</label>
+              <input
+                name="tempo_exibicao_segundos"
+                type="number"
+                defaultValue={popup.tempo_exibicao_segundos || 3}
+                placeholder="Ex: 3"
+                className="w-full border border-gray-300 rounded-xl p-2.5 text-sm bg-white"
+              />
+            </div>
+
+            {/* Onde Exibir */}
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1">Onde Exibir o Pop-up?</label>
+              <select name="onde_exibir" defaultValue={popup.onde_exibir || 'home'} className="w-full border border-gray-300 rounded-xl p-2.5 text-sm bg-white">
+                <option value="home">Somente na Página Inicial (Home)</option>
+                <option value="todas">Em todas as páginas da loja</option>
+                <option value="carrinho">Somente na página de Carrinho</option>
+                <option value="produtos">Somente nas páginas de Produtos</option>
+              </select>
+            </div>
+
+            {/* Frequência */}
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1">Frequência para o Cliente</label>
+              <select name="frequencia" defaultValue={popup.frequencia || 'uma_vez_por_sessao'} className="w-full border border-gray-300 rounded-xl p-2.5 text-sm bg-white">
+                <option value="uma_vez_por_sessao">1 vez por sessão (Recomendado)</option>
+                <option value="uma_vez_por_dia">1 vez por dia (24h)</option>
+                <option value="sempre">Sempre que navegar</option>
+              </select>
+            </div>
+
+            <button
+              type="submit"
+              className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-xl transition md:col-span-2 shadow-sm mt-2 text-sm flex items-center justify-center gap-2"
+            >
+              <Sparkles size={18} />
+              Salvar Pop-up Promocional
+            </button>
+          </form>
+        </div>
+
       </div>
     </div>
   );

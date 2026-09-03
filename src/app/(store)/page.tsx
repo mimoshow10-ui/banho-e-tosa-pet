@@ -3,6 +3,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import CountdownTimer from "@/components/CountdownTimer";
 import BannerCarousel from "@/components/BannerCarousel";
+import HomeCouponsBanner from "@/components/HomeCouponsBanner";
 
 export const revalidate = 0;
 export const dynamic = 'force-dynamic';
@@ -60,16 +61,10 @@ export default async function Home() {
       {/* Hero Section com Banner Dinâmico */}
       <section className="w-full relative bg-gray-100">
         <BannerCarousel banners={banners} />
-        {/* Overlay Escuro com Texto */}
-        <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center text-center px-4 pointer-events-none">
-          <h1 className="text-3xl md:text-5xl font-heading font-bold mb-4 text-white drop-shadow-lg">
-            Estilo e Conforto para o seu Melhor Amigo!
-          </h1>
-          <Link href="/categoria/todas" className="bg-primary text-white font-bold py-3 px-8 rounded-full hover:bg-orange-600 transition text-base md:text-lg shadow-lg pointer-events-auto">
-            Ver Coleção Completa
-          </Link>
-        </div>
       </section>
+
+      {/* Cupons de Desconto Disponíveis da Loja (Inserido Logo Abaixo do Banner) */}
+      <HomeCouponsBanner />
 
       {/* Conteúdo Principal — Usando área lateral (max-w-[1500px]) */}
       <div className="max-w-[1500px] w-full mx-auto px-4 md:px-8 space-y-12 py-8">

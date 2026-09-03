@@ -64,3 +64,59 @@ export async function salvarBanners(formData: FormData) {
   revalidatePath('/');
   redirect('/admin/marketing?msg=Banners atualizados com sucesso');
 }
+
+export async function salvarPopup(formData: FormData) {
+  const ativo = formData.get('ativo') === 'on';
+  const imagem_url_input = formData.get('imagem_url') as string;
+  const link_destino = formData.get('link_destino') as string;
+  const titulo = formData.get('titulo') as string;
+  const subtitulo = formData.get('subtitulo') as string;
+  const gatilho = formData.get('gatilho') as string || 'tempo';
+  const tempo_exibicao_segundos = parseInt(formData.get('tempo_exibicao_segundos') as string || '3');
+  const onde_exibir = formData.get('onde_exibir') as string || 'home';
+  const frequencia = formData.get('frequencia') as string || 'uma_vez_por_sessao';
+
+  let imagem_url = imagem_url_input;
+
+  // Upload de arquivo de imagem do Pop-up se enviado
+  const popupFile = formData.get('popup_file') as File;
+  if (popupFile && popupFile.size > 0) {
+    const buffer = await popupFile.arrayBuffer();
+    const ext = popupFile.name.split('.').pop();
+    const fileName = `popup_${Date.now()}.${ext}`;
+
+    const { data } = await supabase.storage
+      .from('produtos-fotos')
+      .upload(`popups/${fileName}`, buffer, {
+        contentType: popupFile.type,
+        upsert: true
+      });
+
+    if (data) {
+      const { data: pubData } = supabase.storage.from('produtos-fotos').getPublicUrl(`popups/${fileName}`);
+      imagem_url = pubData.publicUrl;
+    }
+  }
+
+  const payload = {
+    ativo,
+    imagem_url: imagem_url || '',
+    link_destino: link_destino || '',
+    titulo: titulo || '',
+    subtitulo: subtitulo || '',
+    gatilho,
+    tempo_exibicao_segundos,
+    onde_exibir,
+    frequencia,
+  };
+
+  const { error } = await supabase.from('configuracoes').upsert(
+    { chave: 'marketing_popup', valor: payload },
+    { onConflict: 'chave' }
+  );
+
+  if (error) redirect('/admin/marketing?erro=Erro ao salvar Pop-up Promocional');
+
+  revalidatePath('/', 'layout');
+  redirect('/admin/marketing?msg=Pop-up Promocional salvo com sucesso!');
+}

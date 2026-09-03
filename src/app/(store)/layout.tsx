@@ -1,5 +1,6 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import PromoModalPopup from "@/components/PromoModalPopup";
 
 export default function StoreLayout({
   children,
@@ -8,6 +9,7 @@ export default function StoreLayout({
 }) {
   return (
     <>
+      <PromoModalPopup />
       {/* 🚀 SCRIPTS DE MARKETING E RASTREAMENTO */}
       {/* Google Analytics 4 (Falso para estruturação) */}
       <script async src="https://www.googletagmanager.com/gtag/js?id=G-SEUIDAQUI"></script>
