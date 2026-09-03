@@ -47,9 +47,22 @@ export default async function ProdutoPage({ params }: { params: Promise<{ slug: 
     .eq('slug', slug)
     .limit(1);
 
-  const produto = produtos && produtos.length > 0 ? produtos[0] : null;
+  const rawProduto = produtos && produtos.length > 0 ? produtos[0] : null;
 
-  if (!produto) notFound();
+  if (!rawProduto) notFound();
+
+  // Se o produto acessado for um FILHO, buscar o produto PAI como anúncio principal
+  let produto = rawProduto;
+  if (rawProduto.parent_id) {
+    const { data: parentProduct } = await supabase
+      .from('produtos')
+      .select('*')
+      .eq('id', rawProduto.parent_id)
+      .maybeSingle();
+    if (parentProduct) {
+      produto = parentProduct;
+    }
+  }
 
   // Buscar família de variações com segurança
   let family: any[] = [];
