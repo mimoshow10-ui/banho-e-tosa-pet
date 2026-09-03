@@ -6,6 +6,7 @@ import FreteCalculator from '@/components/FreteCalculator';
 import ProductMediaGallery from '@/components/ProductMediaGallery';
 import ProductAiAssistant from '@/components/ProductAiAssistant';
 import ProductCouponsBanner from '@/components/ProductCouponsBanner';
+import AddToCartButtons from '@/components/AddToCartButtons';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 
@@ -125,21 +126,8 @@ export default async function ProdutoPage({ params }: { params: Promise<{ slug: 
             </div>
           )}
 
-          {/* Botões de compra padrão de e-commerce */}
-          <div className="flex flex-col sm:flex-row gap-2.5 mt-1">
-            <Link
-              href="/carrinho"
-              className="flex-1 bg-accent text-text text-center font-bold text-sm md:text-base py-3 rounded-xl hover:bg-yellow-400 transition shadow-xs border border-yellow-300 flex items-center justify-center gap-1.5"
-            >
-              🛒 Adicionar ao Carrinho
-            </Link>
-            <Link
-              href="/carrinho"
-              className="flex-1 bg-primary text-white text-center font-bold text-sm md:text-base py-3 rounded-xl hover:bg-orange-600 transition shadow-sm flex items-center justify-center gap-1.5"
-            >
-              ⚡ Comprar Agora
-            </Link>
-          </div>
+          {/* Botões de compra interativos de e-commerce */}
+          <AddToCartButtons produto={produto} />
 
           {/* Cupons da Loja Disponíveis (Shopee Style) */}
           <ProductCouponsBanner

@@ -4,8 +4,9 @@ import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
 import TopBar from './TopBar';
 import SearchBar from './SearchBar';
-
 import CategoryNav from './CategoryNav';
+import CartCountBadge from './CartCountBadge';
+import HomeOnlyCategoryNav from './HomeOnlyCategoryNav';
 
 export default async function Header() {
   const { data: configs } = await supabase.from('configuracoes').select('*');
@@ -48,15 +49,17 @@ export default async function Header() {
             </Link>
             <Link href="/carrinho" className="flex flex-col items-center hover:text-primary transition relative">
               <ShoppingCart size={24} />
-              <span className="absolute -top-1 -right-2 bg-red-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">0</span>
+              <CartCountBadge />
               <span className="text-xs font-bold mt-1">Carrinho</span>
             </Link>
           </div>
         </div>
       </div>
 
-      {/* Menu Superior Horizontal de Categorias (Estilo Foto Enviada) */}
-      <CategoryNav />
+      {/* Menu Superior Horizontal de Categorias (EXIBIDO APENAS NA HOME '/') */}
+      <HomeOnlyCategoryNav>
+        <CategoryNav />
+      </HomeOnlyCategoryNav>
     </header>
   );
 }
