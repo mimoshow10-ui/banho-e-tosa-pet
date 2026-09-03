@@ -11,11 +11,11 @@ export default function LoginPage() {
           <form className="flex flex-col gap-4">
             <div>
               <label htmlFor="login-email" className="block text-sm font-bold text-gray-700 mb-1">E-mail</label>
-              <input id="login-email" name="email" autoComplete="email" type="email" placeholder="seu@email.com" className="w-full border border-border rounded-lg p-3 focus:outline-none focus:border-primary" />
+              <input id="login-email" name="email" autoComplete="off" defaultValue="" type="email" placeholder="seu@email.com" className="w-full border border-border rounded-lg p-3 focus:outline-none focus:border-primary bg-white" />
             </div>
             <div>
               <label htmlFor="login-password" className="block text-sm font-bold text-gray-700 mb-1">Senha</label>
-              <input id="login-password" name="password" autoComplete="current-password" type="password" placeholder="••••••••" className="w-full border border-border rounded-lg p-3 focus:outline-none focus:border-primary" />
+              <input id="login-password" name="password" autoComplete="off" defaultValue="" type="password" placeholder="••••••••" className="w-full border border-border rounded-lg p-3 focus:outline-none focus:border-primary bg-white" />
             </div>
             <div className="flex justify-between items-center text-sm mt-2">
               <label className="flex items-center gap-2 cursor-pointer">
