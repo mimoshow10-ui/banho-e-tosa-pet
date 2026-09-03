@@ -1,153 +1,338 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Trash2, ShoppingBag } from 'lucide-react';
+import Image from 'next/image';
+import { Trash2, ShoppingBag, Plus, Minus, ArrowLeft, Truck } from 'lucide-react';
+import { ItemCarrinho } from '@/lib/types/checkout';
+
+const DEFAULT_PRODUCT_IMAGE = 'https://http2.mlstatic.com/D_NQ_NP_2X_736630-MLB72661556093_112023-F.webp';
 
 export default function CarrinhoPage() {
+  const [itens, setItens] = useState<ItemCarrinho[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [cep, setCep] = useState('');
+  const [valorFrete, setValorFrete] = useState<number | null>(null);
+  const [calculandoFrete, setCalculandoFrete] = useState(false);
+
+  useEffect(() => {
+    try {
+      const cartRaw = localStorage.getItem('carrinho');
+      if (cartRaw) {
+        const parsed = JSON.parse(cartRaw);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          // Assegura que todo item tenha uma imagem válida
+          const comImagensValidas = parsed.map(item => ({
+            ...item,
+            imagem: extrairFoto(item.imagem) || DEFAULT_PRODUCT_IMAGE
+          }));
+          setItens(comImagensValidas);
+        } else {
+          setItens(getExemploInicial());
+        }
+      } else {
+        const exemplo = getExemploInicial();
+        setItens(exemplo);
+        localStorage.setItem('carrinho', JSON.stringify(exemplo));
+      }
+    } catch {
+      setItens(getExemploInicial());
+    }
+    setLoading(false);
+  }, []);
+
+  function salvarCarrinho(novosItens: ItemCarrinho[]) {
+    setItens(novosItens);
+    try {
+      localStorage.setItem('carrinho', JSON.stringify(novosItens));
+    } catch {
+      // localStorage indisponível
+    }
+  }
+
+  function alterarQuantidade(id: string, delta: number) {
+    const novos = itens.map(item => {
+      if (item.id === id) {
+        const novaQtd = Math.max(1, item.quantidade + delta);
+        return { ...item, quantidade: novaQtd };
+      }
+      return item;
+    });
+    salvarCarrinho(novos);
+  }
+
+  function removerItem(id: string) {
+    const novos = itens.filter(item => item.id !== id);
+    salvarCarrinho(novos);
+  }
+
+  async function calcularFrete() {
+    const cepLimpo = cep.replace(/\D/g, '');
+    if (cepLimpo.length !== 8) {
+      alert('Digite um CEP válido com 8 dígitos.');
+      return;
+    }
+
+    setCalculandoFrete(true);
+    try {
+      const res = await fetch('/api/checkout/frete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ itens, cep })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.opcoes?.length > 0) {
+          setValorFrete(data.opcoes[0].valor);
+        } else {
+          setValorFrete(15.00);
+        }
+      } else {
+        setValorFrete(15.00);
+      }
+    } catch {
+      setValorFrete(15.00);
+    }
+    setCalculandoFrete(false);
+  }
+
+  const subtotal = itens.reduce((sum, item) => sum + item.preco_unitario * item.quantidade, 0);
+  const frete = valorFrete ?? 15.00;
+  const total = subtotal + frete;
+  const totalPix = total * 0.95; // 5% de desconto no PIX
+
+  if (loading) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <div className="text-gray-400 font-bold animate-pulse">Carregando seu carrinho...</div>
+      </div>
+    );
+  }
+
   return (
-    <div className="max-w-7xl mx-auto px-4 py-12">
-      <h1 className="text-3xl font-heading font-bold text-secondary mb-8 flex items-center gap-3">
+    <div className="max-w-7xl mx-auto px-4 py-10 font-sans">
+      <h1 className="text-2xl md:text-3xl font-heading font-bold text-secondary mb-8 flex items-center gap-3">
         <ShoppingBag size={32} className="text-primary" />
-        Meu Carrinho
+        Meu Carrinho de Compras
       </h1>
 
-      <div className="flex flex-col lg:flex-row gap-8">
-        
-        {/* Coluna Esquerda - Produtos */}
-        <div className="w-full lg:w-2/3">
-          <div className="bg-white rounded-xl shadow-sm border border-border overflow-hidden">
-            
-            {/* Cabeçalho da Tabela (Desktop) */}
-            <div className="hidden md:grid grid-cols-12 gap-4 p-4 bg-gray-50 border-b border-border font-bold text-sm text-gray-600">
-              <div className="col-span-6">Produto</div>
-              <div className="col-span-2 text-center">Preço Unit.</div>
-              <div className="col-span-2 text-center">Qtd</div>
-              <div className="col-span-2 text-right">Subtotal</div>
+      {itens.length > 0 ? (
+        <div className="flex flex-col lg:flex-row gap-8">
+          
+          {/* Coluna Esquerda - Lista de Produtos */}
+          <div className="w-full lg:w-2/3 space-y-4">
+            <div className="bg-white rounded-2xl shadow-xs border border-gray-200 overflow-hidden">
+              
+              {/* Cabeçalho da Tabela (Desktop) */}
+              <div className="hidden md:grid grid-cols-12 gap-4 p-4 bg-gray-50 border-b border-gray-200 font-bold text-xs uppercase tracking-wider text-gray-600">
+                <div className="col-span-6">Produto</div>
+                <div className="col-span-2 text-center">Preço Unit.</div>
+                <div className="col-span-2 text-center">Qtd</div>
+                <div className="col-span-2 text-right">Subtotal</div>
+              </div>
+
+              {/* Itens do Carrinho */}
+              <div className="divide-y divide-gray-100">
+                {itens.map((item) => {
+                  const fotoUrl = extrairFoto(item.imagem) || DEFAULT_PRODUCT_IMAGE;
+
+                  return (
+                    <div key={item.id} className="grid grid-cols-1 md:grid-cols-12 gap-4 p-4 items-center hover:bg-gray-50/50 transition">
+                      
+                      {/* Imagem e Nome */}
+                      <div className="col-span-1 md:col-span-6 flex gap-3 items-center">
+                        <Link href={`/produto/${item.slug}`} className="w-20 h-20 bg-gray-100 rounded-xl overflow-hidden relative flex-shrink-0 border border-gray-200 shadow-2xs group">
+                          <Image src={fotoUrl} alt={item.nome} fill className="object-cover group-hover:scale-105 transition duration-300" sizes="80px" />
+                        </Link>
+                        <div>
+                          <Link href={`/produto/${item.slug}`} className="font-bold text-secondary text-xs md:text-sm line-clamp-2 hover:text-primary transition">
+                            {item.nome}
+                          </Link>
+                          {item.sku && <p className="text-[11px] text-gray-400 font-mono mt-0.5">SKU: {item.sku}</p>}
+                          <button
+                            type="button"
+                            onClick={() => removerItem(item.id)}
+                            className="text-red-500 text-xs font-bold flex items-center gap-1 mt-1 hover:underline"
+                          >
+                            <Trash2 size={12} /> Remover
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Preço Unitário */}
+                      <div className="col-span-1 md:col-span-2 text-left md:text-center text-xs md:text-sm">
+                        <span className="md:hidden font-bold text-gray-500 mr-2">Preço:</span>
+                        <span className="font-semibold text-gray-700">
+                          R$ {item.preco_unitario.toFixed(2).replace('.', ',')}
+                        </span>
+                      </div>
+
+                      {/* Controles de Quantidade Interativos (+ / -) */}
+                      <div className="col-span-1 md:col-span-2 flex justify-start md:justify-center">
+                        <div className="flex items-center border border-gray-300 rounded-xl overflow-hidden bg-white shadow-2xs">
+                          <button
+                            type="button"
+                            onClick={() => alterarQuantidade(item.id, -1)}
+                            className="px-3 py-1.5 hover:bg-gray-100 transition text-secondary font-bold text-sm border-r border-gray-200"
+                            title="Diminuir quantidade"
+                          >
+                            <Minus size={14} />
+                          </button>
+                          <span className="px-3 py-1.5 font-bold text-sm min-w-[36px] text-center text-secondary">
+                            {item.quantidade}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => alterarQuantidade(item.id, 1)}
+                            className="px-3 py-1.5 hover:bg-gray-100 transition text-secondary font-bold text-sm border-l border-gray-200"
+                            title="Aumentar quantidade"
+                          >
+                            <Plus size={14} />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Subtotal do Item */}
+                      <div className="col-span-1 md:col-span-2 text-left md:text-right">
+                        <span className="md:hidden font-bold text-xs text-gray-500 mr-2">Subtotal:</span>
+                        <span className="font-black text-sm md:text-base text-primary">
+                          R$ {(item.preco_unitario * item.quantidade).toFixed(2).replace('.', ',')}
+                        </span>
+                      </div>
+
+                    </div>
+                  );
+                })}
+              </div>
             </div>
 
-            {/* Itens do Carrinho */}
-            {[1, 2].map((item) => (
-              <div key={item} className="grid grid-cols-1 md:grid-cols-12 gap-4 p-4 border-b border-border items-center">
-                {/* Imagem e Nome */}
-                <div className="col-span-1 md:col-span-6 flex gap-4 items-center">
-                  <div className="w-20 h-20 bg-gray-100 rounded-lg flex-shrink-0"></div>
-                  <div>
-                    <h3 className="font-bold text-secondary line-clamp-2">Coleira Premium Ajustável - Tamanho M</h3>
-                    <button className="text-red-500 text-sm flex items-center gap-1 mt-2 hover:underline">
-                      <Trash2 size={14} /> Remover
-                    </button>
-                  </div>
-                </div>
-
-                {/* Preço Unit. */}
-                <div className="col-span-1 md:col-span-2 text-left md:text-center">
-                  <span className="md:hidden font-bold text-sm text-gray-500 mr-2">Preço:</span>
-                  <span className="font-semibold">R$ 29,90</span>
-                </div>
-
-                {/* Quantidade */}
-                <div className="col-span-1 md:col-span-2 flex justify-start md:justify-center">
-                  <div className="flex items-center border border-border rounded-lg overflow-hidden">
-                    <button className="px-3 py-1 hover:bg-gray-100 transition">-</button>
-                    <span className="px-3 py-1 font-bold text-sm">1</span>
-                    <button className="px-3 py-1 hover:bg-gray-100 transition">+</button>
-                  </div>
-                </div>
-
-                {/* Subtotal */}
-                <div className="col-span-1 md:col-span-2 text-left md:text-right">
-                  <span className="md:hidden font-bold text-sm text-gray-500 mr-2">Subtotal:</span>
-                  <span className="font-bold text-primary">R$ 29,90</span>
-                </div>
-              </div>
-            ))}
+            <Link href="/" className="inline-flex items-center gap-2 text-secondary font-bold hover:text-primary transition text-sm">
+              <ArrowLeft size={16} />
+              <span>Continuar Comprando</span>
+            </Link>
           </div>
 
-          <Link href="/" className="inline-block mt-6 text-secondary font-bold hover:underline">
-            ← Continuar comprando
+          {/* Coluna Direita - Resumo Financeiro */}
+          <div className="w-full lg:w-1/3">
+            <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs sticky top-24 space-y-4">
+              <h2 className="font-heading font-bold text-xl text-secondary pb-3 border-b border-gray-100">
+                Resumo do Pedido
+              </h2>
+              
+              <div className="flex justify-between text-sm text-gray-600">
+                <span>Subtotal ({itens.reduce((acc, i) => acc + i.quantidade, 0)} itens)</span>
+                <span className="font-semibold text-secondary">R$ {subtotal.toFixed(2).replace('.', ',')}</span>
+              </div>
+
+              {/* Simulação de Frete por CEP */}
+              <div className="pt-3 border-t border-gray-100 space-y-2">
+                <label className="block text-xs font-bold text-gray-700 flex items-center gap-1.5">
+                  <Truck size={14} className="text-primary" />
+                  Calcular Frete
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={cep}
+                    onChange={e => setCep(e.target.value)}
+                    placeholder="00000-000"
+                    maxLength={9}
+                    className="flex-1 border border-gray-300 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary bg-white"
+                  />
+                  <button
+                    type="button"
+                    onClick={calcularFrete}
+                    disabled={calculandoFrete}
+                    className="bg-secondary text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-blue-900 transition disabled:opacity-50"
+                  >
+                    {calculandoFrete ? '...' : 'OK'}
+                  </button>
+                </div>
+
+                {valorFrete !== null && (
+                  <div className="flex justify-between items-center text-xs bg-green-50 text-green-800 p-2.5 rounded-xl border border-green-200 font-medium">
+                    <span>Frete Estimado:</span>
+                    <strong className="font-bold">
+                      {valorFrete === 0 ? 'GRÁTIS' : `R$ ${valorFrete.toFixed(2).replace('.', ',')}`}
+                    </strong>
+                  </div>
+                )}
+              </div>
+
+              {/* Totais */}
+              <div className="pt-3 border-t border-gray-100 space-y-2">
+                <div className="flex justify-between items-end">
+                  <span className="font-bold text-gray-600 text-sm">Total Cartão</span>
+                  <span className="font-bold text-xl text-secondary">R$ {total.toFixed(2).replace('.', ',')}</span>
+                </div>
+
+                <div className="flex justify-between items-end bg-orange-50/70 p-3.5 rounded-xl border border-orange-200">
+                  <div>
+                    <span className="font-bold text-secondary text-sm block">Total no PIX</span>
+                    <span className="text-[11px] text-green-600 font-bold">(5% de Desconto)</span>
+                  </div>
+                  <span className="font-heading font-black text-2xl text-primary">
+                    R$ {totalPix.toFixed(2).replace('.', ',')}
+                  </span>
+                </div>
+              </div>
+
+              <Link
+                href="/checkout"
+                className="w-full block text-center bg-primary hover:bg-orange-600 text-white font-bold text-base py-4 rounded-xl transition shadow-md"
+              >
+                Finalizar Compra
+              </Link>
+
+              <p className="text-[11px] text-center text-gray-400">
+                🔒 Compra 100% segura com garantia de devolução
+              </p>
+            </div>
+          </div>
+
+        </div>
+      ) : (
+        <div className="bg-white p-12 text-center rounded-2xl border border-dashed border-gray-300 max-w-md mx-auto space-y-4 shadow-2xs">
+          <ShoppingBag size={48} className="mx-auto text-gray-300" />
+          <h2 className="text-xl font-bold text-secondary">Seu carrinho está vazio</h2>
+          <p className="text-xs text-gray-500">Navegue pelas nossas categorias e adicione produtos incríveis para o seu pet!</p>
+          <Link
+            href="/"
+            className="inline-block bg-primary hover:bg-orange-600 text-white font-bold px-6 py-3 rounded-xl text-sm transition shadow-sm"
+          >
+            Explorar Produtos
           </Link>
         </div>
-
-        {/* Coluna Direita - Resumo */}
-        <div className="w-full lg:w-1/3">
-          <div className="bg-gray-50 p-6 rounded-xl border border-border sticky top-24">
-            <h2 className="font-heading font-bold text-xl text-secondary mb-6 pb-4 border-b border-gray-200">
-              Resumo do Pedido
-            </h2>
-            
-            <div className="flex justify-between mb-4 text-gray-600">
-              <span>Subtotal (2 itens)</span>
-              <span className="font-semibold">R$ 59,80</span>
-            </div>
-
-            {/* Calcular Frete & Preferência de Entrega */}
-            <div className="mb-4 pb-4 border-b border-gray-200">
-              <h3 className="font-bold text-gray-800 mb-4">Opções de Entrega</h3>
-              
-              <div className="grid md:grid-cols-1 gap-4">
-                {/* Campo de CEP */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">CEP *</label>
-                  <div className="flex gap-2">
-                    <input type="text" placeholder="00000-000" className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary" />
-                    <button className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-bold transition">
-                      OK
-                    </button>
-                  </div>
-                </div>
-
-                {/* Campo de Preferência de Entrega */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Preferência de Entrega *</label>
-                  <select className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary bg-white">
-                    <option value="" disabled selected>Selecione</option>
-                    <option value="correios">Correios (PAC/Sedex)</option>
-                    <option value="transportadora">Transportadora Privada</option>
-                    <option value="retirada">Retirada no Local</option>
-                    <option value="qualquer">O mais barato/rápido</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Resultado Simulado do Frete */}
-              <div className="flex justify-between mt-4 text-sm bg-gray-100 p-3 rounded-lg border border-gray-200">
-                <span>PAC (7 dias úteis)</span>
-                <span className="font-semibold text-primary">R$ 15,00</span>
-              </div>
-            </div>
-
-            {/* Cupom */}
-            <div className="mb-4 pb-4 border-b border-gray-200">
-              <p className="text-sm text-gray-600 mb-2">Cupom de Desconto</p>
-              <div className="flex gap-2">
-                <input type="text" placeholder="Código" className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary" />
-                <button className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-bold transition">
-                  Aplicar
-                </button>
-              </div>
-            </div>
-
-            <div className="flex justify-between mb-4 items-end">
-              <span className="font-bold text-secondary text-lg">Total no Cartão</span>
-              <span className="font-bold text-2xl text-gray-400 line-through">R$ 74,80</span>
-            </div>
-
-            <div className="flex justify-between mb-8 items-end bg-orange-50 p-4 rounded-lg border border-orange-200">
-              <div className="flex flex-col">
-                <span className="font-bold text-secondary text-lg">Total no PIX</span>
-                <span className="text-xs text-green-600 font-bold">(5% de desconto)</span>
-              </div>
-              <span className="font-heading font-bold text-3xl text-primary">R$ 71,06</span>
-            </div>
-
-            <Link href="/checkout" className="w-full block text-center bg-primary text-white font-bold text-lg py-4 rounded-xl hover:bg-orange-600 transition shadow-md mb-4">
-              Finalizar Compra
-            </Link>
-            <p className="text-xs text-center text-gray-500">
-              Pagamento 100% seguro processado pelo Mercado Pago
-            </p>
-          </div>
-        </div>
-
-      </div>
+      )}
     </div>
   );
+}
+
+function extrairFoto(img: any): string | null {
+  if (!img) return null;
+  if (typeof img === 'string') {
+    const partes = img.split(/[\r\n,]+/);
+    return partes[0]?.trim() || null;
+  }
+  if (Array.isArray(img) && img.length > 0) {
+    return extrairFoto(img[0]);
+  }
+  return null;
+}
+
+function getExemploInicial(): ItemCarrinho[] {
+  return [
+    {
+      id: 'prod-1',
+      nome: '200 Adesivos Pet Piercings Eva Glitter Petshop Cães E Gatos',
+      slug: '200-adesivos-pet-piercings-eva-glitter-petshop-caes-e-gatos',
+      imagem: DEFAULT_PRODUCT_IMAGE,
+      preco_unitario: 18.90,
+      quantidade: 1,
+      peso_kg: 0.2,
+      largura_cm: 15,
+      altura_cm: 5,
+      comprimento_cm: 20,
+    }
+  ];
 }
