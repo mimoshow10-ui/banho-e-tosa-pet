@@ -9,20 +9,21 @@ type Categoria = {
 };
 
 export default function CategorySelector({
-  categorias,
+  categorias = [],
   defaultCategoriaId,
 }: {
-  categorias: Categoria[];
-  defaultCategoriaId: string | null;
+  categorias?: Categoria[];
+  defaultCategoriaId?: string | null;
 }) {
-  const grupos = categorias.filter((c) => !c.parent_id);
-  const subgrupos = categorias.filter((c) => c.parent_id);
+  const list = Array.isArray(categorias) ? categorias : [];
+  const grupos = list.filter((c) => c && !c.parent_id);
+  const subgrupos = list.filter((c) => c && Boolean(c.parent_id));
 
   let initialGrupoId = '';
   let initialSubgrupoId = '';
 
-  if (defaultCategoriaId) {
-    const defaultCat = categorias.find((c) => c.id === defaultCategoriaId);
+  if (defaultCategoriaId && list.length > 0) {
+    const defaultCat = list.find((c) => c && c.id === defaultCategoriaId);
     if (defaultCat) {
       if (defaultCat.parent_id) {
         initialSubgrupoId = defaultCat.id;
@@ -37,7 +38,7 @@ export default function CategorySelector({
   const [subgrupoId, setSubgrupoId] = useState(initialSubgrupoId);
 
   // Filtra APENAS os subgrupos que pertencem ao grupo selecionado
-  const subgruposFiltrados = subgrupos.filter((c) => c.parent_id === grupoId);
+  const subgruposFiltrados = subgrupos.filter((c) => c && c.parent_id === grupoId);
 
   return (
     <div className="space-y-4">

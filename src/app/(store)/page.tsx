@@ -22,27 +22,26 @@ export default async function Home() {
     .eq('ativo', true)
     .order('criado_em', { ascending: false });
 
-  // Buscar destaques da super promoção
+  // Buscar destaques da super promoção (por flag ou preço promocional)
   const { data: superPromocoes } = await supabase
     .from('produtos')
     .select('*')
-    .eq('destaque_super_promocao', true)
+    .or('destaque_super_promocao.eq.true,preco_promocional.not.is.null')
     .eq('ativo', true)
     .order('criado_em', { ascending: false });
 
   const produtos = todosProdutos || [];
   
-  // Filtrar apenas promoções válidas
+  // Filtrar promoções ativas com estoque
   const agora = Date.now();
   const produtosPromocao = (superPromocoes || []).filter((prod) => {
-    if (!prod.preco_promocional || Number(prod.preco_promocional) >= Number(prod.preco)) return false;
     if (prod.estoque !== null && prod.estoque !== undefined && Number(prod.estoque) <= 0) return false;
     if (prod.promocao_expira_em) {
       const expira = new Date(prod.promocao_expira_em).getTime();
       if (isNaN(expira) || expira <= agora) return false;
     }
     return true;
-  }).slice(0, 6);
+  }).slice(0, 8);
 
   // Mais Vendidos
   const idsMaisVendidos = destaquesConfig.mais_vendidos || [];

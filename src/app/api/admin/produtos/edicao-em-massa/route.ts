@@ -5,18 +5,23 @@ import { revalidatePath } from 'next/cache';
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { ids, acao, valor } = body;
+    const { ids, acao, valor, preco_promocional } = body;
 
     if (!Array.isArray(ids) || ids.length === 0) {
       return NextResponse.json({ erro: 'Nenhum produto selecionado.' }, { status: 400 });
     }
 
     if (acao === 'destaque') {
-      // valor pode ser 'super_promocao', 'mais_vendidos', 'lancamento', 'nenhum'
       const isSuperPromo = valor === 'super_promocao';
-      await supabase.from('produtos').update({ destaque_super_promocao: isSuperPromo }).in('id', ids);
+      const updateData: any = { destaque_super_promocao: isSuperPromo };
 
-      // Atualizar configuracoes de vitrine_destaques
+      if (preco_promocional !== undefined && preco_promocional !== null && preco_promocional !== '') {
+        const pVal = parseFloat(String(preco_promocional).replace(',', '.'));
+        updateData.preco_promocional = isNaN(pVal) ? null : pVal;
+      }
+
+      await supabase.from('produtos').update(updateData).in('id', ids);
+
       const { data: currentConfig } = await supabase
         .from('configuracoes')
         .select('valor')
@@ -45,8 +50,8 @@ export async function POST(req: Request) {
       await supabase.from('produtos').update({ categoria_id: valor || null }).in('id', ids);
 
     } else if (acao === 'preco_promocional') {
-      const precoPromocional = parseFloat(String(valor).replace(',', '.'));
-      await supabase.from('produtos').update({ preco_promocional: isNaN(precoPromocional) ? null : precoPromocional }).in('id', ids);
+      const pVal = parseFloat(String(valor).replace(',', '.'));
+      await supabase.from('produtos').update({ preco_promocional: isNaN(pVal) ? null : pVal }).in('id', ids);
 
     } else if (acao === 'status') {
       const ativo = valor === true || valor === 'true';

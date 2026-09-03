@@ -98,9 +98,7 @@ export async function importarSKU(formData: FormData) {
               ? imagensPermanentes
               : (prodExistente?.imagens && prodExistente.imagens.length > 0)
                 ? prodExistente.imagens
-                : (parentImagens && parentImagens.length > 0)
-                  ? parentImagens
-                  : null,
+                : null,
             parent_id: parent_id
           };
 

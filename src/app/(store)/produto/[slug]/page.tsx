@@ -16,17 +16,19 @@ export const revalidate = 0;
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   
-  const { data: produto } = await supabase
+  const { data: produtos } = await supabase
     .from('produtos')
     .select('nome, descricao_curta, seo_title, seo_description, imagens')
     .eq('slug', slug)
-    .single();
+    .limit(1);
+
+  const produto = produtos && produtos.length > 0 ? produtos[0] : null;
 
   if (!produto) return { title: 'Produto não encontrado | Banho & Tosa' };
 
   const title = produto.seo_title || `${produto.nome} | Banho & Tosa Pet`;
   const description = produto.seo_description || produto.descricao_curta || `Compre ${produto.nome} no Banho & Tosa Pet!`;
-  const imagem = produto.imagens?.length > 0 ? produto.imagens[0] : '/banner-pet.jpg';
+  const imagem = produto.imagens && produto.imagens.length > 0 ? produto.imagens[0] : '/banner-pet.jpg';
 
   return {
     title,
@@ -39,11 +41,13 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 export default async function ProdutoPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   
-  const { data: produto } = await supabase
+  const { data: produtos } = await supabase
     .from('produtos')
     .select('*')
     .eq('slug', slug)
-    .single();
+    .limit(1);
+
+  const produto = produtos && produtos.length > 0 ? produtos[0] : null;
 
   if (!produto) notFound();
 
