@@ -17,7 +17,7 @@ export default function BannerCarousel({ banners }: { banners: string[] }) {
   if (!banners || banners.length === 0) return null;
 
   return (
-    <div className="w-full h-[220px] sm:h-[320px] md:h-[380px] lg:h-[440px] relative overflow-hidden bg-gray-100">
+    <div className="w-full h-[160px] sm:h-[220px] md:h-[270px] lg:h-[300px] relative overflow-hidden bg-gray-100">
       {banners.map((url, i) => (
         <div 
           key={i} 

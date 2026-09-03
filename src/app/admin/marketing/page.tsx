@@ -67,26 +67,26 @@ export default async function AdminMarketing({
           
           <div className="bg-white/10 p-4 rounded-xl border border-white/10 space-y-1">
             <span className="bg-amber-400 text-purple-950 font-black px-2 py-0.5 rounded text-[10px] uppercase block w-fit mb-1">
-              💻 Carrossel Desktop
+              💻 Carrossel Desktop (Oficial)
             </span>
-            <p className="text-base font-mono font-bold text-amber-200">1920 x 500 px</p>
-            <p className="text-purple-200">Proporção 16:4. Formatos: PNG, JPG ou WebP. Tamanho máximo ideal: até 500 KB.</p>
+            <p className="text-base font-mono font-bold text-amber-200">1920 x 300 px</p>
+            <p className="text-purple-200">Proporção 16:2.5 (Slim Elegante). Formatos: PNG, JPG ou WebP até 500 KB.</p>
           </div>
 
           <div className="bg-white/10 p-4 rounded-xl border border-white/10 space-y-1">
             <span className="bg-amber-400 text-purple-950 font-black px-2 py-0.5 rounded text-[10px] uppercase block w-fit mb-1">
-              📱 Carrossel Mobile
+              📱 Carrossel Mobile (Oficial)
             </span>
-            <p className="text-base font-mono font-bold text-amber-200">800 x 800 px</p>
-            <p className="text-purple-200">Quadrado (1:1) ou 1080 x 1080 px para telas de alta densidade.</p>
+            <p className="text-base font-mono font-bold text-amber-200">800 x 600 px</p>
+            <p className="text-purple-200">Proporção 4:3 retangular para ótima visualização em celulares.</p>
           </div>
 
           <div className="bg-white/10 p-4 rounded-xl border border-white/10 space-y-1">
             <span className="bg-amber-400 text-purple-950 font-black px-2 py-0.5 rounded text-[10px] uppercase block w-fit mb-1">
-              🖼️ Pop-up Promocional
+              🖼️ Pop-up Promocional (Oficial)
             </span>
             <p className="text-base font-mono font-bold text-amber-200">800 x 800 px</p>
-            <p className="text-purple-200">Ou 600 x 800 px (Vertical 3:4) para pop-ups de janela modal.</p>
+            <p className="text-purple-200">Ou 600 x 800 px (Vertical 3:4) para janelas modais promocionais.</p>
           </div>
 
         </div>

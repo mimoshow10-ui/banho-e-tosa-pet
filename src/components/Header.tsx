@@ -19,10 +19,10 @@ export default async function Header() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-2.5">
           
-          {/* Logo do Site (25% Maior) */}
+          {/* Logo do Site (50% Maior) */}
           <div className="flex items-center">
             <Link href="/">
-              <div className="relative w-64 md:w-80 h-20 md:h-26 cursor-pointer">
+              <div className="relative w-80 md:w-[420px] h-28 md:h-36 cursor-pointer">
                 <Image 
                   src="/logo-luxo.jpg" 
                   alt="Banho e Tosa Pet Logo" 
