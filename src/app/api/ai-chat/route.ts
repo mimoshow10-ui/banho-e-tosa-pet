@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { supabase } from '@/lib/supabase';
 
 export async function POST(req: NextRequest) {
   try {
@@ -8,28 +9,39 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Dados insuficientes' }, { status: 400 });
     }
 
+    // Puxar treinamento da IA salvo no banco
+    const { data: config } = await supabase
+      .from('configuracoes')
+      .select('valor')
+      .eq('chave', 'treinamento_ia')
+      .single();
+
+    const treinamento = config?.valor || {};
+    const instrucoes = treinamento.instrucoes || 'Responda de forma gentil e prestativa.';
+    const faq = treinamento.faq || '';
+    const apiKey = treinamento.api_key || process.env.OPENAI_API_KEY;
+
     const q = pergunta.toLowerCase();
     const nome = produto.nome || 'Produto';
     const precoVal = produto.preco_promocional || produto.preco;
     const preco = precoVal ? `R$ ${Number(precoVal).toFixed(2).replace('.', ',')}` : '';
     const descClean = (produto.descricao_curta || produto.descricao || '').replace(/<[^>]*>?/gm, '');
 
-    // Se houver chave OPENAI_API_KEY no .env, faz chamada oficial, caso contrário responde com IA local estruturada
-    if (process.env.OPENAI_API_KEY) {
+    // Se houver chave OpenAI configurada no painel ou .env
+    if (apiKey) {
       try {
+        const promptSystem = `${instrucoes}\n\nConhecimento Adicional da Loja (FAQ):\n${faq}\n\nProduto Atual:\nNome: ${nome}\nPreço: ${preco}\nDescrição: ${descClean}\n\nResponda a dúvida do cliente em até 3 frases.`;
+
         const res = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+            'Authorization': `Bearer ${apiKey}`
           },
           body: JSON.stringify({
             model: 'gpt-3.5-turbo',
             messages: [
-              {
-                role: 'system',
-                content: `Você é o assistente virtual inteligente do e-commerce 'Banho & Tosa Pet'. Responda a dúvida do cliente sobre o produto "${nome}" que custa ${preco}. Descrição do produto: "${descClean}". Seja gentil, direto e prestativo.`
-              },
+              { role: 'system', content: promptSystem },
               { role: 'user', content: pergunta }
             ],
             max_tokens: 150
@@ -42,25 +54,42 @@ export async function POST(req: NextRequest) {
           return NextResponse.json({ resposta: text });
         }
       } catch {
-        // Fallback para lógica inteligente abaixo se a chave falhar
+        // Fallback para motor local
       }
     }
 
-    // Lógica Inteligente de Resposta
-    let resposta = `O item "${nome}" (${preco}) é ótimo para o seu pet! `;
+    // Motor Inteligente Local (Treinado com o FAQ salvo)
+    let resposta = '';
 
-    if (q.includes('frete') || q.includes('entrega') || q.includes('prazo')) {
-      resposta = `Enviamos para todo o Brasil! Você pode simular o frete exato e o prazo de entrega inserindo seu CEP no campo de frete acima.`;
-    } else if (q.includes('tamanho') || q.includes('medida') || q.includes('porte')) {
-      resposta = `O "${nome}" foi projetado para uso pet. Recomendamos conferir as especificações na descrição do item.`;
-    } else if (q.includes('material') || q.includes('eva') || q.includes('qualidade')) {
-      resposta = `Este produto utiliza materiais atóxicos e seguros para animais, desenvolvidos especialmente para higienização e estética no Banho e Tosa.`;
-    } else if (descClean.length > 10) {
-      resposta = `Sobre "${nome}": ${descClean.slice(0, 200)}...`;
+    // Verificar se a pergunta bate com o FAQ cadastrado
+    if (faq) {
+      const linhas = faq.split('\n');
+      for (let i = 0; i < linhas.length; i++) {
+        if (linhas[i].toLowerCase().includes(q)) {
+          if (linhas[i + 1] && linhas[i + 1].toLowerCase().startsWith('r:')) {
+            resposta = linhas[i + 1].replace(/^r:\s*/i, '');
+            break;
+          }
+        }
+      }
+    }
+
+    if (!resposta) {
+      if (q.includes('frete') || q.includes('entrega') || q.includes('prazo')) {
+        resposta = `Enviamos para todo o Brasil! Digite seu CEP no campo de frete acima para calcular o valor e prazo de entrega.`;
+      } else if (q.includes('tamanho') || q.includes('medida') || q.includes('porte')) {
+        resposta = `O "${nome}" foi projetado especialmente para estética pet. Confira as dimensões na ficha técnica abaixo.`;
+      } else if (q.includes('material') || q.includes('eva') || q.includes('qualidade')) {
+        resposta = `Este produto utiliza materiais atóxicos, leves e de alta aderência, próprios para estética e banho e tosa.`;
+      } else if (descClean.length > 10) {
+        resposta = `Sobre "${nome}": ${descClean.slice(0, 180)}...`;
+      } else {
+        resposta = `O item "${nome}" (${preco}) é excelente para o seu pet! Enviaremos com todo o carinho e embalagem protegida.`;
+      }
     }
 
     return NextResponse.json({ resposta });
   } catch (e: any) {
-    return NextResponse.json({ resposta: 'Não consegui processar a pergunta agora, mas nosso suporte está à disposição no WhatsApp!' });
+    return NextResponse.json({ resposta: 'Nosso assistente está processando seu pedido, mas você também pode nos chamar no suporte!' });
   }
 }
