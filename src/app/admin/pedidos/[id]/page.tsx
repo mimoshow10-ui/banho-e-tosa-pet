@@ -103,6 +103,7 @@ export default async function DetalhePedidoPage({
         </div>
 
         <div className="divide-y divide-gray-100">
+          {pedido.itens?.map((item: any, i: number) => (
             <div key={i} className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-gray-50/50 transition">
               <div className="flex items-center gap-4">
                 <Link href={item.slug ? `/produto/${item.slug}` : '/'} target="_blank" title="Abrir página de vendas do produto" className="group">
