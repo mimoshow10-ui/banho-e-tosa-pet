@@ -158,20 +158,19 @@ export default async function ProdutoPage({ params }: { params: Promise<{ slug: 
             </div>
           )}
 
-          {/* Botões de compra */}
-          <div className="flex flex-col gap-3 mt-1">
+          {/* Botões de compra padrão de e-commerce */}
+          <div className="flex flex-col sm:flex-row gap-3 mt-1">
             <Link
               href="/carrinho"
-              className="w-full bg-accent text-text text-center font-bold text-lg py-4 rounded-xl hover:bg-yellow-400 transition shadow-sm"
+              className="flex-1 bg-primary text-white text-center font-bold text-lg py-4 rounded-xl hover:bg-orange-600 transition shadow-md"
             >
-              🛒 Adicionar ao Carrinho
+              ⚡ Comprar Agora
             </Link>
             <Link
-              href={`https://wa.me/5511999999999?text=Olá! Tenho interesse em: ${encodeURIComponent(produto.nome)}`}
-              target="_blank"
-              className="w-full bg-green-500 text-white text-center font-bold text-lg py-4 rounded-xl hover:bg-green-600 transition shadow-sm"
+              href="/carrinho"
+              className="flex-1 bg-accent text-text text-center font-bold text-lg py-4 rounded-xl hover:bg-yellow-400 transition shadow-sm border border-yellow-300"
             >
-              📲 Comprar pelo WhatsApp
+              🛒 Adicionar ao Carrinho
             </Link>
           </div>
 
