@@ -141,8 +141,15 @@ export default function CarrinhoPage() {
                       
                       {/* Imagem e Nome */}
                       <div className="col-span-1 md:col-span-6 flex gap-3 items-center">
-                        <Link href={`/produto/${item.slug}`} className="w-20 h-20 bg-gray-100 rounded-xl overflow-hidden relative flex-shrink-0 border border-gray-200 shadow-2xs group">
-                          <Image src={fotoUrl} alt={item.nome} fill className="object-cover group-hover:scale-105 transition duration-300" sizes="80px" />
+                        <Link href={`/produto/${item.slug}`} className="w-20 h-20 bg-gray-100 rounded-xl overflow-hidden relative flex-shrink-0 border border-gray-200 shadow-2xs group flex items-center justify-center">
+                          <img
+                            src={fotoUrl}
+                            alt={item.nome}
+                            className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = DEFAULT_PRODUCT_IMAGE;
+                            }}
+                          />
                         </Link>
                         <div>
                           <Link href={`/produto/${item.slug}`} className="font-bold text-secondary text-xs md:text-sm line-clamp-2 hover:text-primary transition">
