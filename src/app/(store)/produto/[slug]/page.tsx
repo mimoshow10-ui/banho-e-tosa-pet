@@ -1,9 +1,10 @@
 import Link from 'next/link';
-import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
 import CountdownTimer from '@/components/CountdownTimer';
 import VariationSelector from '@/components/VariationSelector';
 import FreteCalculator from '@/components/FreteCalculator';
+import ProductMediaGallery from '@/components/ProductMediaGallery';
+import ProductAiAssistant from '@/components/ProductAiAssistant';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 
@@ -69,50 +70,12 @@ export default async function ProdutoPage({ params }: { params: Promise<{ slug: 
       {/* ── Bloco principal: Foto | Info ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-10 mb-12">
 
-        {/* COLUNA ESQUERDA — Galeria de fotos */}
-        <div className="flex flex-col gap-4">
-          <div className="w-full aspect-square bg-gray-100 rounded-2xl border border-border relative overflow-hidden">
-            {produto.imagens?.length > 0 ? (
-              <Image src={produto.imagens[0]} alt={produto.nome} fill className="object-cover" />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-gray-400 font-bold bg-gray-200">Sem Foto</div>
-            )}
-          </div>
-          {produto.imagens?.length > 1 && (
-            <div className="flex gap-3 overflow-x-auto pb-2">
-              {produto.imagens.slice(1).map((img: string, i: number) => (
-                <div key={i} className="w-20 h-20 bg-gray-100 rounded-xl border border-border flex-shrink-0 relative overflow-hidden">
-                  <Image src={img} alt={`Foto ${i + 2}`} fill className="object-cover" />
-                </div>
-              ))}
-            </div>
-          )}
-          {produto.video_url && (
-            <div className="w-full mt-2 bg-black rounded-2xl overflow-hidden aspect-video border border-border">
-              {produto.video_url.includes('youtube') || produto.video_url.includes('youtu.be') ? (
-                (() => {
-                  const videoId = produto.video_url.includes('v=')
-                    ? produto.video_url.split('v=')[1].split('&')[0]
-                    : produto.video_url.split('youtu.be/')[1]?.split('?')[0];
-                  return (
-                    <iframe
-                      className="w-full h-full"
-                      src={`https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&loop=1&playlist=${videoId}&rel=0&controls=0`}
-                      title="Vídeo do Produto"
-                      frameBorder="0"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                    />
-                  );
-                })()
-              ) : (
-                <video autoPlay loop muted playsInline className="w-full h-full object-cover">
-                  <source src={produto.video_url} />
-                </video>
-              )}
-            </div>
-          )}
-        </div>
+        {/* COLUNA ESQUERDA — Galeria de fotos e vídeo */}
+        <ProductMediaGallery
+          imagens={produto.imagens || []}
+          videoUrl={produto.video_url}
+          nome={produto.nome}
+        />
 
         {/* COLUNA DIREITA — Nome, preço, variações, botões, frete */}
         <div className="flex flex-col gap-5">
@@ -179,6 +142,9 @@ export default async function ProdutoPage({ params }: { params: Promise<{ slug: 
 
           {/* Calculadora de Frete por CEP */}
           <FreteCalculator />
+
+          {/* Campo Pergunte sobre este Produto (IA Assistente) */}
+          <ProductAiAssistant produto={produto} />
 
           {/* Estoque */}
           {produto.estoque > 0 && produto.estoque < 20 && (
