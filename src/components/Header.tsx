@@ -7,7 +7,6 @@ import SearchBar from './SearchBar';
 import CategoryNav from './CategoryNav';
 import CartCountBadge from './CartCountBadge';
 import HomeOnlyCategoryNav from './HomeOnlyCategoryNav';
-import HeaderLogo from './HeaderLogo';
 
 export default async function Header() {
   const { data: configs } = await supabase.from('configuracoes').select('*');
@@ -17,35 +16,18 @@ export default async function Header() {
     <header className="w-full bg-white shadow-sm sticky top-0 z-50">
       <TopBar topbar={topbar} />
 
-      {/* Área de Logo Expandido Exclusiva na Home */}
-      <HomeOnlyCategoryNav>
-        <div className="w-full flex justify-center py-4 bg-white border-b border-gray-100 shadow-2xs">
-          <Link href="/">
-            <div className="relative w-72 sm:w-96 md:w-[480px] h-28 sm:h-32 md:h-40 cursor-pointer hover:scale-102 transition duration-300">
-              <Image 
-                src="/logo-luxo.jpg" 
-                alt="Banho e Tosa Pet Logo" 
-                fill 
-                className="object-contain" 
-                priority 
-              />
-            </div>
-          </Link>
-        </div>
-      </HomeOnlyCategoryNav>
-
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center py-3">
+        <div className="flex justify-between items-center py-2.5">
           
-          {/* Logo compacto (nas páginas internas que não são a Home) */}
+          {/* Logo do Site */}
           <div className="flex items-center">
             <Link href="/">
-              <div className="relative w-44 md:w-52 h-14 cursor-pointer">
+              <div className="relative w-52 md:w-60 h-16 md:h-20 cursor-pointer">
                 <Image 
                   src="/logo-luxo.jpg" 
                   alt="Banho e Tosa Pet Logo" 
                   fill 
-                  className="object-contain" 
+                  className="object-contain object-left" 
                   priority 
                 />
               </div>

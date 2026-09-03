@@ -39,15 +39,16 @@ export default async function CategoryNav() {
 
   return (
     <nav className="w-full bg-white border-t border-gray-100 py-3 shadow-xs">
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="flex flex-wrap items-center justify-center gap-2.5 md:gap-3">
+      <div className="max-w-7xl mx-auto px-4 overflow-x-auto no-scrollbar">
+        {/* Linha Única sem quebrar para baixo (flex-nowrap) */}
+        <div className="flex items-center justify-start md:justify-center gap-2.5 md:gap-3 whitespace-nowrap min-w-max">
           {pais.map((cat) => {
             const subs = getSubcategorias(cat.id);
             const temSub = subs.length > 0;
             const emoji = EMOJIS[cat.slug] || '🐶';
 
             return (
-              <div key={cat.id} className="relative group">
+              <div key={cat.id} className="relative group flex-shrink-0">
                 <Link
                   href={`/categoria/${cat.slug}`}
                   className="flex items-center gap-2 bg-white border border-gray-300 rounded-full px-4 py-2 text-xs md:text-sm font-bold text-secondary hover:border-primary hover:text-primary transition shadow-2xs hover:shadow-sm"
@@ -75,10 +76,10 @@ export default async function CategoryNav() {
             );
           })}
 
-          {/* Botão Laranja Ver Tudo */}
+          {/* Botão Laranja Ver Tudo Na MESMA Linha dos Grupos */}
           <Link
             href="/categoria/todas"
-            className="flex items-center gap-2 bg-primary text-white border border-primary rounded-full px-5 py-2 text-xs md:text-sm font-bold hover:bg-orange-600 transition shadow-sm"
+            className="flex-shrink-0 flex items-center gap-2 bg-primary text-white border border-primary rounded-full px-5 py-2 text-xs md:text-sm font-bold hover:bg-orange-600 transition shadow-sm"
           >
             <span className="text-sm md:text-base leading-none">🛍️</span>
             <span>Ver Tudo</span>
