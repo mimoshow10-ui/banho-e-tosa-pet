@@ -41,11 +41,23 @@ export default async function Home() {
     .from('produtos')
     .select('*')
     .eq('destaque_super_promocao', true)
-    .order('criado_em', { ascending: false })
-    .limit(4);
+    .eq('ativo', true)
+    .order('criado_em', { ascending: false });
 
   const produtos = todosProdutos || [];
-  const produtosPromocao = superPromocoes || [];
+  
+  // Filtrar apenas promoções válidas (com estoque > 0, dentro do prazo e preço promocional ativo)
+  const agora = Date.now();
+  const produtosPromocao = (superPromocoes || []).filter((prod) => {
+    if (!prod.preco_promocional || Number(prod.preco_promocional) >= Number(prod.preco)) return false;
+    if (prod.estoque !== null && prod.estoque !== undefined && Number(prod.estoque) <= 0) return false;
+    if (prod.promocao_expira_em) {
+      const expira = new Date(prod.promocao_expira_em).getTime();
+      if (isNaN(expira) || expira <= agora) return false;
+    }
+    return true;
+  }).slice(0, 5);
+
   const produtosNovidades = produtos.slice(0, 8);
 
   return (

@@ -52,7 +52,13 @@ export default async function ProdutoPage({ params }: { params: Promise<{ slug: 
 
   const temVariacoes = family && family.length > 1;
   const preco = Number(produto.preco);
-  const precoPromo = produto.preco_promocional ? Number(produto.preco_promocional) : null;
+  const agora = Date.now();
+  const expiraTime = produto.promocao_expira_em ? new Date(produto.promocao_expira_em).getTime() : null;
+  const promoExpirada = expiraTime !== null && (isNaN(expiraTime) || expiraTime <= agora);
+  const semEstoque = produto.estoque !== null && produto.estoque !== undefined && Number(produto.estoque) <= 0;
+
+  const promoValida = produto.preco_promocional && Number(produto.preco_promocional) < preco && !promoExpirada && !semEstoque;
+  const precoPromo = promoValida ? Number(produto.preco_promocional) : null;
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-12">
@@ -123,7 +129,7 @@ export default async function ProdutoPage({ params }: { params: Promise<{ slug: 
             ) : (
               <span className="text-4xl font-black text-primary">R$ {preco.toFixed(2).replace('.', ',')}</span>
             )}
-            {produto.promocao_expira_em && (
+            {promoValida && produto.promocao_expira_em && (
               <div className="ml-2">
                 <CountdownTimer targetDate={produto.promocao_expira_em} />
               </div>
