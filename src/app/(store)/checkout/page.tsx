@@ -33,6 +33,9 @@ export default function CheckoutPage() {
   const [freteSelecionado, setFreteSelecionado] = useState<OpcaoFrete | null>(null);
   const [calculandoFrete, setCalculandoFrete] = useState(false);
 
+  // Cupom de Desconto
+  const [cupomAplicado, setCupomAplicado] = useState<{ codigo: string; desconto: number; nome: string } | null>(null);
+
   // Carregar itens do carrinho do localStorage (com fallback)
   useEffect(() => {
     try {
@@ -46,6 +49,12 @@ export default function CheckoutPage() {
         }
       } else {
         setItens(getExemploCarrinho());
+      }
+
+      // Restaurar cupom de desconto aplicado no carrinho
+      const cupomSalvo = localStorage.getItem('cupom_aplicado');
+      if (cupomSalvo) {
+        setCupomAplicado(JSON.parse(cupomSalvo));
       }
     } catch {
       setItens(getExemploCarrinho());
@@ -589,6 +598,13 @@ export default function CheckoutPage() {
                 <span>R$ {subtotal.toFixed(2).replace('.', ',')}</span>
               </div>
 
+              {cupomAplicado && (
+                <div className="flex justify-between text-green-600 font-bold">
+                  <span>Desconto Cupom ({cupomAplicado.codigo})</span>
+                  <span>- R$ {cupomAplicado.desconto.toFixed(2).replace('.', ',')}</span>
+                </div>
+              )}
+
               <div className="flex justify-between items-center">
                 <span>Frete</span>
                 {freteSelecionado ? (
@@ -605,7 +621,7 @@ export default function CheckoutPage() {
               <div>
                 <span className="text-xs font-bold text-gray-500 uppercase block">Total</span>
                 <span className="text-2xl font-black text-secondary">
-                  R$ {total.toFixed(2).replace('.', ',')}
+                  R$ {Math.max(0, subtotal - (cupomAplicado ? cupomAplicado.desconto : 0) + (freteSelecionado ? freteSelecionado.valor : 0)).toFixed(2).replace('.', ',')}
                 </span>
               </div>
             </div>

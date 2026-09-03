@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Trash2, ShoppingBag, Plus, Minus, ArrowLeft, Truck } from 'lucide-react';
+import { Trash2, ShoppingBag, Plus, Minus, ArrowLeft, Truck, Ticket, CheckCircle2, X } from 'lucide-react';
 import { ItemCarrinho } from '@/lib/types/checkout';
+import { Cupom } from '@/lib/types/coupon';
 
 const DEFAULT_PRODUCT_IMAGE = 'https://http2.mlstatic.com/D_NQ_NP_2X_736630-MLB72661556093_112023-F.webp';
 
@@ -15,13 +16,19 @@ export default function CarrinhoPage() {
   const [valorFrete, setValorFrete] = useState<number | null>(null);
   const [calculandoFrete, setCalculandoFrete] = useState(false);
 
+  // Cupons
+  const [cupomInput, setCupomInput] = useState('');
+  const [cupomAplicado, setCupomAplicado] = useState<{ codigo: string; desconto: number; nome: string } | null>(null);
+  const [erroCupom, setErroCupom] = useState('');
+  const [validandoCupom, setValidandoCupom] = useState(false);
+  const [cuponsDisponiveis, setCuponsDisponiveis] = useState<Cupom[]>([]);
+
   useEffect(() => {
     try {
       const cartRaw = localStorage.getItem('carrinho');
       if (cartRaw) {
         const parsed = JSON.parse(cartRaw);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          // Assegura que todo item tenha uma imagem válida
           const comImagensValidas = parsed.map(item => ({
             ...item,
             imagem: extrairFoto(item.imagem) || DEFAULT_PRODUCT_IMAGE
@@ -35,10 +42,31 @@ export default function CarrinhoPage() {
         setItens(exemplo);
         localStorage.setItem('carrinho', JSON.stringify(exemplo));
       }
+
+      // Restaurar cupom aplicado salvo
+      const cupomSalvo = localStorage.getItem('cupom_aplicado');
+      if (cupomSalvo) {
+        setCupomAplicado(JSON.parse(cupomSalvo));
+      }
     } catch {
       setItens(getExemploInicial());
     }
-    setLoading(false);
+
+    // Carregar cupons disponíveis do backend
+    async function carregarCupons() {
+      try {
+        const res = await fetch('/api/cupons/disponiveis');
+        if (res.ok) {
+          const data = await res.json();
+          setCuponsDisponiveis(data.cupons || []);
+        }
+      } catch {
+        // Fallback
+      }
+      setLoading(false);
+    }
+
+    carregarCupons();
   }, []);
 
   function salvarCarrinho(novosItens: ItemCarrinho[]) {
@@ -59,11 +87,79 @@ export default function CarrinhoPage() {
       return item;
     });
     salvarCarrinho(novos);
+    if (cupomAplicado) revalidarCupomExistente(cupomAplicado.codigo, novos);
   }
 
   function removerItem(id: string) {
     const novos = itens.filter(item => item.id !== id);
     salvarCarrinho(novos);
+    if (cupomAplicado) revalidarCupomExistente(cupomAplicado.codigo, novos);
+  }
+
+  async function revalidarCupomExistente(codigo: string, itensAtuais: ItemCarrinho[]) {
+    if (itensAtuais.length === 0) {
+      removerCupom();
+      return;
+    }
+    try {
+      const res = await fetch('/api/cupons/validar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ codigo, itens: itensAtuais, valorFrete: valorFrete || 0 })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.valido) {
+          const payload = { codigo: data.cupom.codigo, desconto: data.descontoAplicado, nome: data.cupom.nome_interno };
+          setCupomAplicado(payload);
+          localStorage.setItem('cupom_aplicado', JSON.stringify(payload));
+        } else {
+          removerCupom();
+        }
+      }
+    } catch {
+      //
+    }
+  }
+
+  async function aplicarCupomCodigo(codigoParam?: string) {
+    const targetCodigo = (codigoParam || cupomInput).trim();
+    if (!targetCodigo) return;
+
+    setValidandoCupom(true);
+    setErroCupom('');
+
+    try {
+      const res = await fetch('/api/cupons/validar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ codigo: targetCodigo, itens, valorFrete: valorFrete || 0 })
+      });
+
+      const data = await res.json();
+
+      if (data.valido) {
+        const payload = { codigo: data.cupom.codigo, desconto: data.descontoAplicado, nome: data.cupom.nome_interno };
+        setCupomAplicado(payload);
+        setCupomInput('');
+        try {
+          localStorage.setItem('cupom_aplicado', JSON.stringify(payload));
+        } catch {}
+      } else {
+        setErroCupom(data.erro || 'Cupom inválido.');
+      }
+    } catch {
+      setErroCupom('Erro ao validar cupom.');
+    }
+    setValidandoCupom(false);
+  }
+
+  function removerCupom() {
+    setCupomAplicado(null);
+    setErroCupom('');
+    try {
+      localStorage.removeItem('cupom_aplicado');
+    } catch {}
   }
 
   async function calcularFrete() {
@@ -97,8 +193,9 @@ export default function CarrinhoPage() {
   }
 
   const subtotal = itens.reduce((sum, item) => sum + item.preco_unitario * item.quantidade, 0);
+  const descontoCupom = cupomAplicado ? cupomAplicado.desconto : 0;
   const frete = valorFrete ?? 15.00;
-  const total = subtotal + frete;
+  const total = Math.max(0, subtotal - descontoCupom + frete);
   const totalPix = total * 0.95; // 5% de desconto no PIX
 
   if (loading) {
@@ -220,15 +317,96 @@ export default function CarrinhoPage() {
           </div>
 
           {/* Coluna Direita - Resumo Financeiro */}
-          <div className="w-full lg:w-1/3">
+          <div className="w-full lg:w-1/3 space-y-4">
+            
+            {/* Bloco de Cupom de Desconto */}
+            <div className="bg-white p-5 rounded-2xl border border-orange-200 shadow-2xs space-y-3">
+              <h3 className="font-bold text-secondary text-sm flex items-center gap-2">
+                <Ticket size={16} className="text-primary" />
+                Cupom de Desconto
+              </h3>
+
+              {cupomAplicado ? (
+                <div className="bg-green-50 border border-green-200 p-3 rounded-xl flex items-center justify-between">
+                  <div>
+                    <span className="text-xs font-bold text-green-900 block flex items-center gap-1">
+                      <CheckCircle2 size={14} className="text-green-600" />
+                      Cupom {cupomAplicado.codigo}
+                    </span>
+                    <span className="text-[11px] text-green-700">Desconto: - R$ {cupomAplicado.desconto.toFixed(2).replace('.', ',')}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={removerCupom}
+                    className="p-1 text-red-500 hover:bg-red-50 rounded-lg transition"
+                    title="Remover Cupom"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={cupomInput}
+                      onChange={e => setCupomInput(e.target.value.toUpperCase())}
+                      placeholder="Digite o código"
+                      className="flex-1 border border-gray-300 rounded-xl px-3 py-2 text-xs font-bold font-mono focus:outline-none focus:ring-2 focus:ring-primary uppercase bg-white"
+                      onKeyDown={e => e.key === 'Enter' && aplicarCupomCodigo()}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => aplicarCupomCodigo()}
+                      disabled={validandoCupom || !cupomInput.trim()}
+                      className="bg-secondary text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-blue-900 transition disabled:opacity-50"
+                    >
+                      {validandoCupom ? '...' : 'Aplicar'}
+                    </button>
+                  </div>
+
+                  {erroCupom && <p className="text-red-500 text-[11px] font-semibold">{erroCupom}</p>}
+
+                  {/* Cupons Disponíveis para Coletar/Aplicar com 1 Clique */}
+                  {cuponsDisponiveis.length > 0 && (
+                    <div className="pt-2">
+                      <span className="text-[11px] font-bold text-gray-500 block mb-1.5">Cupons Disponíveis:</span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {cuponsDisponiveis.map(c => (
+                          <button
+                            key={c.id}
+                            type="button"
+                            onClick={() => aplicarCupomCodigo(c.codigo)}
+                            className="text-[10px] font-bold bg-orange-50 text-primary border border-orange-200 hover:bg-orange-100 px-2.5 py-1 rounded-lg transition"
+                          >
+                            🏷️ {c.codigo} ({c.tipo_desconto === 'percentual' ? `${c.valor_desconto}% OFF` : `R$ ${c.valor_desconto} OFF`})
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Resumo do Pedido */}
             <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-xs sticky top-24 space-y-4">
               <h2 className="font-heading font-bold text-xl text-secondary pb-3 border-b border-gray-100">
                 Resumo do Pedido
               </h2>
               
-              <div className="flex justify-between text-sm text-gray-600">
-                <span>Subtotal ({itens.reduce((acc, i) => acc + i.quantidade, 0)} itens)</span>
-                <span className="font-semibold text-secondary">R$ {subtotal.toFixed(2).replace('.', ',')}</span>
+              <div className="space-y-2 text-sm text-gray-600">
+                <div className="flex justify-between">
+                  <span>Subtotal ({itens.reduce((acc, i) => acc + i.quantidade, 0)} itens)</span>
+                  <span className="font-semibold text-secondary">R$ {subtotal.toFixed(2).replace('.', ',')}</span>
+                </div>
+
+                {cupomAplicado && (
+                  <div className="flex justify-between text-green-600 font-bold">
+                    <span>Desconto Cupom ({cupomAplicado.codigo})</span>
+                    <span>- R$ {cupomAplicado.desconto.toFixed(2).replace('.', ',')}</span>
+                  </div>
+                )}
               </div>
 
               {/* Simulação de Frete por CEP */}

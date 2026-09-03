@@ -5,6 +5,7 @@ import VariationSelector from '@/components/VariationSelector';
 import FreteCalculator from '@/components/FreteCalculator';
 import ProductMediaGallery from '@/components/ProductMediaGallery';
 import ProductAiAssistant from '@/components/ProductAiAssistant';
+import ProductCouponsBanner from '@/components/ProductCouponsBanner';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 
@@ -139,6 +140,13 @@ export default async function ProdutoPage({ params }: { params: Promise<{ slug: 
               ⚡ Comprar Agora
             </Link>
           </div>
+
+          {/* Cupons da Loja Disponíveis (Shopee Style) */}
+          <ProductCouponsBanner
+            produtoId={produto.id}
+            categoriaId={produto.categoria_id}
+            sku={produto.codigo_barras}
+          />
 
           {/* Calculadora de Frete por CEP */}
           <FreteCalculator />
