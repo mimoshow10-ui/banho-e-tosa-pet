@@ -43,7 +43,7 @@ export default function CountdownTimer({ targetDate, onExpire }: { targetDate: s
   }, [targetDate, onExpire]);
 
   if (isExpired) {
-    return <div className="text-red-500 font-bold text-xs">Promoção Encerrada</div>;
+    return null;
   }
 
   if (!timeLeft) return null;
