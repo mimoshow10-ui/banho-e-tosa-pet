@@ -90,7 +90,7 @@ export default async function Home() {
                 const foto = prod.imagens?.[0] ? (typeof prod.imagens[0] === 'string' ? prod.imagens[0].split(/[\r\n,]+/)[0] : prod.imagens[0]) : null;
 
                 return (
-                  <Link href={`/produto/${prod.slug}`} key={`promo-${prod.id}`} className="group bg-white rounded-2xl shadow-xs border border-red-200 overflow-hidden hover:shadow-md transition relative flex flex-col">
+                  <Link href={`/produto/${prod.slug}`} key={`promo-${prod.id}`} className="group bg-white rounded-2xl shadow-xs border border-red-200 overflow-hidden hover:shadow-md transition relative flex flex-col h-[290px]">
                     <div className="absolute top-2 right-2 bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-xs z-10">
                       -{desconto}% OFF
                     </div>
@@ -102,15 +102,12 @@ export default async function Home() {
                       )}
                     </div>
                     <div className="p-3 flex flex-col flex-1 justify-between">
-                      <h3 className="font-bold text-secondary text-xs mb-2 group-hover:text-red-600 transition line-clamp-2">{prod.nome}</h3>
+                      <h3 className="font-bold text-secondary text-xs group-hover:text-red-600 transition line-clamp-2">{prod.nome}</h3>
                       <div className="mt-auto">
-                        <span className="text-[11px] text-gray-400 line-through block">R$ {Number(prod.preco).toFixed(2).replace('.', ',')}</span>
-                        <span className="font-black text-base text-red-600">R$ {Number(prod.preco_promocional).toFixed(2).replace('.', ',')}</span>
-                        {prod.promocao_expira_em && (
-                          <div className="mt-1 scale-90 origin-left">
-                            <CountdownTimer targetDate={prod.promocao_expira_em} />
-                          </div>
-                        )}
+                        <div className="flex items-baseline gap-1">
+                          <span className="font-black text-sm md:text-base text-red-600">R$ {Number(prod.preco_promocional).toFixed(2).replace('.', ',')}</span>
+                          <span className="text-[10px] text-gray-400 line-through">R$ {Number(prod.preco).toFixed(2).replace('.', ',')}</span>
+                        </div>
                       </div>
                     </div>
                   </Link>
@@ -141,7 +138,7 @@ export default async function Home() {
                 const precoExibido = prod.preco_promocional && Number(prod.preco_promocional) < Number(prod.preco) ? prod.preco_promocional : prod.preco;
 
                 return (
-                  <Link href={`/produto/${prod.slug}`} key={`best-${prod.id}`} className="group bg-white rounded-2xl shadow-xs border border-amber-200 overflow-hidden hover:shadow-md transition flex flex-col">
+                  <Link href={`/produto/${prod.slug}`} key={`best-${prod.id}`} className="group bg-white rounded-2xl shadow-xs border border-amber-200 overflow-hidden hover:shadow-md transition flex flex-col h-[290px]">
                     <div className="w-full aspect-square bg-gray-100 relative">
                       {foto ? (
                         <Image src={foto} alt={prod.nome} fill className="object-cover group-hover:scale-105 transition duration-300" />
@@ -150,9 +147,9 @@ export default async function Home() {
                       )}
                     </div>
                     <div className="p-3 flex flex-col flex-1 justify-between">
-                      <h3 className="font-bold text-secondary text-xs mb-2 group-hover:text-amber-600 transition line-clamp-2">{prod.nome}</h3>
+                      <h3 className="font-bold text-secondary text-xs group-hover:text-amber-600 transition line-clamp-2">{prod.nome}</h3>
                       <div className="mt-auto">
-                        <span className="font-black text-base text-primary">R$ {Number(precoExibido).toFixed(2).replace('.', ',')}</span>
+                        <span className="font-black text-sm md:text-base text-primary">R$ {Number(precoExibido).toFixed(2).replace('.', ',')}</span>
                       </div>
                     </div>
                   </Link>
