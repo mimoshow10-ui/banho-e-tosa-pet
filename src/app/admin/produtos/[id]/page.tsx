@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import CategorySelector from '@/components/CategorySelector';
 import ImageManager from '@/components/ImageManager';
+import VariacaoManager from '@/components/VariacaoManager';
 
 async function atualizarProduto(formData: FormData) {
   'use server'
@@ -71,6 +72,22 @@ export default async function EditarProduto(props: { params: Promise<{ id: strin
 
   const { data: produto } = await supabase.from('produtos').select('*').eq('id', id).single();
   const { data: categorias } = await supabase.from('categorias').select('*');
+
+  // Buscar variações já vinculadas (filhos deste produto)
+  const familyId = produto?.parent_id || id;
+  const { data: familyRaw } = await supabase
+    .from('produtos')
+    .select('id, nome, codigo_barras, imagens, preco')
+    .or(`id.eq.${familyId},parent_id.eq.${familyId}`)
+    .neq('id', id);
+  const variacoes = (familyRaw || []) as any[];
+
+  // Todos os produtos para busca (só id, nome, sku, imagem, preco)
+  const { data: todosProdutosRaw } = await supabase
+    .from('produtos')
+    .select('id, nome, codigo_barras, imagens, preco')
+    .order('nome');
+  const todosProdutos = (todosProdutosRaw || []) as any[];
 
   if (!produto) {
     return <div className="p-8 font-bold text-red-600">Produto no encontrado!</div>;
@@ -167,6 +184,12 @@ export default async function EditarProduto(props: { params: Promise<{ id: strin
           <input name="video_url" type="url" defaultValue={produto.video_url || ''} placeholder="Ex: https://youtube.com/watch?v=..." className="w-full border border-border rounded-lg p-2" />
           <p className="text-xs text-gray-500 mt-1">Opcional. Se preenchido, o vídeo aparecerá abaixo das fotos na página do produto.</p>
         </div>
+
+        <VariacaoManager
+          produtoId={id}
+          variacoes={variacoes}
+          todosProdutos={todosProdutos}
+        />
 
         <button type="submit" className="bg-primary text-white py-3 rounded-lg font-bold hover:bg-orange-600 transition mt-4">
           Salvar Alterações
