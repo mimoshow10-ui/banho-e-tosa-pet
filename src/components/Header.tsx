@@ -1,8 +1,9 @@
-﻿import { Search, ShoppingCart, User, Heart } from 'lucide-react';
+import { ShoppingCart, User, Heart } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
 import TopBar from './TopBar';
+import SearchBar from './SearchBar';
 
 export default async function Header() {
   const { data: configs } = await supabase.from('configuracoes').select('*');
@@ -30,16 +31,7 @@ export default async function Header() {
           </div>
 
           {/* Search Bar */}
-          <div className="flex-1 max-w-lg mx-8">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Buscar acessórios para seu pet"
-                className="w-full bg-gray-100 rounded-full py-2 pl-4 pr-10 focus:outline-none focus:ring-2 focus:ring-primary"
-              />
-              <Search className="absolute right-3 top-2.5 text-gray-400" size={20} />
-            </div>
-          </div>
+          <SearchBar />
 
           {/* Icons */}
           <div className="flex items-center gap-6 text-secondary">
