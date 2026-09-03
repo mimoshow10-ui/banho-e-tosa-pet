@@ -121,29 +121,42 @@ export default function CheckoutPage() {
         {
           id: 'frete-padrao',
           transportadora_id: '1',
-          nome: 'Entrega Padrão (Correios PAC)',
+          nome: 'Entrega Padrão Correios',
           nome_transportadora: 'Correios',
           valor: 14.90,
           prazo_dias: 5,
           prazo_estimado_texto: 'Chegará entre 4 e 6 dias úteis',
+          descricao: 'Entrega garantida pelos Correios/Transportadora'
         },
         {
           id: 'frete-express',
           transportadora_id: '2',
-          nome: 'Entrega Expressa (Sedex)',
+          nome: 'Entrega Padrão Correios (Expressa)',
           nome_transportadora: 'Correios Express',
           valor: 24.90,
           prazo_dias: 2,
-          prazo_estimado_texto: 'Chegará entre 1 e 2 dias úteis',
+          prazo_estimado_texto: 'Chegará em 2 a 3 dias úteis',
+          descricao: 'Opção mais rápida com rastreamento prioritário.'
+        },
+        {
+          id: 'frete-jadlog',
+          transportadora_id: '3',
+          nome: 'Entrega via Transportadora Privada (Jadlog / Exclusiva)',
+          nome_transportadora: 'Jadlog / Transportadora',
+          valor: 18.90,
+          prazo_dias: 4,
+          prazo_estimado_texto: 'Chegará entre 3 e 5 dias úteis',
+          descricao: 'Coleta e entrega expressa via transportadora privada.'
         },
         {
           id: 'frete-retirada',
-          transportadora_id: '3',
+          transportadora_id: '4',
           nome: 'Retirar na Loja Física',
           nome_transportadora: 'Loja Banho & Tosa',
           valor: 0,
           prazo_dias: 0,
           prazo_estimado_texto: 'Pronto para retirada após confirmação',
+          descricao: 'Retire gratuitamente em nossa loja. Traga o documento de identificação e o número do pedido.',
           is_gratis: true,
         }
       ];

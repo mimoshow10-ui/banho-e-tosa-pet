@@ -125,6 +125,18 @@ export default async function TransportadorasPage({
         ordem: 1,
       },
       {
+        id: 'trans-jadlog',
+        nome: 'Transportadora Privada (Jadlog / Logística)',
+        nome_exibicao: 'Entrega via Transportadora (Jadlog / Exclusiva)',
+        tipo_integracao: 'jadlog',
+        ativo: true,
+        cep_origem: '01000-000',
+        prazo_adicional_dias: 0,
+        valor_adicional_reais: 4.00,
+        desconto_percentual: 0,
+        ordem: 2,
+      },
+      {
         id: 'trans-retirada',
         nome: 'Retirada no Local',
         nome_exibicao: 'Retirar na Loja Física',
@@ -134,7 +146,7 @@ export default async function TransportadorasPage({
         prazo_adicional_dias: 0,
         valor_adicional_reais: 0,
         desconto_percentual: 0,
-        ordem: 2,
+        ordem: 3,
         instrucoes_retirada: 'Retire gratuitamente em nossa loja. Traga o documento de identificação e o número do pedido.',
       }
     ];

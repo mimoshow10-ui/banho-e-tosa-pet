@@ -54,6 +54,24 @@ export async function calcularFretesCarrinho(
           descricao: trans.instrucoes_retirada || 'Retire gratuitamente em nosso endereço.',
           is_gratis: true,
         });
+      } else if (trans.tipo_integracao === 'jadlog' || trans.tipo_integracao === 'melhorenvio' || trans.tipo_integracao === 'frenet') {
+        const uf = await buscarUfPorCep(cepLimpo);
+        const eProximo = ['SP', 'RJ', 'MG', 'ES', 'PR', 'SC', 'RS'].includes(uf);
+        let valorTrans = (eProximo ? 18.90 : 28.90) + (pesoTotal > 1 ? (pesoTotal - 1) * 5 : 0) + (trans.valor_adicional_reais || 0);
+        let prazoTrans = (eProximo ? 3 : 6) + (trans.prazo_adicional_dias || 0);
+
+        if (trans.desconto_percentual) valorTrans *= (1 - trans.desconto_percentual / 100);
+
+        opcoes.push({
+          id: `trans-${trans.id}`,
+          transportadora_id: trans.id,
+          nome: trans.nome_exibicao || `${trans.nome} (Transportadora Privada)`,
+          nome_transportadora: trans.nome,
+          valor: Math.max(0, valorTrans),
+          prazo_dias: prazoTrans,
+          prazo_estimado_texto: `Chegará entre ${prazoTrans} e ${prazoTrans + 2} dias úteis`,
+          descricao: 'Coleta e entrega expressa via transportadora privada.',
+        });
       } else if (trans.tipo_integracao === 'motoboy') {
         // Exemplo: Entrega expressa por motoboy para entregas locais
         const valorBase = 12.00 + (trans.valor_adicional_reais || 0);
