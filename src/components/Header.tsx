@@ -17,12 +17,12 @@ export default async function Header() {
       <TopBar topbar={topbar} />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center py-2.5">
+        <div className="flex justify-between items-center py-1">
           
-          {/* Logo do Site (25% Maior) */}
+          {/* Logo do Site (Sem espaço em branco em cima/baixo) */}
           <div className="flex items-center">
             <Link href="/">
-              <div className="relative w-96 md:w-[525px] h-36 md:h-44 cursor-pointer">
+              <div className="relative w-64 md:w-[320px] h-16 md:h-20 cursor-pointer">
                 <Image 
                   src="/logo-luxo.jpg" 
                   alt="Banho e Tosa Pet Logo" 

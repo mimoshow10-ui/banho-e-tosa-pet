@@ -14,28 +14,52 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
-  const { slug } = await params;
-  
-  const { data: produtos } = await supabase
-    .from('produtos')
-    .select('nome, descricao_curta, seo_title, seo_description, imagens')
-    .eq('slug', slug)
-    .limit(1);
+  try {
+    const { slug } = await params;
+    
+    const { data: produtos } = await supabase
+      .from('produtos')
+      .select('nome, descricao_curta, seo_title, seo_description, imagens, parent_id')
+      .eq('slug', slug)
+      .limit(1);
 
-  const produto = produtos && produtos.length > 0 ? produtos[0] : null;
+    const rawProduto = produtos && produtos.length > 0 ? produtos[0] : null;
 
-  if (!produto) return { title: 'Produto não encontrado | Banho & Tosa' };
+    if (!rawProduto) return { title: 'Produto não encontrado | Banho & Tosa' };
 
-  const title = produto.seo_title || `${produto.nome} | Banho & Tosa Pet`;
-  const description = produto.seo_description || produto.descricao_curta || `Compre ${produto.nome} no Banho & Tosa Pet!`;
-  const imagem = produto.imagens && produto.imagens.length > 0 ? produto.imagens[0] : '/banner-pet.jpg';
+    let produto = rawProduto;
+    if (rawProduto.parent_id) {
+      const { data: parentProduct } = await supabase
+        .from('produtos')
+        .select('nome, descricao_curta, seo_title, seo_description, imagens')
+        .eq('id', rawProduto.parent_id)
+        .maybeSingle();
+      if (parentProduct) {
+        produto = parentProduct;
+      }
+    }
 
-  return {
-    title,
-    description,
-    openGraph: { title, description, images: [imagem], type: 'website' },
-    twitter: { card: 'summary_large_image', title, description, images: [imagem] }
-  };
+    const title = (produto.seo_title || `${produto.nome} | Banho & Tosa Pet`).slice(0, 70);
+    const rawDesc = produto.seo_description || produto.descricao_curta || `Compre ${produto.nome} no Banho & Tosa Pet!`;
+    const description = rawDesc.replace(/<[^>]*>?/gm, '').replace(/[\r\n]+/g, ' ').slice(0, 160).trim();
+
+    let imagem = '/banner-pet.jpg';
+    if (produto.imagens && produto.imagens.length > 0) {
+      const rawImg = produto.imagens[0];
+      if (typeof rawImg === 'string' && rawImg.trim()) {
+        imagem = rawImg.split(/[\r\n,]+/)[0].trim();
+      }
+    }
+
+    return {
+      title,
+      description,
+      openGraph: { title, description, images: [imagem], type: 'website' },
+      twitter: { card: 'summary_large_image', title, description, images: [imagem] }
+    };
+  } catch {
+    return { title: 'Banho & Tosa Pet' };
+  }
 }
 
 export default async function ProdutoPage({ params }: { params: Promise<{ slug: string }> }) {

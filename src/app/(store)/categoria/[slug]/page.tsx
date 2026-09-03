@@ -2,6 +2,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
 import { notFound } from 'next/navigation';
+import ProductCard from '@/components/ProductCard';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -132,42 +133,9 @@ export default async function CategoriaPage({
         {/* Grid de Cards de Produto */}
         {produtos.length > 0 ? (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {produtos.map((prod: any) => {
-              const foto = prod.imagens?.[0] ? (typeof prod.imagens[0] === 'string' ? prod.imagens[0].split(/[\r\n,]+/)[0] : prod.imagens[0]) : null;
-              const preco = prod.preco_promocional && Number(prod.preco_promocional) < Number(prod.preco) ? prod.preco_promocional : prod.preco;
-
-              return (
-                <div key={prod.id} className="flex flex-col bg-white rounded-2xl shadow-2xs hover:shadow-md transition border border-gray-200 overflow-hidden group">
-                  <Link href={`/produto/${prod.slug}`}>
-                    <div className="aspect-square bg-gray-100 relative overflow-hidden">
-                      {foto ? (
-                        <Image src={foto} alt={prod.nome} fill className="object-cover group-hover:scale-105 transition duration-300" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs font-bold">Sem Foto</div>
-                      )}
-                    </div>
-                  </Link>
-                  <div className="p-4 flex flex-col flex-1 justify-between">
-                    <Link href={`/produto/${prod.slug}`}>
-                      <h3 className="font-bold mb-2 text-xs md:text-sm line-clamp-2 hover:text-primary transition text-secondary">
-                        {prod.nome}
-                      </h3>
-                    </Link>
-                    <div className="mt-auto">
-                      <span className="text-lg md:text-xl font-heading font-bold text-primary block">
-                        R$ {Number(preco).toFixed(2).replace('.', ',')}
-                      </span>
-                      <Link
-                        href={`/produto/${prod.slug}`}
-                        className="mt-3 w-full bg-secondary text-white py-2 rounded-xl font-bold hover:bg-blue-900 transition text-xs flex items-center justify-center gap-1"
-                      >
-                        Ver Produto
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+            {produtos.map((prod: any) => (
+              <ProductCard key={prod.id} produto={prod} />
+            ))}
           </div>
         ) : (
           <div className="bg-gray-50 p-12 text-center rounded-2xl border border-dashed border-gray-300">

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
+import ProductCard from '@/components/ProductCard';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -49,63 +50,9 @@ export default async function BuscaPage({
 
       {produtos.length > 0 ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
-          {produtos.map((prod) => {
-            const precoExibido = prod.preco_promocional && Number(prod.preco_promocional) < Number(prod.preco)
-              ? Number(prod.preco_promocional)
-              : Number(prod.preco);
-
-            const temDesconto = prod.preco_promocional && Number(prod.preco_promocional) < Number(prod.preco);
-
-            return (
-              <div
-                key={prod.id}
-                className="flex flex-col bg-white rounded-xl shadow-sm hover:shadow-md transition border border-border overflow-hidden group"
-              >
-                <Link href={`/produto/${prod.slug}`}>
-                  <div className="aspect-square bg-gray-100 flex items-center justify-center relative overflow-hidden">
-                    {prod.imagens && prod.imagens.length > 0 ? (
-                      <Image
-                        src={prod.imagens[0]}
-                        alt={prod.nome}
-                        fill
-                        className="object-cover group-hover:scale-105 transition duration-300"
-                      />
-                    ) : (
-                      <span className="text-gray-400 text-sm font-bold">Sem Foto</span>
-                    )}
-                    {temDesconto && (
-                      <span className="absolute top-2 right-2 bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow">
-                        PROMO
-                      </span>
-                    )}
-                  </div>
-                </Link>
-                <div className="p-4 flex flex-col flex-grow">
-                  <Link href={`/produto/${prod.slug}`}>
-                    <h3 className="font-bold mb-2 text-sm line-clamp-2 hover:text-primary transition text-secondary">
-                      {prod.nome}
-                    </h3>
-                  </Link>
-                  <div className="mt-auto pt-2">
-                    {temDesconto && (
-                      <span className="text-xs text-gray-400 line-through block">
-                        R$ {Number(prod.preco).toFixed(2).replace('.', ',')}
-                      </span>
-                    )}
-                    <span className="text-xl font-heading font-bold text-primary">
-                      R$ {precoExibido.toFixed(2).replace('.', ',')}
-                    </span>
-                  </div>
-                  <Link
-                    href={`/produto/${prod.slug}`}
-                    className="mt-4 w-full bg-secondary text-white py-2 rounded-lg font-bold hover:bg-blue-900 transition text-sm text-center block"
-                  >
-                    Ver Produto
-                  </Link>
-                </div>
-              </div>
-            );
-          })}
+          {produtos.map((prod) => (
+            <ProductCard key={prod.id} produto={prod} />
+          ))}
         </div>
       ) : (
         <div className="bg-gray-50 p-12 text-center rounded-2xl border border-dashed border-gray-300 my-8">
