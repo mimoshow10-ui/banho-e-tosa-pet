@@ -5,6 +5,8 @@ import { supabase } from '@/lib/supabase';
 import TopBar from './TopBar';
 import SearchBar from './SearchBar';
 
+import CategoryNav from './CategoryNav';
+
 export default async function Header() {
   const { data: configs } = await supabase.from('configuracoes').select('*');
   const topbar = configs?.find(c => c.chave === 'marketing_topbar')?.valor || { texto: 'Frete grátis acima de R', visibilidade: 'todas', cor: 'bg-primary' };
@@ -52,6 +54,9 @@ export default async function Header() {
           </div>
         </div>
       </div>
+
+      {/* Menu Superior Horizontal de Categorias (Estilo Foto Enviada) */}
+      <CategoryNav />
     </header>
   );
 }
