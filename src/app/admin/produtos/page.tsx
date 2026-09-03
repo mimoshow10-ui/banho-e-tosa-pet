@@ -33,7 +33,12 @@ export default async function AdminProdutos(props: { searchParams: Promise<{ msg
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-heading font-bold text-secondary">Produtos</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-heading font-bold text-secondary">Produtos</h1>
+            <span className="bg-orange-100 text-primary border border-orange-200 text-xs font-black px-3 py-1 rounded-full shadow-2xs">
+              📦 Total: {produtos?.length || 0} produto(s)
+            </span>
+          </div>
           <p className="text-xs text-gray-500 mt-0.5">Gerencie os anúncios, preços, estoques e edições em massa da loja.</p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">

@@ -223,9 +223,19 @@ export default function TabelaProdutosComEdicaoEmMassa({ produtos, categorias, p
       )}
 
       {/* TABELA DE PRODUTOS */}
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-xs overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+      <div className="space-y-2">
+        <div className="flex items-center justify-between px-1 text-xs font-bold text-gray-500">
+          <span>TOTAL EXIBIDO: {produtos.length} PRODUTO(S)</span>
+          {selecionados.length > 0 && (
+            <span className="text-primary font-black bg-orange-100 px-2 py-0.5 rounded-md border border-orange-200">
+              {selecionados.length} SELECIONADO(S)
+            </span>
+          )}
+        </div>
+        
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-xs overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
             <thead className="bg-gray-50 text-gray-700 text-xs uppercase tracking-wider font-bold border-b border-gray-200">
               <tr>
                 <th className="p-4 w-12 text-center">
@@ -369,5 +379,6 @@ export default function TabelaProdutosComEdicaoEmMassa({ produtos, categorias, p
         </div>
       </div>
     </div>
+  </div>
   );
 }
