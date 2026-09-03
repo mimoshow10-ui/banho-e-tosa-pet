@@ -329,9 +329,9 @@ export default function TabelaProdutosComEdicaoEmMassa({ produtos, categorias, p
                         </div>
                       </td>
 
-                      {/* Categoria */}
+                      {/* Categoria / Subcategoria */}
                       <td className="p-4 text-xs font-semibold text-gray-600">
-                        {item.categorias?.nome || 'Sem Categoria'}
+                        {(item as any).categoria_nome_exibicao || item.categorias?.nome || 'Sem Categoria'}
                       </td>
 
                       {/* Preço Normal */}

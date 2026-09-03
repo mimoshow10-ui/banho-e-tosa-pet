@@ -12,12 +12,51 @@ export default async function AdminProdutos(props: { searchParams: Promise<{ msg
   const searchParams = await props.searchParams;
   const q = searchParams.q || '';
 
-  let query = supabase.from('produtos').select('*, categorias(nome)').order('nome');
+  let query = supabase.from('produtos').select('*, categorias(id, nome, parent_id)').order('nome');
   if (q) {
     query = query.or(`nome.ilike.%${q}%,codigo_barras.ilike.%${q}%`);
   }
   const { data: produtos, error } = await query;
-  const { data: categorias } = await supabase.from('categorias').select('id, nome').order('nome');
+  const { data: todasCategorias } = await supabase.from('categorias').select('id, nome, parent_id').order('nome');
+
+  const catMap = new Map<string, { id: string; nome: string; parent_id: string | null }>();
+  (todasCategorias || []).forEach(c => catMap.set(c.id, c));
+
+  // Formatar a lista completa de Grupos e Subgrupos / Subcategorias
+  const categoriasFormatadas = (todasCategorias || []).map(cat => {
+    if (cat.parent_id && catMap.has(cat.parent_id)) {
+      const pai = catMap.get(cat.parent_id);
+      return {
+        id: cat.id,
+        nome: `🏷️ ${pai?.nome} > ${cat.nome}`,
+        isSub: true,
+        parent_id: cat.parent_id,
+      };
+    }
+    return {
+      id: cat.id,
+      nome: `📂 ${cat.nome} (Grupo Principal)`,
+      isSub: false,
+      parent_id: null,
+    };
+  });
+
+  // Mapear também a categoria formatada em cada produto
+  const produtosFormatados = (produtos || []).map(p => {
+    let catNome = 'Sem Categoria';
+    if (p.categoria_id && catMap.has(p.categoria_id)) {
+      const cat = catMap.get(p.categoria_id);
+      if (cat?.parent_id && catMap.has(cat.parent_id)) {
+        const pai = catMap.get(cat.parent_id);
+        catNome = `${pai?.nome} > ${cat.nome}`;
+      } else if (cat?.nome) {
+        catNome = cat.nome;
+      }
+    } else if (p.categorias?.nome) {
+      catNome = p.categorias.nome;
+    }
+    return { ...p, categoria_nome_exibicao: catNome };
+  });
 
   // Descobrir quais produtos são PAI (têm filhos)
   const { data: filhos } = await supabase.from('produtos').select('parent_id').not('parent_id', 'is', null);
@@ -99,8 +138,8 @@ export default async function AdminProdutos(props: { searchParams: Promise<{ msg
 
       {/* Tabela Interativa de Produtos com Seleção e Edição em Massa */}
       <TabelaProdutosComEdicaoEmMassa
-        produtos={produtos || []}
-        categorias={categorias || []}
+        produtos={produtosFormatados || []}
+        categorias={categoriasFormatadas || []}
         paiIds={paiIds}
       />
     </div>
