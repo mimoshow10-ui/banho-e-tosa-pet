@@ -15,7 +15,13 @@ export default function VariationSelector({ currentSlug, family }: { currentSlug
       <div className="flex flex-wrap gap-3">
         {sortedFamily.map((item) => {
           const isActive = item.slug === currentSlug;
-          const image = item.imagens && item.imagens.length > 0 ? item.imagens[0] : null;
+          let image: string | null = null;
+          if (item.imagens && item.imagens.length > 0) {
+            const first = item.imagens[0];
+            if (typeof first === 'string' && first.trim()) {
+              image = first.split(/[\r\n,]+/)[0].trim();
+            }
+          }
 
           return (
             <Link 
