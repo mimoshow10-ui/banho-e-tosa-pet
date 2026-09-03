@@ -11,8 +11,6 @@ import { importarSKU } from './actions';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
 
 export default async function AdminProdutos(props: { searchParams: Promise<{ msg?: string, erro?: string, q?: string }> }) {
   const searchParams = await props.searchParams;
