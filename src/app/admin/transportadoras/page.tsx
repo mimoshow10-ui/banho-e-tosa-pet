@@ -203,27 +203,27 @@ export default async function TransportadorasPage({
         ))}
       </div>
 
-      {/* Formulário de Cadastro / Edição */}
+      {/* Formulário de Cadastro / Edição com trava de Autopreenchimento */}
       <div className="bg-white p-8 rounded-2xl shadow-xs border border-border">
         <h2 className="text-xl font-bold text-secondary mb-4 flex items-center gap-2">
           <Plus size={20} className="text-primary" />
           Cadastrar / Editar Transportadora
         </h2>
 
-        <form action={salvarTransportadora} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <form action={salvarTransportadora} autoComplete="off" className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-bold text-gray-700 mb-1">Nome Interno</label>
-            <input name="nome" required placeholder="Ex: Correios PAC" className="w-full border border-border rounded-xl p-2.5 text-sm" />
+            <input name="nome" required placeholder="Ex: Correios PAC" autoComplete="off" className="w-full border border-border rounded-xl p-2.5 text-sm" />
           </div>
 
           <div>
             <label className="block text-xs font-bold text-gray-700 mb-1">Nome de Exibição no Checkout</label>
-            <input name="nome_exibicao" placeholder="Ex: Entrega Padrão (5 a 7 dias)" className="w-full border border-border rounded-xl p-2.5 text-sm" />
+            <input name="nome_exibicao" placeholder="Ex: Entrega Padrão (5 a 7 dias)" autoComplete="off" className="w-full border border-border rounded-xl p-2.5 text-sm" />
           </div>
 
           <div>
             <label className="block text-xs font-bold text-gray-700 mb-1">Tipo de Integração</label>
-            <select name="tipo_integracao" className="w-full border border-border rounded-xl p-2.5 text-sm bg-white">
+            <select name="tipo_integracao" className="w-full border border-border rounded-xl p-2.5 text-sm bg-white font-bold">
               <option value="correios">Correios (PAC / Sedex)</option>
               <option value="retirada">Retirada no Local (Custo R$ 0)</option>
               <option value="motoboy">Motoboy Express Local</option>
@@ -234,8 +234,15 @@ export default async function TransportadorasPage({
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-gray-700 mb-1">CEP de Origem (Remetente)</label>
-            <input name="cep_origem" placeholder="01000-000" defaultValue="01000-000" className="w-full border border-border rounded-xl p-2.5 text-sm" />
+            <label className="block text-xs font-bold text-gray-700 mb-1">CEP de Origem do Remetente (Ex: 01000-000)</label>
+            <input
+              name="cep_origem"
+              type="text"
+              placeholder="01000-000"
+              defaultValue="01000-000"
+              autoComplete="off"
+              className="w-full border border-border rounded-xl p-2.5 text-sm font-bold text-secondary"
+            />
           </div>
 
           <div className="md:col-span-2 border-t border-border pt-4">
@@ -247,12 +254,12 @@ export default async function TransportadorasPage({
 
           <div>
             <label className="block text-xs font-bold text-gray-700 mb-1">Chave da API / API Key (Opcional)</label>
-            <input name="api_key" type="password" placeholder="••••••••••••" className="w-full border border-border rounded-xl p-2.5 text-sm" />
+            <input name="api_key" type="password" placeholder="••••••••••••" autoComplete="new-password" className="w-full border border-border rounded-xl p-2.5 text-sm" />
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-gray-700 mb-1">Token de Acesso (Opcional)</label>
-            <input name="token" type="password" placeholder="Bearer token..." className="w-full border border-border rounded-xl p-2.5 text-sm" />
+            <label className="block text-xs font-bold text-gray-700 mb-1">Token de API (Melhor Envio / Correios)</label>
+            <input name="token" type="password" placeholder="Token da API..." autoComplete="new-password" className="w-full border border-border rounded-xl p-2.5 text-sm" />
           </div>
 
           <div className="md:col-span-2 border-t border-border pt-4">
