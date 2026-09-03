@@ -20,6 +20,7 @@ export default async function BuscaPage({
       .from('produtos')
       .select('*')
       .eq('ativo', true)
+      .is('parent_id', null)
       .or(`nome.ilike.%${q}%,codigo_barras.ilike.%${q}%,descricao.ilike.%${q}%`)
       .order('criado_em', { ascending: false });
 

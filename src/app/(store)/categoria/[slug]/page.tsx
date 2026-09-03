@@ -25,7 +25,7 @@ export default async function CategoriaPage({
   let grupoPai: any = null;
 
   if (slug === 'todas') {
-    const { data } = await supabase.from('produtos').select('*').eq('ativo', true).order('criado_em', { ascending: false });
+    const { data } = await supabase.from('produtos').select('*').eq('ativo', true).is('parent_id', null).order('criado_em', { ascending: false });
     if (data) produtos = data;
   } else if (catAtual) {
     const isGrupo = !catAtual.parent_id;
@@ -40,13 +40,14 @@ export default async function CategoriaPage({
 
       subgrupos = subs || [];
 
-      // Buscar produtos que pertencem diretamente ao grupo OU a um dos seus subgrupos
+      // Buscar produtos que pertencem diretamente ao grupo OU a um dos seus subgrupos (Apenas PAIS)
       const idsRelacionados = [catAtual.id, ...subgrupos.map(s => s.id)];
       const { data } = await supabase
         .from('produtos')
         .select('*')
         .in('categoria_id', idsRelacionados)
         .eq('ativo', true)
+        .is('parent_id', null)
         .order('criado_em', { ascending: false });
 
       if (data) produtos = data;
@@ -60,12 +61,13 @@ export default async function CategoriaPage({
 
       grupoPai = pai;
 
-      // Buscar produtos pertencentes estritamente a este Subgrupo
+      // Buscar produtos pertencentes estritamente a este Subgrupo (Apenas PAIS)
       const { data } = await supabase
         .from('produtos')
         .select('*')
         .eq('categoria_id', catAtual.id)
         .eq('ativo', true)
+        .is('parent_id', null)
         .order('criado_em', { ascending: false });
 
       if (data) produtos = data;

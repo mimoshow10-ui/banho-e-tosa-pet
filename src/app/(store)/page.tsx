@@ -15,19 +15,21 @@ export default async function Home() {
   // Destaques da vitrine
   const destaquesConfig = configs?.find(c => c.chave === 'vitrine_destaques')?.valor || { mais_vendidos: [], novidades: [] };
 
-  // Puxar todos os produtos ativos ordenados por novidade
+  // Puxar apenas produtos PAI (parent_id IS NULL) na vitrine
   const { data: todosProdutos } = await supabase
     .from('produtos')
     .select('*')
     .eq('ativo', true)
+    .is('parent_id', null)
     .order('criado_em', { ascending: false });
 
-  // Buscar destaques da super promoção (por flag ou preço promocional)
+  // Buscar destaques da super promoção (apenas produtos PAI)
   const { data: superPromocoes } = await supabase
     .from('produtos')
     .select('*')
     .or('destaque_super_promocao.eq.true,preco_promocional.not.is.null')
     .eq('ativo', true)
+    .is('parent_id', null)
     .order('criado_em', { ascending: false });
 
   const produtos = todosProdutos || [];
