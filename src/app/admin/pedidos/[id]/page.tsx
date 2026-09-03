@@ -103,18 +103,21 @@ export default async function DetalhePedidoPage({
         </div>
 
         <div className="divide-y divide-gray-100">
-          {pedido.itens?.map((item: any, i: number) => (
             <div key={i} className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-gray-50/50 transition">
               <div className="flex items-center gap-4">
-                <div className="w-16 h-16 bg-gray-100 rounded-xl overflow-hidden relative flex-shrink-0 border border-gray-200">
-                  {item.imagem ? (
-                    <Image src={item.imagem} alt={item.nome} fill className="object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-[10px] text-gray-400 font-bold">Sem Foto</div>
-                  )}
-                </div>
+                <Link href={item.slug ? `/produto/${item.slug}` : '/'} target="_blank" title="Abrir página de vendas do produto" className="group">
+                  <div className="w-16 h-16 bg-gray-100 rounded-xl overflow-hidden relative flex-shrink-0 border border-gray-200 group-hover:border-primary transition">
+                    {item.imagem ? (
+                      <Image src={item.imagem} alt={item.nome} fill className="object-cover group-hover:scale-105 transition duration-300" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-[10px] text-gray-400 font-bold">Sem Foto</div>
+                    )}
+                  </div>
+                </Link>
                 <div>
-                  <h4 className="font-bold text-secondary text-sm md:text-base">{item.nome}</h4>
+                  <Link href={item.slug ? `/produto/${item.slug}` : '/'} target="_blank" className="font-bold text-secondary text-sm md:text-base hover:text-primary hover:underline transition">
+                    {item.nome}
+                  </Link>
                   <div className="flex items-center gap-3 mt-1">
                     <span className="bg-purple-100 text-purple-800 text-xs font-mono font-bold px-2 py-0.5 rounded">
                       SKU: {item.sku || 'N/A'}

@@ -99,11 +99,13 @@ export default async function AdminProdutos(props: { searchParams: Promise<{ msg
               produtos.map((item: any) => (
                 <tr key={item.id} className="hover:bg-gray-50">
                   <td className="p-4">
-                    {item.imagens && item.imagens.length > 0 ? (
-                      <img src={typeof item.imagens[0] === 'string' ? item.imagens[0].split(/[\r\n]+/)[0] : ''} alt="Miniatura" className="w-12 h-12 object-cover rounded border border-gray-200" />
-                    ) : (
-                      <div className="w-12 h-12 bg-gray-200 rounded border border-gray-300 flex items-center justify-center text-[9px] text-gray-400 text-center leading-tight">Sem<br/>Foto</div>
-                    )}
+                    <Link href={`/produto/${item.slug}`} target="_blank" title="Abrir página de vendas do produto">
+                      {item.imagens && item.imagens.length > 0 ? (
+                        <img src={typeof item.imagens[0] === 'string' ? item.imagens[0].split(/[\r\n]+/)[0] : ''} alt="Miniatura" className="w-12 h-12 object-cover rounded border border-gray-200 hover:opacity-80 transition cursor-pointer" />
+                      ) : (
+                        <div className="w-12 h-12 bg-gray-200 rounded border border-gray-300 flex items-center justify-center text-[9px] text-gray-400 text-center leading-tight">Sem<br/>Foto</div>
+                      )}
+                    </Link>
                   </td>
                   <td className="p-4 font-bold text-gray-500">{item.codigo_barras || 'Sem SKU'}</td>
                   <td className="p-4 font-medium text-gray-800">
@@ -111,7 +113,10 @@ export default async function AdminProdutos(props: { searchParams: Promise<{ msg
                       {paiIds.has(item.id) && (
                         <span title="Produto Pai (tem variações)" className="text-yellow-400 text-lg leading-none">★</span>
                       )}
-                      {item.nome}
+                      <Link href={`/produto/${item.slug}`} target="_blank" className="hover:text-primary hover:underline transition flex items-center gap-1">
+                        {item.nome}
+                        <ExternalLink size={12} className="text-gray-400" />
+                      </Link>
                     </div>
                   </td>
                   <td className="p-4 text-gray-600">{item.categorias?.nome || 'Sem Categoria'}</td>
