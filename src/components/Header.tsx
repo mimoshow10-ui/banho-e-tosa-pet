@@ -7,21 +7,21 @@ import SearchBar from './SearchBar';
 import CategoryNav from './CategoryNav';
 import CartCountBadge from './CartCountBadge';
 import HomeOnlyCategoryNav from './HomeOnlyCategoryNav';
+import HeaderLogo from './HeaderLogo';
 
 export default async function Header() {
   const { data: configs } = await supabase.from('configuracoes').select('*');
-  const topbar = configs?.find(c => c.chave === 'marketing_topbar')?.valor || { texto: 'Frete grátis acima de R', visibilidade: 'todas', cor: 'bg-primary' };
+  const topbar = configs?.find(c => c.chave === 'marketing_topbar')?.valor || { texto: 'Frete grátis acima de R$ 99,00', visibilidade: 'todas', cor: 'bg-primary' };
 
   return (
     <header className="w-full bg-white shadow-sm sticky top-0 z-50">
       <TopBar topbar={topbar} />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center py-2">
-          {/* Logo and Search */}
-        <div className="flex items-center justify-between">
+      {/* Área de Logo Expandido Exclusiva na Home */}
+      <HomeOnlyCategoryNav>
+        <div className="w-full flex justify-center py-4 bg-white border-b border-gray-100 shadow-2xs">
           <Link href="/">
-            <div className="relative w-48 h-16 cursor-pointer z-50">
+            <div className="relative w-72 sm:w-96 md:w-[480px] h-28 sm:h-32 md:h-40 cursor-pointer hover:scale-102 transition duration-300">
               <Image 
                 src="/logo-luxo.jpg" 
                 alt="Banho e Tosa Pet Logo" 
@@ -31,12 +31,31 @@ export default async function Header() {
               />
             </div>
           </Link>
+        </div>
+      </HomeOnlyCategoryNav>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center py-3">
+          
+          {/* Logo compacto (nas páginas internas que não são a Home) */}
+          <div className="flex items-center">
+            <Link href="/">
+              <div className="relative w-44 md:w-52 h-14 cursor-pointer">
+                <Image 
+                  src="/logo-luxo.jpg" 
+                  alt="Banho e Tosa Pet Logo" 
+                  fill 
+                  className="object-contain" 
+                  priority 
+                />
+              </div>
+            </Link>
           </div>
 
-          {/* Search Bar */}
+          {/* Barra de Pesquisa */}
           <SearchBar />
 
-          {/* Icons */}
+          {/* Ícones de Conta, Favoritos e Carrinho */}
           <div className="flex items-center gap-6 text-secondary">
             <Link href="/minhaconta" className="flex flex-col items-center hover:text-primary transition">
               <User size={24} />
@@ -53,6 +72,7 @@ export default async function Header() {
               <span className="text-xs font-bold mt-1">Carrinho</span>
             </Link>
           </div>
+
         </div>
       </div>
 
