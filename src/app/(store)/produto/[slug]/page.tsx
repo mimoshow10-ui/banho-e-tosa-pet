@@ -51,17 +51,23 @@ export default async function ProdutoPage({ params }: { params: Promise<{ slug: 
 
   if (!produto) notFound();
 
-  // Buscar família de variações
-  const familyId = produto.parent_id || produto.id;
-  const { data: family } = await supabase
-    .from('produtos')
-    .select('id, nome, slug, imagens, preco, preco_promocional, estoque, ativo')
-    .or(`id.eq.${familyId},parent_id.eq.${familyId}`)
-    .eq('ativo', true)
-    .order('id');
+  // Buscar família de variações com segurança
+  let family: any[] = [];
+  try {
+    const familyId = produto.parent_id || produto.id;
+    if (familyId) {
+      const { data: familyData } = await supabase
+        .from('produtos')
+        .select('id, nome, slug, imagens, preco, preco_promocional, estoque, ativo')
+        .or(`id.eq.${familyId},parent_id.eq.${familyId}`)
+        .eq('ativo', true)
+        .order('id');
+      family = familyData || [];
+    }
+  } catch {}
 
-  const temVariacoes = family && family.length > 1;
-  const preco = Number(produto.preco);
+  const temVariacoes = Array.isArray(family) && family.length > 1;
+  const preco = Number(produto.preco || 0);
   const agora = Date.now();
   const expiraTime = produto.promocao_expira_em ? new Date(produto.promocao_expira_em).getTime() : null;
   const promoExpirada = expiraTime !== null && (isNaN(expiraTime) || expiraTime <= agora);
@@ -117,7 +123,7 @@ export default async function ProdutoPage({ params }: { params: Promise<{ slug: 
           )}
 
           {/* Tamanhos (se houver) */}
-          {produto.tamanhos?.length > 0 && (
+          {Array.isArray(produto.tamanhos) && produto.tamanhos.length > 0 && (
             <div>
               <p className="text-sm font-bold text-gray-500 mb-2">Tamanho:</p>
               <div className="flex gap-2 flex-wrap">
