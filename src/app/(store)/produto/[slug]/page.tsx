@@ -3,66 +3,46 @@ import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
 import CountdownTimer from '@/components/CountdownTimer';
 import VariationSelector from '@/components/VariationSelector';
+import FreteCalculator from '@/components/FreteCalculator';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   
-  // Buscar os dados do produto no banco para gerar as tags SEO dinamicamente
   const { data: produto } = await supabase
     .from('produtos')
     .select('nome, descricao_curta, seo_title, seo_description, imagens')
     .eq('slug', slug)
     .single();
 
-  if (!produto) {
-    return {
-      title: 'Produto não encontrado | Banho & Tosa',
-    };
-  }
+  if (!produto) return { title: 'Produto não encontrado | Banho & Tosa' };
 
   const title = produto.seo_title || `${produto.nome} | Banho & Tosa Pet`;
-  const description = produto.seo_description || produto.descricao_curta || `Compre ${produto.nome} no Banho & Tosa Pet com as melhores condições!`;
-  
-  // Pegar a imagem principal para aparecer ao compartilhar o link no WhatsApp/Instagram
-  const imagem = produto.imagens && produto.imagens.length > 0 ? produto.imagens[0] : '/banner-pet.jpg';
+  const description = produto.seo_description || produto.descricao_curta || `Compre ${produto.nome} no Banho & Tosa Pet!`;
+  const imagem = produto.imagens?.length > 0 ? produto.imagens[0] : '/banner-pet.jpg';
 
   return {
     title,
     description,
-    openGraph: {
-      title,
-      description,
-      images: [imagem],
-      type: 'website',
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title,
-      description,
-      images: [imagem],
-    }
+    openGraph: { title, description, images: [imagem], type: 'website' },
+    twitter: { card: 'summary_large_image', title, description, images: [imagem] }
   };
 }
 
 export default async function ProdutoPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   
-  // Puxar o produto real do banco usando a URL
   const { data: produto } = await supabase
     .from('produtos')
     .select('*')
     .eq('slug', slug)
     .single();
 
-  if (!produto) {
-    notFound(); 
-  }
+  if (!produto) notFound();
 
-  // Buscar todos os irmãos (variações) ou ele mesmo
+  // Buscar família de variações
   const familyId = produto.parent_id || produto.id;
-  
   const { data: family } = await supabase
     .from('produtos')
     .select('id, nome, slug, imagens, preco, preco_promocional, estoque, ativo')
@@ -70,47 +50,50 @@ export default async function ProdutoPage({ params }: { params: Promise<{ slug: 
     .eq('ativo', true)
     .order('id');
 
+  const temVariacoes = family && family.length > 1;
+  const preco = Number(produto.preco);
+  const precoPromo = produto.preco_promocional ? Number(produto.preco_promocional) : null;
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-12">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-        
-        {/* Galeria de Imagens REAIS */}
+
+      {/* ── Bloco principal: Foto | Info ── */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-10 mb-12">
+
+        {/* COLUNA ESQUERDA — Galeria de fotos */}
         <div className="flex flex-col gap-4">
           <div className="w-full aspect-square bg-gray-100 rounded-2xl border border-border relative overflow-hidden">
-             {produto.imagens && produto.imagens.length > 0 ? (
-                <Image src={produto.imagens[0]} alt={produto.nome} fill className="object-cover" />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-gray-400 font-bold bg-gray-200">Sem Foto</div>
-              )}
+            {produto.imagens?.length > 0 ? (
+              <Image src={produto.imagens[0]} alt={produto.nome} fill className="object-cover" />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-gray-400 font-bold bg-gray-200">Sem Foto</div>
+            )}
           </div>
-          {produto.imagens && produto.imagens.length > 1 && (
-            <div className="flex gap-4 overflow-x-auto pb-2">
-              {produto.imagens.slice(1).map((img: string, index: number) => (
-                <div key={index} className="w-24 h-24 bg-gray-100 rounded-xl border border-border flex-shrink-0 relative overflow-hidden">
-                  <Image src={img} alt={`Foto ${index}`} fill className="object-cover" />
+          {produto.imagens?.length > 1 && (
+            <div className="flex gap-3 overflow-x-auto pb-2">
+              {produto.imagens.slice(1).map((img: string, i: number) => (
+                <div key={i} className="w-20 h-20 bg-gray-100 rounded-xl border border-border flex-shrink-0 relative overflow-hidden">
+                  <Image src={img} alt={`Foto ${i + 2}`} fill className="object-cover" />
                 </div>
               ))}
             </div>
           )}
-          
-          {/* VÍDEO DO PRODUTO */}
           {produto.video_url && (
-            <div className="w-full mt-4 bg-black rounded-2xl overflow-hidden aspect-video border border-border pointer-events-none">
-              {produto.video_url.includes('youtube.com') || produto.video_url.includes('youtu.be') ? (
+            <div className="w-full mt-2 bg-black rounded-2xl overflow-hidden aspect-video border border-border">
+              {produto.video_url.includes('youtube') || produto.video_url.includes('youtu.be') ? (
                 (() => {
-                  const videoId = produto.video_url.includes('v=') 
-                    ? produto.video_url.split('v=')[1].split('&')[0] 
+                  const videoId = produto.video_url.includes('v=')
+                    ? produto.video_url.split('v=')[1].split('&')[0]
                     : produto.video_url.split('youtu.be/')[1]?.split('?')[0];
-                  
                   return (
-                    <iframe 
+                    <iframe
                       className="w-full h-full"
-                      src={`https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&loop=1&playlist=${videoId}&rel=0&controls=0&modestbranding=1&showinfo=0`}
+                      src={`https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&loop=1&playlist=${videoId}&rel=0&controls=0`}
                       title="Vídeo do Produto"
                       frameBorder="0"
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                       allowFullScreen
-                    ></iframe>
+                    />
                   );
                 })()
               ) : (
@@ -122,54 +105,46 @@ export default async function ProdutoPage({ params }: { params: Promise<{ slug: 
           )}
         </div>
 
-        {/* Informações do Produto REAIS */}
-        <div className="flex flex-col">
-          <h1 className="text-3xl md:text-4xl font-heading font-bold text-secondary mb-4">
+        {/* COLUNA DIREITA — Nome, preço, variações, botões, frete */}
+        <div className="flex flex-col gap-5">
+
+          {/* Nome */}
+          <h1 className="text-2xl md:text-3xl font-heading font-bold text-secondary leading-tight">
             {produto.nome}
           </h1>
-          
-          <div className="mb-6 flex items-end gap-3">
-            {produto.preco_promocional > 0 ? (
+
+          {/* Preço */}
+          <div className="flex items-end gap-3">
+            {precoPromo ? (
               <>
-                <span className="text-xl text-gray-400 line-through font-medium mb-1">
-                  R$ {Number(produto.preco).toFixed(2).replace('.', ',')}
-                </span>
-                <span className="text-4xl font-bold text-primary">
-                  R$ {Number(produto.preco_promocional).toFixed(2).replace('.', ',')}
-                </span>
-                {produto.promocao_expira_em && (
-                  <div className="ml-4">
-                    <CountdownTimer targetDate={produto.promocao_expira_em} />
-                  </div>
-                )}
+                <span className="text-lg text-gray-400 line-through">R$ {preco.toFixed(2).replace('.', ',')}</span>
+                <span className="text-4xl font-black text-primary">R$ {precoPromo.toFixed(2).replace('.', ',')}</span>
               </>
             ) : (
-              <span className="text-3xl font-bold text-primary">
-                R$ {Number(produto.preco).toFixed(2).replace('.', ',')}
-              </span>
+              <span className="text-4xl font-black text-primary">R$ {preco.toFixed(2).replace('.', ',')}</span>
+            )}
+            {produto.promocao_expira_em && (
+              <div className="ml-2">
+                <CountdownTimer targetDate={produto.promocao_expira_em} />
+              </div>
             )}
           </div>
 
-          <VariationSelector currentSlug={produto.slug} family={family || []} />
-
-          {produto.descricao_curta || produto.descricao ? (
-            <div 
-              className="text-gray-600 mb-8 leading-relaxed prose prose-sm max-w-none"
-              dangerouslySetInnerHTML={{ __html: produto.descricao_curta || produto.descricao }}
-            />
-          ) : (
-            <p className="text-gray-600 mb-8 leading-relaxed">
-              Nenhuma descrição fornecida para este produto.
-            </p>
+          {/* Variações (só aparece se tiver filhos vinculados) */}
+          {temVariacoes && (
+            <div>
+              <p className="text-sm font-bold text-gray-500 mb-2">Escolha uma opção:</p>
+              <VariationSelector currentSlug={produto.slug} family={family || []} />
+            </div>
           )}
 
-          {/* Variações de Tamanho */}
-          {produto.tamanhos && produto.tamanhos.length > 0 && (
-            <div className="mb-8">
-              <h3 className="font-bold text-secondary mb-3">Tamanho:</h3>
-              <div className="flex gap-3">
+          {/* Tamanhos (se houver) */}
+          {produto.tamanhos?.length > 0 && (
+            <div>
+              <p className="text-sm font-bold text-gray-500 mb-2">Tamanho:</p>
+              <div className="flex gap-2 flex-wrap">
                 {produto.tamanhos.map((tam: string) => (
-                  <button key={tam} className="w-12 h-12 rounded-lg border-2 border-border font-bold text-secondary hover:border-primary transition">
+                  <button key={tam} className="px-4 py-2 rounded-lg border-2 border-border font-bold text-secondary hover:border-primary transition text-sm">
                     {tam}
                   </button>
                 ))}
@@ -177,46 +152,43 @@ export default async function ProdutoPage({ params }: { params: Promise<{ slug: 
             </div>
           )}
 
-          <div className="flex gap-4 mt-auto">
-            <Link href="/carrinho" className="flex-1 bg-accent text-text text-center font-bold text-lg py-4 rounded-xl hover:bg-yellow-400 transition shadow-sm">
-              Adicionar ao Carrinho
+          {/* Botões de compra */}
+          <div className="flex flex-col gap-3 mt-1">
+            <Link
+              href="/carrinho"
+              className="w-full bg-accent text-text text-center font-bold text-lg py-4 rounded-xl hover:bg-yellow-400 transition shadow-sm"
+            >
+              🛒 Adicionar ao Carrinho
+            </Link>
+            <Link
+              href={`https://wa.me/5511999999999?text=Olá! Tenho interesse em: ${encodeURIComponent(produto.nome)}`}
+              target="_blank"
+              className="w-full bg-green-500 text-white text-center font-bold text-lg py-4 rounded-xl hover:bg-green-600 transition shadow-sm"
+            >
+              📲 Comprar pelo WhatsApp
             </Link>
           </div>
+
+          {/* Calculadora de Frete por CEP */}
+          <FreteCalculator />
+
+          {/* Estoque */}
+          {produto.estoque > 0 && produto.estoque < 20 && (
+            <p className="text-orange-600 font-bold text-sm">⚠️ Apenas {produto.estoque} em estoque!</p>
+          )}
         </div>
       </div>
 
-      {/* SEÇÃO COMPRE JUNTO (Cross-sell) */}
-      <div className="mt-24 border-t border-border pt-12">
-        <h2 className="text-2xl font-heading font-bold text-secondary mb-8">Compre Junto e Ganhe Desconto</h2>
-        <div className="flex flex-col md:flex-row gap-8 items-center bg-gray-50 p-6 rounded-2xl border border-border">
-          {/* Produto Atual */}
-          <div className="flex flex-col items-center max-w-[200px] text-center">
-             <div className="w-32 h-32 bg-gray-200 rounded-xl mb-4"></div>
-             <p className="font-bold text-sm line-clamp-2">{produto.nome}</p>
-             <p className="text-primary font-bold">R$ {Number(produto.preco).toFixed(2).replace('.', ',')}</p>
-          </div>
-          
-          <div className="text-3xl font-bold text-gray-300">+</div>
-          
-          {/* Produto Relacionado (Anúncio de outro produto) */}
-          <div className="flex flex-col items-center max-w-[200px] text-center">
-             <div className="w-32 h-32 bg-blue-100 rounded-xl mb-4 flex items-center justify-center text-blue-500 font-bold text-xs p-2">Produto Linkado no Painel</div>
-             <p className="font-bold text-sm line-clamp-2">Ex: Plaquinha de Identificação</p>
-             <p className="text-primary font-bold">R$ 15,00</p>
-          </div>
-
-          <div className="text-3xl font-bold text-gray-300">=</div>
-
-          {/* Resumo da Compra Conjunta */}
-          <div className="flex flex-col items-center bg-white p-6 rounded-xl border border-border shadow-sm ml-auto w-full md:w-auto">
-            <p className="text-gray-500 mb-2">Comprando os dois juntos:</p>
-            <p className="text-3xl font-bold text-primary mb-4">R$ {Number(Number(produto.preco) + 15).toFixed(2).replace('.', ',')}</p>
-            <button className="bg-secondary text-white font-bold py-3 px-8 rounded-lg hover:bg-blue-900 transition w-full">
-              Levar o Kit
-            </button>
-          </div>
+      {/* ── Descrição completa abaixo ── */}
+      {(produto.descricao_curta || produto.descricao) && (
+        <div className="border-t border-border pt-10">
+          <h2 className="text-2xl font-heading font-bold text-secondary mb-6">Descrição do Produto</h2>
+          <div
+            className="text-gray-700 leading-relaxed prose prose-sm max-w-none"
+            dangerouslySetInnerHTML={{ __html: produto.descricao_curta || produto.descricao }}
+          />
         </div>
-      </div>
+      )}
 
     </div>
   );
