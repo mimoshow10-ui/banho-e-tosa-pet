@@ -120,23 +120,55 @@ export default async function EditarProduto(props: { params: Promise<{ id: strin
           </div>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
           <div>
-            <label className="block text-sm font-medium mb-1">Preço Normal (R$)</label>
-            <input name="preco" type="text" defaultValue={produto.preco} required className="w-full border border-border rounded-lg p-2" />
+            <label className="block text-xs font-bold text-gray-700 mb-1 min-h-[36px] flex items-end">
+              Preço Normal (R$)
+            </label>
+            <input
+              name="preco"
+              type="text"
+              defaultValue={produto.preco}
+              required
+              className="w-full border border-gray-300 rounded-xl p-2.5 h-11 text-sm font-bold text-gray-800 focus:ring-2 focus:ring-primary focus:outline-none"
+            />
           </div>
+
           <div>
-            <label className="block text-sm font-bold text-green-600 mb-1">Preço Promoção (R$)</label>
-            <input name="preco_promocional" type="text" defaultValue={produto.preco_promocional || ''} className="w-full border border-green-400 focus:ring-green-500 focus:border-green-500 rounded-lg p-2" />
+            <label className="block text-xs font-bold text-green-700 mb-1 min-h-[36px] flex items-end">
+              Preço Promoção (R$)
+            </label>
+            <input
+              name="preco_promocional"
+              type="text"
+              defaultValue={produto.preco_promocional || ''}
+              className="w-full border border-green-500 rounded-xl p-2.5 h-11 text-sm font-bold text-green-700 focus:ring-2 focus:ring-green-500 focus:outline-none bg-green-50/30"
+            />
           </div>
+
           <div>
-            <label className="block text-sm font-bold text-red-600 mb-1">Validade Promoção</label>
-            <input name="promocao_expira_em" type="datetime-local" defaultValue={produto.promocao_expira_em ? new Date(new Date(produto.promocao_expira_em).getTime() - 3 * 3600 * 1000).toISOString().slice(0,16) : ''} className="w-full border border-red-300 rounded-lg p-2" />
+            <label className="block text-xs font-bold text-red-600 mb-1 min-h-[36px] flex items-end">
+              Validade Promoção
+            </label>
+            <input
+              name="promocao_expira_em"
+              type="datetime-local"
+              defaultValue={produto.promocao_expira_em ? new Date(new Date(produto.promocao_expira_em).getTime() - 3 * 3600 * 1000).toISOString().slice(0,16) : ''}
+              className="w-full border border-red-300 rounded-xl p-2.5 h-11 text-xs font-bold text-red-700 focus:ring-2 focus:ring-red-500 focus:outline-none bg-red-50/30"
+            />
           </div>
-          <div className="col-span-1 flex items-center justify-center pt-6">
-            <label className="flex items-center gap-2 cursor-pointer border border-border rounded-lg p-2 bg-gray-50 w-full justify-center">
-              <input type="checkbox" name="super_promocao" defaultChecked={produto.destaque_super_promocao} className="w-4 h-4 text-primary" />
-              <span className="text-xs font-bold text-gray-700 leading-tight">Capa Super<br/>Promoção</span>
+
+          <div>
+            <label className="flex items-center gap-2 cursor-pointer border border-gray-300 rounded-xl p-2.5 h-11 bg-gray-50 hover:bg-gray-100 transition w-full justify-center shadow-2xs">
+              <input
+                type="checkbox"
+                name="super_promocao"
+                defaultChecked={produto.destaque_super_promocao}
+                className="w-4 h-4 text-primary rounded accent-primary cursor-pointer"
+              />
+              <span className="text-xs font-bold text-secondary whitespace-nowrap">
+                Capa Super Promoção
+              </span>
             </label>
           </div>
         </div>
