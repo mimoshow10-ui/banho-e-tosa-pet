@@ -58,13 +58,13 @@ export default async function Home() {
 
   return (
     <div className="flex flex-col min-h-screen">
+      {/* Cupons de Desconto Disponíveis da Loja (Ao Topo do Banner Principal) */}
+      <HomeCouponsBanner />
+
       {/* Hero Section com Banner Dinâmico */}
       <section className="w-full relative bg-gray-100">
         <BannerCarousel banners={banners} />
       </section>
-
-      {/* Cupons de Desconto Disponíveis da Loja (Inserido Logo Abaixo do Banner) */}
-      <HomeCouponsBanner />
 
       {/* Conteúdo Principal — Usando área lateral (max-w-[1500px]) */}
       <div className="max-w-[1500px] w-full mx-auto px-4 md:px-8 space-y-12 py-8">
