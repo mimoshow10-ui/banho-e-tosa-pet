@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import { salvarTopBar, salvarPopup } from './actions';
 import BannersForm from './BannersForm';
+import PopupImageFieldWithAI from '@/components/PopupImageFieldWithAI';
 import { Megaphone, Layout, Sparkles, Sliders, Image as ImageIcon, Info, Upload, CheckCircle2, Clock } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
@@ -171,38 +172,9 @@ export default async function AdminMarketing({
               </label>
             </div>
 
-            {/* Imagem do Pop-up (Upload ou URL) */}
-            <div className="md:col-span-2 space-y-2">
-              <label className="block text-xs font-bold text-gray-700">
-                Imagem / Banner do Pop-up (Recomendado: 800x800 px ou 600x800 px)
-              </label>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <input
-                    name="popup_file"
-                    type="file"
-                    accept="image/*"
-                    className="w-full border border-gray-300 rounded-xl p-2 text-xs bg-white"
-                  />
-                  <p className="text-[11px] text-gray-400 mt-1">Selecione uma foto no seu computador.</p>
-                </div>
-                <div>
-                  <input
-                    name="imagem_url"
-                    type="text"
-                    defaultValue={popup.imagem_url || ''}
-                    placeholder="Ou cole a URL da imagem (https://...)"
-                    className="w-full border border-gray-300 rounded-xl p-2.5 text-xs bg-white"
-                  />
-                </div>
-              </div>
-
-              {popup.imagem_url && (
-                <div className="mt-2 w-32 h-32 relative bg-gray-100 rounded-xl overflow-hidden border border-gray-200 shadow-2xs">
-                  <img src={popup.imagem_url} alt="Prévia do Pop-up" className="w-full h-full object-cover" />
-                </div>
-              )}
+            {/* Imagem do Pop-up com Gerador de I.A. */}
+            <div className="md:col-span-2">
+              <PopupImageFieldWithAI initialUrl={popup.imagem_url || ''} />
             </div>
 
             {/* Link de Destino ao Clicar no Pop-up */}

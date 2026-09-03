@@ -60,16 +60,14 @@ async function salvarCupom(formData: FormData) {
     lista.push(novoCupom);
   }
 
-  const { data: existente } = await supabase
-    .from('configuracoes')
-    .select('id')
-    .eq('chave', 'cupons_db')
-    .single();
+  const { error: upsertError } = await supabase.from('configuracoes').upsert({
+    chave: 'cupons_db',
+    valor: lista
+  }, { onConflict: 'chave' });
 
-  if (existente) {
-    await supabase.from('configuracoes').update({ valor: lista }).eq('chave', 'cupons_db');
-  } else {
-    await supabase.from('configuracoes').insert({ chave: 'cupons_db', valor: lista });
+  if (upsertError) {
+    console.error("Erro ao salvar cupons_db:", upsertError);
+    redirect(`/admin/cupons?erro=Erro ao salvar cupom: ${encodeURIComponent(upsertError.message)}`);
   }
 
   revalidatePath('/admin/cupons');
