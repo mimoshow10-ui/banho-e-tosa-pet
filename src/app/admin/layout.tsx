@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Package, Tags, ShoppingCart, Settings, Home, LogOut } from 'lucide-react';
+import { Package, Tags, ShoppingCart, Settings, Home, LogOut, Bot, Truck, Users } from 'lucide-react';
 
 export default function AdminLayout({
   children,
@@ -32,6 +32,14 @@ export default function AdminLayout({
             <ShoppingCart size={20} />
             <span>Pedidos</span>
           </Link>
+          <Link href="/admin/transportadoras" className="flex items-center gap-3 p-3 rounded-lg hover:bg-blue-800 transition">
+            <Truck size={20} />
+            <span>Transportadoras (Fretes)</span>
+          </Link>
+          <Link href="/admin/clientes" className="flex items-center gap-3 p-3 rounded-lg hover:bg-blue-800 transition">
+            <Users size={20} />
+            <span>Clientes</span>
+          </Link>
           <Link href="/admin/marketing" className="flex items-center gap-3 p-3 rounded-lg hover:bg-blue-800 transition">
             <Settings size={20} />
             <span>Marketing (Banners)</span>
@@ -39,6 +47,10 @@ export default function AdminLayout({
           <Link href="/admin/configuracoes" className="flex items-center gap-3 p-3 rounded-lg hover:bg-blue-800 transition">
             <Settings size={20} />
             <span>Configurações</span>
+          </Link>
+          <Link href="/admin/treinamento-ia" className="flex items-center gap-3 p-3 rounded-lg bg-purple-900/60 hover:bg-purple-800 transition border border-purple-500/30 text-purple-200">
+            <Bot size={20} className="text-purple-300" />
+            <span>Treinar IA (Robô)</span>
           </Link>
         </nav>
 

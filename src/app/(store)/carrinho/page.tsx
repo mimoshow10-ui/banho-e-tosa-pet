@@ -138,8 +138,8 @@ export default function CarrinhoPage() {
               <span className="font-heading font-bold text-3xl text-primary">R$ 71,06</span>
             </div>
 
-            <Link href="/login" className="w-full block text-center bg-accent text-text font-bold text-lg py-4 rounded-xl hover:bg-yellow-400 transition shadow-sm mb-4">
-              Pagar com PIX ou Cartão
+            <Link href="/checkout" className="w-full block text-center bg-primary text-white font-bold text-lg py-4 rounded-xl hover:bg-orange-600 transition shadow-md mb-4">
+              Finalizar Compra
             </Link>
             <p className="text-xs text-center text-gray-500">
               Pagamento 100% seguro processado pelo Mercado Pago

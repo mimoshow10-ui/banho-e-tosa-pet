@@ -26,7 +26,7 @@ export default function ProductAiAssistant({ produto }: Props) {
   const [historico, setHistorico] = useState<Mensagem[]>([
     {
       autor: 'ia',
-      texto: `Olá! Sou o assistente virtual. Dúvidas sobre o "${produto.nome}"?`
+      texto: `Olá! Sou o assistente virtual da loja. Como posso te ajudar com o "${produto.nome}"?`
     }
   ]);
 
@@ -62,40 +62,40 @@ export default function ProductAiAssistant({ produto }: Props) {
   }
 
   return (
-    <div className="border border-purple-200 bg-gradient-to-b from-purple-50/40 to-white rounded-xl p-3 shadow-xs">
-      <div className="flex items-center gap-2 mb-2">
-        <div className="w-6 h-6 rounded-full bg-purple-600 text-white flex items-center justify-center shadow-xs flex-shrink-0">
-          <Bot size={14} />
+    <div className="border border-purple-200 bg-gradient-to-b from-purple-50/50 to-white rounded-2xl p-4 shadow-xs">
+      <div className="flex items-center gap-2.5 mb-3">
+        <div className="w-8 h-8 rounded-full bg-purple-600 text-white flex items-center justify-center shadow-xs flex-shrink-0">
+          <Bot size={18} />
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="font-bold text-secondary text-xs flex items-center gap-1">
+          <h3 className="font-bold text-secondary text-base md:text-lg flex items-center gap-1.5 leading-tight">
             Pergunte sobre o produto (IA)
-            <Sparkles size={12} className="text-purple-600 animate-pulse" />
+            <Sparkles size={16} className="text-purple-600 animate-pulse" />
           </h3>
         </div>
       </div>
 
-      {/* Histórico de Conversa Compacto */}
-      <div className="space-y-2 max-h-28 overflow-y-auto mb-2 p-2 bg-white border border-purple-100 rounded-lg">
+      {/* Histórico de Conversa com Fontes Ampliadas */}
+      <div className="space-y-2.5 max-h-44 overflow-y-auto mb-3 p-3 bg-white border border-purple-100 rounded-xl">
         {historico.map((m, i) => (
           <div
             key={i}
-            className={`flex items-start gap-1.5 text-[11px] ${
+            className={`flex items-start gap-2 text-xs md:text-sm ${
               m.autor === 'user' ? 'flex-row-reverse' : 'flex-row'
             }`}
           >
             <div
-              className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-[9px] ${
+              className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-xs ${
                 m.autor === 'user' ? 'bg-secondary text-white' : 'bg-purple-600 text-white'
               }`}
             >
-              {m.autor === 'user' ? <User size={10} /> : <Bot size={10} />}
+              {m.autor === 'user' ? <User size={12} /> : <Bot size={12} />}
             </div>
             <div
-              className={`p-2 rounded-lg max-w-[85%] leading-tight ${
+              className={`p-2.5 rounded-xl max-w-[85%] leading-relaxed ${
                 m.autor === 'user'
-                  ? 'bg-secondary text-white rounded-tr-none'
-                  : 'bg-purple-50 text-gray-800 border border-purple-100 rounded-tl-none'
+                  ? 'bg-secondary text-white rounded-tr-none font-medium'
+                  : 'bg-purple-50 text-gray-800 border border-purple-100 rounded-tl-none font-medium'
               }`}
             >
               {m.texto}
@@ -103,28 +103,28 @@ export default function ProductAiAssistant({ produto }: Props) {
           </div>
         ))}
         {loading && (
-          <div className="flex items-center gap-1.5 text-[11px] text-purple-600 italic">
-            <Sparkles size={12} className="animate-spin" /> Pensando...
+          <div className="flex items-center gap-2 text-xs md:text-sm text-purple-600 italic">
+            <Sparkles size={14} className="animate-spin" /> Pensando na resposta...
           </div>
         )}
       </div>
 
       {/* Formulário de Pergunta */}
-      <form onSubmit={enviarPergunta} className="flex gap-1.5">
+      <form onSubmit={enviarPergunta} className="flex gap-2">
         <input
           type="text"
           value={pergunta}
           onChange={e => setPergunta(e.target.value)}
           placeholder="Ex: Serve para pet pequeno?"
-          className="flex-1 border border-purple-200 rounded-lg px-2.5 py-1.5 text-[11px] focus:outline-none focus:ring-1 focus:ring-purple-500 bg-white"
+          className="flex-1 border border-purple-200 rounded-xl px-3 py-2.5 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white font-medium"
         />
         <button
           type="submit"
           disabled={loading || !pergunta.trim()}
-          className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 disabled:opacity-50"
+          className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2.5 rounded-xl text-xs md:text-sm font-bold transition flex items-center gap-1.5 disabled:opacity-50 shadow-xs"
         >
           <span>Perguntar</span>
-          <Send size={10} />
+          <Send size={12} />
         </button>
       </form>
     </div>

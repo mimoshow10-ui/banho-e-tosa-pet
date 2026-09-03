@@ -12,7 +12,7 @@ export default function FreteCalculator() {
   async function calcular() {
     const cepLimpo = cep.replace(/\D/g, '');
     if (cepLimpo.length !== 8) {
-      setErro('CEP inválido.');
+      setErro('CEP inválido. Digite 8 números.');
       return;
     }
 
@@ -25,7 +25,7 @@ export default function FreteCalculator() {
       const dados = await r.json();
 
       if (dados.erro) {
-        setErro('CEP não encontrado.');
+        setErro('CEP não encontrado. Verifique e tente novamente.');
         setLoading(false);
         return;
       }
@@ -40,29 +40,29 @@ export default function FreteCalculator() {
         setResultado({ prazo: '7 a 15 dias úteis', valor: 'Grátis acima de R$ 149 | Ou R$ 24,90' });
       }
     } catch {
-      setErro('Erro ao consultar o CEP.');
+      setErro('Erro ao consultar o CEP. Tente novamente.');
     }
 
     setLoading(false);
   }
 
   return (
-    <div className="border border-border rounded-xl p-3 bg-gray-50/70">
-      <div className="flex items-center justify-between mb-2">
-        <h4 className="font-bold text-secondary flex items-center gap-1.5 text-xs">
-          <Truck size={14} className="text-primary" />
+    <div className="border border-gray-200 rounded-2xl p-4 bg-gray-50/80 shadow-xs">
+      <div className="flex items-center justify-between mb-3">
+        <h4 className="font-bold text-secondary flex items-center gap-2 text-base md:text-lg">
+          <Truck size={20} className="text-primary" />
           Calcular Frete e Prazo
         </h4>
         <a
           href="https://buscacepinter.correios.com.br/"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-[10px] text-blue-500 hover:underline"
+          className="text-xs text-blue-600 hover:underline font-medium"
         >
           Não sei meu CEP
         </a>
       </div>
-      <div className="flex gap-2">
+      <div className="flex gap-2.5">
         <input
           type="text"
           value={cep}
@@ -74,25 +74,25 @@ export default function FreteCalculator() {
           }}
           placeholder="00000-000"
           maxLength={9}
-          className="flex-1 border border-border rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+          className="flex-1 border border-gray-300 rounded-xl px-3.5 py-2.5 text-sm md:text-base focus:outline-none focus:ring-2 focus:ring-primary bg-white font-medium"
           onKeyDown={e => e.key === 'Enter' && calcular()}
         />
         <button
           type="button"
           onClick={calcular}
           disabled={loading}
-          className="bg-secondary text-white font-bold px-3 py-1.5 rounded-lg text-xs hover:bg-blue-900 transition disabled:opacity-50"
+          className="bg-secondary text-white font-bold px-5 py-2.5 rounded-xl text-sm md:text-base hover:bg-blue-900 transition disabled:opacity-50 shadow-xs"
         >
           {loading ? '...' : 'OK'}
         </button>
       </div>
 
-      {erro && <p className="text-red-500 text-[11px] mt-1">{erro}</p>}
+      {erro && <p className="text-red-500 text-xs md:text-sm mt-2 font-semibold">{erro}</p>}
 
       {resultado && (
-        <div className="mt-2 bg-white border border-green-200 rounded-lg p-2 text-xs">
-          <p className="text-[10px] text-gray-400">Previsão de entrega: <strong className="text-secondary">{resultado.prazo}</strong></p>
-          <p className="text-[10px] text-gray-400">Frete: <strong className="text-primary">{resultado.valor}</strong></p>
+        <div className="mt-3 bg-white border border-green-200 rounded-xl p-3 text-xs md:text-sm">
+          <p className="text-gray-500">Previsão de entrega: <strong className="text-secondary font-bold">{resultado.prazo}</strong></p>
+          <p className="text-gray-500 mt-1">Frete: <strong className="text-primary font-bold">{resultado.valor}</strong></p>
         </div>
       )}
     </div>
