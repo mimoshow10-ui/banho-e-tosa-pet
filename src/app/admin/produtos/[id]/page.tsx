@@ -36,6 +36,9 @@ async function atualizarProduto(formData: FormData) {
     expiraIso = new Date(dateStr).toISOString();
   }
 
+  const destaque_home = formData.get('destaque_home') as string;
+  const isSuperPromo = destaque_home === 'super_promocao';
+
   const payload = { 
     nome, 
     codigo_barras,
@@ -46,7 +49,7 @@ async function atualizarProduto(formData: FormData) {
     categoria_id: categoria_id || null, 
     imagens: imagensArr.length > 0 ? imagensArr : null,
     produtos_relacionados: relacionadosArr.length > 0 ? relacionadosArr : null,
-    destaque_super_promocao: formData.get('super_promocao') === 'on',
+    destaque_super_promocao: isSuperPromo,
     promocao_expira_em: expiraIso
   };
 
@@ -55,6 +58,29 @@ async function atualizarProduto(formData: FormData) {
   if (error) {
     redirect(`/admin/produtos/${id}?erro=Erro ao salvar: ${error.message}`);
   }
+
+  // Atualizar listas de destaques da Home em configuracoes
+  try {
+    const { data: configCurrent } = await supabase.from('configuracoes').select('valor').eq('chave', 'vitrine_destaques').single();
+    let valorAtual = configCurrent?.valor || { mais_vendidos: [], novidades: [] };
+
+    let mvList: string[] = (valorAtual.mais_vendidos || []).filter((prodId: string) => prodId !== id);
+    let novList: string[] = (valorAtual.novidades || []).filter((prodId: string) => prodId !== id);
+
+    if (destaque_home === 'mais_vendidos') {
+      mvList.unshift(id);
+    } else if (destaque_home === 'lancamento') {
+      novList.unshift(id);
+    }
+
+    await supabase.from('configuracoes').upsert({
+      chave: 'vitrine_destaques',
+      valor: {
+        mais_vendidos: Array.from(new Set(mvList)),
+        novidades: Array.from(new Set(novList))
+      }
+    }, { onConflict: 'chave' });
+  } catch {}
 
   revalidatePath('/admin/produtos');
   revalidatePath('/');
@@ -77,6 +103,17 @@ export default async function EditarProduto(props: { params: Promise<{ id: strin
 
   const { data: produto } = await supabase.from('produtos').select('*').eq('id', id).single();
   const { data: categorias } = await supabase.from('categorias').select('*');
+  const { data: configDestaques } = await supabase.from('configuracoes').select('valor').eq('chave', 'vitrine_destaques').single();
+  const valorDestaques = configDestaques?.valor || { mais_vendidos: [], novidades: [] };
+
+  let destaqueInicial = 'nenhum';
+  if (produto?.destaque_super_promocao) {
+    destaqueInicial = 'super_promocao';
+  } else if (Array.isArray(valorDestaques.mais_vendidos) && valorDestaques.mais_vendidos.includes(id)) {
+    destaqueInicial = 'mais_vendidos';
+  } else if (Array.isArray(valorDestaques.novidades) && valorDestaques.novidades.includes(id)) {
+    destaqueInicial = 'lancamento';
+  }
 
   // Buscar variações já vinculadas (filhos deste produto)
   const familyId = produto?.parent_id || id;
@@ -95,7 +132,7 @@ export default async function EditarProduto(props: { params: Promise<{ id: strin
   const todosProdutos = (todosProdutosRaw || []) as any[];
 
   if (!produto) {
-    return <div className="p-8 font-bold text-red-600">Produto no encontrado!</div>;
+    return <div className="p-8 font-bold text-red-600">Produto não encontrado!</div>;
   }
 
   if (produto && produto.imagens) {
@@ -103,6 +140,7 @@ export default async function EditarProduto(props: { params: Promise<{ id: strin
       produto.imagens = produto.imagens[0].split(/[\r\n,]+/).map((s: string) => s.trim()).filter((s: string) => s);
     }
   }
+
   return (
     <div className="max-w-2xl bg-white p-8 rounded-xl shadow-sm border border-border">
       <h1 className="text-2xl font-bold mb-6 text-secondary">Editar Produto</h1>
@@ -159,17 +197,19 @@ export default async function EditarProduto(props: { params: Promise<{ id: strin
           </div>
 
           <div>
-            <label className="flex items-center gap-2 cursor-pointer border border-gray-300 rounded-xl p-2.5 h-11 bg-gray-50 hover:bg-gray-100 transition w-full justify-center shadow-2xs">
-              <input
-                type="checkbox"
-                name="super_promocao"
-                defaultChecked={produto.destaque_super_promocao}
-                className="w-4 h-4 text-primary rounded accent-primary cursor-pointer"
-              />
-              <span className="text-xs font-bold text-secondary whitespace-nowrap">
-                Capa Super Promoção
-              </span>
+            <label className="block text-xs font-bold text-secondary mb-1 min-h-[36px] flex items-end">
+              Destaque na Home?
             </label>
+            <select
+              name="destaque_home"
+              defaultValue={destaqueInicial}
+              className="w-full border border-primary/50 bg-orange-50/40 rounded-xl p-2.5 h-11 text-xs md:text-sm font-bold text-secondary focus:ring-2 focus:ring-primary focus:outline-none shadow-2xs cursor-pointer"
+            >
+              <option value="nenhum">Nenhum (Vitrine Normal)</option>
+              <option value="super_promocao">🔥 Super Promoção</option>
+              <option value="mais_vendidos">⭐ Os Mais Vendidos</option>
+              <option value="lancamento">🆕 Lançamento / Novidade</option>
+            </select>
           </div>
         </div>
         
@@ -211,22 +251,48 @@ export default async function EditarProduto(props: { params: Promise<{ id: strin
           </div>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-3">Imagens do Produto</label>
+        <div className="border-t border-border pt-6">
+          <h2 className="text-lg font-bold mb-2 text-secondary">Variações / Produtos Filhos</h2>
+          <p className="text-xs text-gray-500 mb-4">
+            Vincule ou remova produtos que funcionam como tamanhos ou pacotes (ex: 25 un, 50 un) deste produto.
+          </p>
+
+          <VariacaoManager
+            parentId={familyId}
+            currentProdutoId={id}
+            variacoesIniciais={variacoes}
+            todosProdutos={todosProdutos}
+          />
+        </div>
+
+        <div className="border-t border-border pt-6">
+          <label className="block text-sm font-medium mb-3">Imagens do Anúncio (Primeira é a Capa)</label>
           <ImageManager initialImages={produto.imagens || []} />
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1">URL do Vídeo (YouTube, MP4, etc)</label>
-          <input name="video_url" type="url" defaultValue={produto.video_url || ''} placeholder="Ex: https://youtube.com/watch?v=..." className="w-full border border-border rounded-lg p-2" />
-          <p className="text-xs text-gray-500 mt-1">Opcional. Se preenchido, o vídeo aparecerá abaixo das fotos na página do produto.</p>
+          <label className="block text-sm font-medium mb-1">Vídeo Explicativo do Produto (URL do YouTube)</label>
+          <input 
+            name="video_url" 
+            type="url" 
+            placeholder="https://www.youtube.com/watch?v=..." 
+            defaultValue={produto.video_url || ''} 
+            className="w-full border border-border rounded-lg p-2" 
+          />
+          <p className="text-xs text-gray-500 mt-1">Cole o link completo do vídeo do YouTube para ser exibido na página de vendas.</p>
         </div>
 
-        <VariacaoManager
-          produtoId={id}
-          variacoes={variacoes}
-          todosProdutos={todosProdutos}
-        />
+        <div>
+          <label className="block text-sm font-medium mb-1">Produtos Relacionados (Mais Opções de Compra)</label>
+          <input 
+            name="relacionados" 
+            type="text" 
+            placeholder="IDs dos produtos separados por vírgula" 
+            defaultValue={produto.produtos_relacionados ? produto.produtos_relacionados.join(', ') : ''} 
+            className="w-full border border-border rounded-lg p-2" 
+          />
+          <p className="text-xs text-gray-500 mt-1">IDs dos produtos que aparecerão na seção "Compre Junto".</p>
+        </div>
 
         <button type="submit" className="bg-primary text-white py-3 rounded-lg font-bold hover:bg-orange-600 transition mt-4">
           Salvar Alterações
