@@ -125,18 +125,18 @@ export default async function ProdutoPage({ params }: { params: Promise<{ slug: 
           )}
 
           {/* Botões de compra padrão de e-commerce */}
-          <div className="flex flex-col sm:flex-row gap-3 mt-1">
+          <div className="flex flex-col sm:flex-row gap-2.5 mt-1">
             <Link
               href="/carrinho"
-              className="flex-1 bg-primary text-white text-center font-bold text-lg py-4 rounded-xl hover:bg-orange-600 transition shadow-md"
+              className="flex-1 bg-accent text-text text-center font-bold text-sm md:text-base py-3 rounded-xl hover:bg-yellow-400 transition shadow-xs border border-yellow-300 flex items-center justify-center gap-1.5"
             >
-              ⚡ Comprar Agora
+              🛒 Adicionar ao Carrinho
             </Link>
             <Link
               href="/carrinho"
-              className="flex-1 bg-accent text-text text-center font-bold text-lg py-4 rounded-xl hover:bg-yellow-400 transition shadow-sm border border-yellow-300"
+              className="flex-1 bg-primary text-white text-center font-bold text-sm md:text-base py-3 rounded-xl hover:bg-orange-600 transition shadow-sm flex items-center justify-center gap-1.5"
             >
-              🛒 Adicionar ao Carrinho
+              ⚡ Comprar Agora
             </Link>
           </div>
 

@@ -7,27 +7,12 @@ import BannerCarousel from "@/components/BannerCarousel";
 export const revalidate = 0;
 export const dynamic = 'force-dynamic';
 
-// Emojis para as categorias
-const CATEGORIA_EMOJI: Record<string, string> = {
-  'adesivos': '🎨',
-  'gravatinhas': '👔',
-  'lacinhos': '🎀',
-  'bandanas': '🧣',
-  'gargantilhas': '📿',
-  'colarinhos': '🐾',
-  'piercings': '✨',
-};
-
 export default async function Home() {
   const { data: configs } = await supabase.from('configuracoes').select('*');
   const banners = configs?.find(c => c.chave === 'marketing_banners')?.valor?.urls || ['/banner-pet.jpg'];
 
-  // Categorias para pílulas
-  const { data: categorias } = await supabase
-    .from('categorias')
-    .select('id, nome, slug')
-    .is('parent_id', null)
-    .order('nome');
+  // Destaques da vitrine
+  const destaquesConfig = configs?.find(c => c.chave === 'vitrine_destaques')?.valor || { mais_vendidos: [], novidades: [] };
 
   // Puxar todos os produtos ativos ordenados por novidade
   const { data: todosProdutos } = await supabase
@@ -46,7 +31,7 @@ export default async function Home() {
 
   const produtos = todosProdutos || [];
   
-  // Filtrar apenas promoções válidas (com estoque > 0, dentro do prazo e preço promocional ativo)
+  // Filtrar apenas promoções válidas
   const agora = Date.now();
   const produtosPromocao = (superPromocoes || []).filter((prod) => {
     if (!prod.preco_promocional || Number(prod.preco_promocional) >= Number(prod.preco)) return false;
@@ -56,131 +41,179 @@ export default async function Home() {
       if (isNaN(expira) || expira <= agora) return false;
     }
     return true;
-  }).slice(0, 5);
+  }).slice(0, 6);
 
-  const produtosNovidades = produtos.slice(0, 8);
+  // Mais Vendidos
+  const idsMaisVendidos = destaquesConfig.mais_vendidos || [];
+  const produtosMaisVendidos = idsMaisVendidos.length > 0
+    ? produtos.filter(p => idsMaisVendidos.includes(p.id))
+    : produtos.slice(0, 6);
+
+  // Novidades
+  const idsNovidades = destaquesConfig.novidades || [];
+  const produtosNovidades = idsNovidades.length > 0
+    ? produtos.filter(p => idsNovidades.includes(p.id))
+    : produtos.slice(0, 8);
 
   return (
     <div className="flex flex-col min-h-screen">
       {/* Hero Section com Banner Dinâmico */}
       <section className="w-full relative bg-gray-100">
         <BannerCarousel banners={banners} />
-          {/* Overlay Escuro com Texto */}
-          <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center text-center px-4 pointer-events-none">
-            <h1 className="text-4xl md:text-5xl font-heading font-bold mb-6 text-white drop-shadow-lg">
-              Estilo e Conforto para o seu Melhor Amigo!
-            </h1>
-            <Link href="/categoria/todas" className="bg-primary text-text font-bold py-3 px-8 rounded-full hover:bg-orange-600 transition text-lg shadow-lg pointer-events-auto">
-              Ver Coleção Completa
-            </Link>
-          </div>
+        {/* Overlay Escuro com Texto */}
+        <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center text-center px-4 pointer-events-none">
+          <h1 className="text-3xl md:text-5xl font-heading font-bold mb-4 text-white drop-shadow-lg">
+            Estilo e Conforto para o seu Melhor Amigo!
+          </h1>
+          <Link href="/categoria/todas" className="bg-primary text-white font-bold py-3 px-8 rounded-full hover:bg-orange-600 transition text-base md:text-lg shadow-lg pointer-events-auto">
+            Ver Coleção Completa
+          </Link>
+        </div>
       </section>
 
-      {/* Grupos de Categoria */}
-      {categorias && categorias.length > 0 && (
-        <section className="py-8 px-4 max-w-7xl mx-auto w-full">
-          <div className="flex flex-wrap gap-3 justify-center">
-            {categorias.map(cat => (
-              <Link
-                key={cat.id}
-                href={`/categoria/${cat.slug}`}
-                className="flex items-center gap-2 bg-white border-2 border-border rounded-full px-5 py-2.5 font-bold text-secondary hover:border-primary hover:text-primary hover:shadow-md transition text-sm"
-              >
-                <span className="text-lg">{CATEGORIA_EMOJI[cat.slug] || '🐶'}</span>
-                {cat.nome}
-              </Link>
-            ))}
-            <Link
-              href="/categoria/todas"
-              className="flex items-center gap-2 bg-primary text-white border-2 border-primary rounded-full px-5 py-2.5 font-bold hover:bg-orange-600 hover:border-orange-600 transition text-sm"
-            >
-              <span className="text-lg">🛍️</span>
-              Ver Tudo
-            </Link>
-          </div>
-        </section>
-      )}
+      {/* Conteúdo Principal — Usando área lateral (max-w-[1500px]) */}
+      <div className="max-w-[1500px] w-full mx-auto px-4 md:px-8 space-y-12 py-8">
 
-      {/* Super Promoção */}
-      {produtosPromocao.length > 0 && (
-        <section className="py-12 px-4 max-w-7xl mx-auto w-full bg-red-50 mt-4 rounded-2xl border border-red-100">
-          <div className="flex justify-between items-end mb-8">
-            <div>
-              <h2 className="text-3xl font-heading font-black text-red-600 uppercase tracking-tight flex items-center gap-2">
-                🔥 Super Promoção
-              </h2>
-              <p className="text-red-500 font-bold text-sm mt-1">Ofertas por tempo limitado!</p>
+        {/* 1. Super Promoção */}
+        {produtosPromocao.length > 0 && (
+          <section className="py-8 px-6 bg-red-50/80 rounded-3xl border border-red-100 shadow-xs">
+            <div className="flex justify-between items-end mb-6">
+              <div>
+                <h2 className="text-2xl md:text-3xl font-heading font-black text-red-600 uppercase tracking-tight flex items-center gap-2">
+                  🔥 Super Promoção
+                </h2>
+                <p className="text-red-500 font-bold text-xs md:text-sm mt-0.5">Ofertas exclusivas por tempo limitado!</p>
+              </div>
+              <Link href="/categoria/todas" className="text-red-600 font-bold hover:underline text-xs md:text-sm hidden md:block">
+                Ver todas as ofertas &rarr;
+              </Link>
             </div>
-            <Link href="/promocoes" className="text-red-600 font-bold hover:underline text-sm hidden md:block">
-              Ver todas as ofertas
+            
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+              {produtosPromocao.map((prod) => {
+                const desconto = Math.round(((prod.preco - prod.preco_promocional) / prod.preco) * 100);
+                const foto = prod.imagens?.[0] ? (typeof prod.imagens[0] === 'string' ? prod.imagens[0].split(/[\r\n,]+/)[0] : prod.imagens[0]) : null;
+
+                return (
+                  <Link href={`/produto/${prod.slug}`} key={`promo-${prod.id}`} className="group bg-white rounded-2xl shadow-xs border border-red-200 overflow-hidden hover:shadow-md transition relative flex flex-col">
+                    <div className="absolute top-2 right-2 bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-xs z-10">
+                      -{desconto}% OFF
+                    </div>
+                    <div className="w-full aspect-square bg-gray-100 relative">
+                      {foto ? (
+                        <Image src={foto} alt={prod.nome} fill className="object-cover group-hover:scale-105 transition duration-300" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-400 font-bold text-xs bg-gray-200">Sem Foto</div>
+                      )}
+                    </div>
+                    <div className="p-3 flex flex-col flex-1 justify-between">
+                      <h3 className="font-bold text-secondary text-xs mb-2 group-hover:text-red-600 transition line-clamp-2">{prod.nome}</h3>
+                      <div className="mt-auto">
+                        <span className="text-[11px] text-gray-400 line-through block">R$ {Number(prod.preco).toFixed(2).replace('.', ',')}</span>
+                        <span className="font-black text-base text-red-600">R$ {Number(prod.preco_promocional).toFixed(2).replace('.', ',')}</span>
+                        {prod.promocao_expira_em && (
+                          <div className="mt-1 scale-90 origin-left">
+                            <CountdownTimer targetDate={prod.promocao_expira_em} />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {/* 2. Mais Vendidos (Antes de Novidades) */}
+        {produtosMaisVendidos.length > 0 && (
+          <section className="py-8 px-6 bg-amber-50/60 rounded-3xl border border-amber-100 shadow-xs">
+            <div className="flex justify-between items-end mb-6">
+              <div>
+                <h2 className="text-2xl md:text-3xl font-heading font-black text-amber-900 uppercase tracking-tight flex items-center gap-2">
+                  ⭐ Os Mais Vendidos
+                </h2>
+                <p className="text-amber-700 font-bold text-xs md:text-sm mt-0.5">Os queridinhos dos nossos clientes pet shop!</p>
+              </div>
+              <Link href="/categoria/todas" className="text-amber-800 font-bold hover:underline text-xs md:text-sm hidden md:block">
+                Ver todos os mais vendidos &rarr;
+              </Link>
+            </div>
+            
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+              {produtosMaisVendidos.map((prod) => {
+                const foto = prod.imagens?.[0] ? (typeof prod.imagens[0] === 'string' ? prod.imagens[0].split(/[\r\n,]+/)[0] : prod.imagens[0]) : null;
+                const precoExibido = prod.preco_promocional && Number(prod.preco_promocional) < Number(prod.preco) ? prod.preco_promocional : prod.preco;
+
+                return (
+                  <Link href={`/produto/${prod.slug}`} key={`best-${prod.id}`} className="group bg-white rounded-2xl shadow-xs border border-amber-200 overflow-hidden hover:shadow-md transition flex flex-col">
+                    <div className="w-full aspect-square bg-gray-100 relative">
+                      {foto ? (
+                        <Image src={foto} alt={prod.nome} fill className="object-cover group-hover:scale-105 transition duration-300" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-400 font-bold text-xs bg-gray-200">Sem Foto</div>
+                      )}
+                    </div>
+                    <div className="p-3 flex flex-col flex-1 justify-between">
+                      <h3 className="font-bold text-secondary text-xs mb-2 group-hover:text-amber-600 transition line-clamp-2">{prod.nome}</h3>
+                      <div className="mt-auto">
+                        <span className="font-black text-base text-primary">R$ {Number(precoExibido).toFixed(2).replace('.', ',')}</span>
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {/* 3. Nossas Novidades */}
+        <section className="py-6">
+          <div className="flex justify-between items-end mb-6">
+            <div>
+              <h2 className="text-2xl md:text-3xl font-heading font-bold text-secondary flex items-center gap-2">
+                🆕 Nossas Novidades
+              </h2>
+              <p className="text-gray-500 text-xs md:text-sm mt-0.5">Últimos lançamentos adicionados ao catálogo</p>
+            </div>
+            <Link href="/categoria/todas" className="text-primary font-bold hover:underline text-xs md:text-sm hidden md:block">
+              Ver todos os lançamentos &rarr;
             </Link>
           </div>
           
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            {produtosPromocao.map((prod) => {
-              const desconto = Math.round(((prod.preco - prod.preco_promocional) / prod.preco) * 100);
-              return (
-                <Link href={`/produto/${prod.slug}`} key={`promo-${prod.id}`} className="group bg-white rounded-xl shadow-sm border border-red-200 overflow-hidden hover:shadow-md transition relative">
-                  <div className="absolute top-2 right-2 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded z-10 shadow">
-                    -{desconto}% OFF
-                  </div>
-                  <div className="w-full h-40 bg-gray-100 relative">
-                    {prod.imagens && prod.imagens.length > 0 ? (
-                      <Image src={typeof prod.imagens[0] === 'string' ? prod.imagens[0].split(/[\r\n]+/)[0] : prod.imagens[0]} alt={prod.nome} fill className="object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-400 font-bold text-sm bg-gray-200">Sem Foto</div>
-                    )}
-                  </div>
-                  <div className="p-3 flex flex-col h-auto">
-                    <h3 className="font-bold text-secondary text-sm mb-2 group-hover:text-red-600 transition line-clamp-2">{prod.nome}</h3>
-                    <div className="mt-auto flex flex-col">
-                      <span className="text-xs text-gray-400 line-through">R$ {Number(prod.preco).toFixed(2).replace('.', ',')}</span>
-                      <span className="font-black text-lg text-red-600">R$ {Number(prod.preco_promocional).toFixed(2).replace('.', ',')}</span>
-                      {prod.promocao_expira_em && (
-                        <div className="mt-2 scale-90 origin-left">
-                          <CountdownTimer targetDate={prod.promocao_expira_em} />
-                        </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            {produtosNovidades && produtosNovidades.length > 0 ? (
+              produtosNovidades.map((prod) => {
+                const foto = prod.imagens?.[0] ? (typeof prod.imagens[0] === 'string' ? prod.imagens[0].split(/[\r\n,]+/)[0] : prod.imagens[0]) : null;
+
+                return (
+                  <Link href={`/produto/${prod.slug}`} key={prod.id} className="group bg-white rounded-2xl shadow-xs border border-border overflow-hidden hover:shadow-md transition flex flex-col">
+                    <div className="w-full aspect-square bg-gray-100 relative">
+                      {foto ? (
+                        <Image src={foto} alt={prod.nome} fill className="object-cover group-hover:scale-105 transition duration-300" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-400 font-bold text-xs bg-gray-200">Sem Foto</div>
                       )}
                     </div>
-                  </div>
-                </Link>
-              );
-            })}
+                    <div className="p-3 flex flex-col flex-1 justify-between">
+                      <h3 className="font-bold text-secondary text-xs mb-2 group-hover:text-primary transition line-clamp-2">{prod.nome}</h3>
+                      <div className="mt-auto">
+                        <span className="font-bold text-base text-primary">R$ {Number(prod.preco).toFixed(2).replace('.', ',')}</span>
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })
+            ) : (
+              <div className="col-span-full text-center text-gray-500 py-8 bg-gray-50 rounded-2xl border border-dashed border-gray-300">
+                <p className="text-base font-bold mb-1">A vitrine está vazia!</p>
+                <p className="text-xs text-gray-400">Os produtos cadastrados no Painel Admin aparecerão aqui.</p>
+              </div>
+            )}
           </div>
         </section>
-      )}
 
-      {/* Novidades */}
-      <section className="py-16 px-4 max-w-7xl mx-auto w-full">
-        <h2 className="text-3xl font-heading font-bold text-secondary text-center mb-12">Nossas Novidades</h2>
-        
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
-          {produtosNovidades && produtosNovidades.length > 0 ? (
-            produtosNovidades.map((prod) => (
-              <Link href={`/produto/${prod.slug}`} key={prod.id} className="group bg-white rounded-xl shadow-sm border border-border overflow-hidden hover:shadow-md transition">
-                <div className="w-full h-48 bg-gray-100 relative">
-                  {prod.imagens && prod.imagens.length > 0 ? (
-                    <Image src={typeof prod.imagens[0] === 'string' ? prod.imagens[0].split(/[\r\n]+/)[0] : prod.imagens[0]} alt={prod.nome} fill className="object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-400 font-bold text-sm bg-gray-200">Sem Foto</div>
-                  )}
-                </div>
-                <div className="p-4 flex flex-col h-32">
-                  <h3 className="font-bold text-secondary mb-2 group-hover:text-primary transition line-clamp-2">{prod.nome}</h3>
-                  <div className="mt-auto">
-                    <span className="font-bold text-xl text-primary">R$ {Number(prod.preco).toFixed(2).replace('.', ',')}</span>
-                  </div>
-                </div>
-              </Link>
-            ))
-          ) : (
-            <div className="col-span-full text-center text-gray-500 py-8 bg-gray-50 rounded-xl border border-dashed border-gray-300">
-              <p className="text-lg font-bold mb-2">A vitrine está vazia!</p>
-              <p>Os produtos que você cadastrar no Painel Admin ou exportar do Bling aparecerão automaticamente aqui.</p>
-            </div>
-          )}
-        </div>
-      </section>
+      </div>
     </div>
   );
 }
