@@ -23,6 +23,7 @@ async function salvarCupom(formData: FormData) {
   const ativo = formData.get('ativo') === 'on';
   const limite_usos_total = formData.get('limite_usos_total') ? parseInt(formData.get('limite_usos_total') as string) : null;
   const permitir_produtos_promocionais = formData.get('permitir_produtos_promocionais') === 'on';
+  const permitir_acumulo = formData.get('permitir_acumulo') === 'on';
   const tipo_elegibilidade = (formData.get('tipo_elegibilidade') as Cupom['tipo_elegibilidade']) || 'todos';
 
   const { data: config } = await supabase
@@ -48,6 +49,7 @@ async function salvarCupom(formData: FormData) {
     limite_usos_total,
     usos_realizados: index >= 0 ? lista[index].usos_realizados || 0 : 0,
     permitir_produtos_promocionais,
+    permitir_acumulo,
     tipo_elegibilidade,
     criado_em: index >= 0 ? lista[index].criado_em : new Date().toISOString(),
   };
@@ -282,9 +284,16 @@ export default async function AdminCuponsPage({
           </div>
 
           <div className="flex items-center gap-2 md:col-span-2 pt-2">
-            <input id="permitir_produtos_promocionais" name="permitir_produtos_promocionais" type="checkbox" defaultChecked className="w-4 h-4 accent-primary" />
-            <label htmlFor="permitir_produtos_promocionais" className="text-xs font-bold text-gray-700">
+            <input id="permitir_produtos_promocionais" name="permitir_produtos_promocionais" type="checkbox" defaultChecked className="w-4 h-4 accent-primary cursor-pointer" />
+            <label htmlFor="permitir_produtos_promocionais" className="text-xs font-bold text-gray-700 cursor-pointer">
               Permitir aplicação do cupom sobre produtos que JÁ estão em promoção
+            </label>
+          </div>
+
+          <div className="flex items-center gap-2 md:col-span-2">
+            <input id="permitir_acumulo" name="permitir_acumulo" type="checkbox" className="w-4 h-4 accent-primary cursor-pointer" />
+            <label htmlFor="permitir_acumulo" className="text-xs font-bold text-gray-700 cursor-pointer">
+              Permitir somar/acumular este cupom com outros cupons no mesmo pedido
             </label>
           </div>
 

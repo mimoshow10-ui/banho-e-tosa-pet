@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Ticket, Check, Sparkles, Copy } from 'lucide-react';
+import { Ticket, Check, Sparkles, Tag, ArrowRight } from 'lucide-react';
 import { CupomDesconto } from '@/lib/types/coupon';
 
 export default function HomeCouponsBanner() {
@@ -16,9 +16,7 @@ export default function HomeCouponsBanner() {
           const data = await res.json();
           setCupons(data.cupons || []);
         }
-      } catch {
-        //
-      }
+      } catch {}
     }
 
     try {
@@ -29,137 +27,94 @@ export default function HomeCouponsBanner() {
     carregarCupons();
   }, []);
 
-  function coletarCupom(c: CupomDesconto) {
+  function coletarCupom(c: Partial<CupomDesconto>) {
     try {
+      if (!c.codigo) return;
       const novos = { ...coletados, [c.codigo]: true };
       setColetados(novos);
       localStorage.setItem('cupons_coletados', JSON.stringify(novos));
-
-      // Salva o último cupom coletado para auto-aplicação no carrinho
       localStorage.setItem('cupom_ativo_codigo', c.codigo);
-
-      // Copia o código para a área de transferência do usuário
       navigator.clipboard.writeText(c.codigo);
     } catch {}
   }
 
-  if (cupons.length === 0) {
-    // Se ainda não cadastrou no banco, mostra 2 cupons de exemplo atrativos
-    const cuponsExemplo: Partial<CupomDesconto>[] = [
-      { id: '1', codigo: 'BEMVINDO10', tipo: 'percentual', valor: 10, compra_minima: 50, nome_interno: '10% OFF na Primeira Compra' },
-      { id: '2', codigo: 'FRETEGRATIS', tipo: 'frete_gratis', valor: 0, compra_minima: 99, nome_interno: 'Frete Grátis acima de R$ 99' },
-      { id: '3', codigo: 'PET20', tipo: 'fixo', valor: 20, compra_minima: 150, nome_interno: 'R$ 20 OFF em compras acima de R$ 150' },
-    ];
-
-    return (
-      <div className="w-full bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 py-6 px-4 text-white shadow-md">
-        <div className="max-w-[1500px] mx-auto space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Ticket size={24} className="text-yellow-200 animate-bounce" />
-              <h2 className="text-lg md:text-xl font-heading font-black tracking-tight uppercase">
-                🎟️ Cupons Especiais da Loja
-              </h2>
-            </div>
-            <span className="text-xs font-bold bg-white/20 backdrop-blur-xs px-3 py-1 rounded-full hidden sm:inline-block">
-              Pegue o seu e economize!
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {cuponsExemplo.map((c) => {
-              const isColetado = !!coletados[c.codigo!];
-
-              return (
-                <div
-                  key={c.codigo}
-                  className="bg-white text-secondary rounded-2xl p-4 shadow-sm border border-yellow-200 flex items-center justify-between gap-3 relative overflow-hidden group"
-                >
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-1.5">
-                      <span className="bg-red-500 text-white font-black text-xs px-2 py-0.5 rounded-md uppercase">
-                        {c.tipo === 'percentual' ? `${c.valor}% OFF` : c.tipo === 'fixo' ? `R$ ${c.valor} OFF` : 'FRETE GRÁTIS'}
-                      </span>
-                      <span className="font-mono font-bold text-xs text-gray-500">{c.codigo}</span>
-                    </div>
-                    <p className="text-xs text-gray-600 font-bold line-clamp-1">{c.nome_interno}</p>
-                    <p className="text-[11px] text-gray-400">Mínimo R$ {c.compra_minima?.toFixed(2).replace('.', ',')}</p>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => coletarCupom(c as CupomDesconto)}
-                    className={`px-3 py-2 rounded-xl text-xs font-black transition flex items-center gap-1 cursor-pointer flex-shrink-0 ${
-                      isColetado
-                        ? 'bg-green-600 text-white'
-                        : 'bg-primary text-white hover:bg-orange-600 shadow-2xs'
-                    }`}
-                  >
-                    {isColetado ? (
-                      <>
-                        <Check size={14} />
-                        <span>Coletado</span>
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles size={14} />
-                        <span>Pegar</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const listaExibida: Partial<CupomDesconto>[] = cupons.length > 0 ? cupons : [
+    { id: '1', codigo: 'BEMVINDO10', tipo: 'percentual', valor: 10, compra_minima: 50, nome_interno: '10% OFF na Primeira Compra' },
+    { id: '2', codigo: 'FRETEGRATIS', tipo: 'frete_gratis', valor: 0, compra_minima: 99, nome_interno: 'Frete Grátis acima de R$ 99' },
+    { id: '3', codigo: 'PET20', tipo: 'fixo', valor: 20, compra_minima: 150, nome_interno: 'R$ 20 OFF acima de R$ 150' },
+  ];
 
   return (
-    <div className="w-full bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 py-6 px-4 text-white shadow-md">
-      <div className="max-w-[1500px] mx-auto space-y-4">
+    <div className="w-full bg-gradient-to-r from-orange-600 via-amber-500 to-orange-500 py-4 px-4 text-white shadow-md border-b border-orange-600/30">
+      <div className="max-w-[1500px] mx-auto space-y-3">
+        
+        {/* Cabeçalho da Seção de Cupons */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Ticket size={24} className="text-yellow-200" />
-            <h2 className="text-lg md:text-xl font-heading font-black tracking-tight uppercase">
-              🎟️ Cupons Especiais da Loja
-            </h2>
+            <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-xs flex items-center justify-center text-yellow-200">
+              <Ticket size={18} />
+            </div>
+            <div>
+              <h2 className="text-sm md:text-base font-heading font-black tracking-tight uppercase flex items-center gap-1.5">
+                <span>🎟️ Cupons da Loja</span>
+                <span className="text-[10px] bg-red-600 text-white font-bold px-2 py-0.5 rounded-full tracking-normal lowercase font-sans">
+                  economize já
+                </span>
+              </h2>
+            </div>
           </div>
-          <span className="text-xs font-bold bg-white/20 backdrop-blur-xs px-3 py-1 rounded-full hidden sm:inline-block">
-            Pegue o seu e economize na hora!
+          
+          <span className="text-xs font-bold text-yellow-100 hidden sm:flex items-center gap-1">
+            Clique em PEGAR para aplicar no carrinho <ArrowRight size={14} />
           </span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
-          {cupons.map((c) => {
-            const isColetado = !!coletados[c.codigo];
+        {/* Cards Estilo Ticket de Cupom */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {listaExibida.map((c) => {
+            const isColetado = !!coletados[c.codigo!];
+            const badgeTexto = c.tipo === 'percentual'
+              ? `${c.valor}% OFF`
+              : c.tipo === 'fixo'
+              ? `R$ ${c.valor} OFF`
+              : 'FRETE GRÁTIS';
 
             return (
               <div
-                key={c.id}
-                className="bg-white text-secondary rounded-2xl p-4 shadow-sm border border-yellow-200 flex items-center justify-between gap-3 relative overflow-hidden group"
+                key={c.codigo}
+                className="bg-white text-secondary rounded-2xl p-3.5 shadow-sm hover:shadow-md transition-all duration-200 border-l-4 border-l-orange-500 border border-gray-200 flex items-center justify-between gap-3 group relative"
               >
-                <div className="space-y-1">
-                  <div className="flex items-center gap-1.5">
-                    <span className="bg-red-600 text-white font-black text-xs px-2 py-0.5 rounded-md uppercase">
-                      {c.tipo === 'percentual' ? `${c.valor}% OFF` : c.tipo === 'fixo' ? `R$ ${c.valor} OFF` : 'FRETE GRÁTIS'}
+                {/* Detalhes do Cupom */}
+                <div className="space-y-1 overflow-hidden">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="bg-red-600 text-white font-black text-[11px] px-2 py-0.5 rounded-md uppercase tracking-tight shadow-2xs">
+                      {badgeTexto}
                     </span>
-                    <span className="font-mono font-bold text-xs text-gray-500">{c.codigo}</span>
+                    <span className="font-mono font-bold text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded border border-gray-200 flex items-center gap-1">
+                      <Tag size={10} className="text-orange-500" />
+                      {c.codigo}
+                    </span>
                   </div>
-                  <p className="text-xs text-gray-700 font-bold line-clamp-1">{c.nome_interno}</p>
-                  {c.compra_minima > 0 && (
-                    <p className="text-[11px] text-gray-400">Mínimo R$ {c.compra_minima.toFixed(2).replace('.', ',')}</p>
-                  )}
+                  
+                  <p className="text-xs font-bold text-gray-800 line-clamp-1 group-hover:text-primary transition">
+                    {c.nome_interno}
+                  </p>
+
+                  <p className="text-[10px] text-gray-400 font-medium">
+                    {c.compra_minima && c.compra_minima > 0
+                      ? `Mínimo R$ ${Number(c.compra_minima).toFixed(2).replace('.', ',')}`
+                      : 'Sem valor mínimo exigido'}
+                  </p>
                 </div>
 
+                {/* Botão de Coletar */}
                 <button
                   type="button"
                   onClick={() => coletarCupom(c)}
-                  className={`px-3 py-2 rounded-xl text-xs font-black transition flex items-center gap-1 cursor-pointer flex-shrink-0 ${
+                  className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all duration-200 flex items-center gap-1 flex-shrink-0 cursor-pointer ${
                     isColetado
-                      ? 'bg-green-600 text-white'
-                      : 'bg-primary text-white hover:bg-orange-600 shadow-2xs'
+                      ? 'bg-green-600 text-white shadow-2xs'
+                      : 'bg-primary text-white hover:bg-orange-600 shadow-sm active:scale-95'
                   }`}
                 >
                   {isColetado ? (
@@ -178,6 +133,7 @@ export default function HomeCouponsBanner() {
             );
           })}
         </div>
+
       </div>
     </div>
   );

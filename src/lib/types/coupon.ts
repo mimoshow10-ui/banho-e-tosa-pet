@@ -12,6 +12,7 @@ export interface Cupom {
   limite_usos_total?: number | null;
   usos_realizados: number;
   permitir_produtos_promocionais: boolean; // SIM / NÃO
+  permitir_acumulo?: boolean; // SIM / NÃO (Permite ser acumulado com outros cupons)
   tipo_elegibilidade: 'todos' | 'grupos' | 'subgrupos' | 'produtos' | 'skus';
   elegiveis_ids?: string[]; // IDs autorizados
   exclusoes_ids?: string[]; // IDs bloqueados

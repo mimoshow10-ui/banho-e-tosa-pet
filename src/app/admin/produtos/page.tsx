@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Pencil, Trash2, Plus, ExternalLink } from 'lucide-react';
 import ImportBlingForm from '@/components/ImportBlingForm';
+import ImportadorLoteModal from '@/components/ImportadorLoteModal';
 import DeleteProductButton from './DeleteProductButton';
 
 import { importarSKU } from './actions';
@@ -34,15 +35,18 @@ export default async function AdminProdutos(props: { searchParams: Promise<{ msg
           <span className="block sm:inline"> {error.message} - {error.details} - {error.hint}</span>
         </div>
       )}
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
         <h1 className="text-3xl font-heading font-bold text-gray-800">Produtos</h1>
-        <Link 
-          href="/admin/produtos/novo" 
-          className="bg-primary text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-primary-hover transition"
-        >
-          <Plus size={20} />
-          Novo Produto
-        </Link>
+        <div className="flex items-center gap-3">
+          <ImportadorLoteModal />
+          <Link 
+            href="/admin/produtos/novo" 
+            className="bg-primary text-white px-4 py-2 rounded-xl flex items-center gap-2 hover:bg-primary-hover transition text-sm font-bold shadow-sm"
+          >
+            <Plus size={18} />
+            <span>Novo Produto</span>
+          </Link>
+        </div>
       </div>
 
       {searchParams.msg && (
