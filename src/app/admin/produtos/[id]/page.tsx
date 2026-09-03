@@ -30,6 +30,11 @@ async function atualizarProduto(formData: FormData) {
 
   const codigo_barras = formData.get('codigo_barras') as string;
   const promocao_expira_em = formData.get('promocao_expira_em') as string;
+  let expiraIso = null;
+  if (promocao_expira_em) {
+    const dateStr = promocao_expira_em.length === 16 ? `${promocao_expira_em}:00-03:00` : promocao_expira_em;
+    expiraIso = new Date(dateStr).toISOString();
+  }
 
   const payload = { 
     nome, 
@@ -42,7 +47,7 @@ async function atualizarProduto(formData: FormData) {
     imagens: imagensArr.length > 0 ? imagensArr : null,
     produtos_relacionados: relacionadosArr.length > 0 ? relacionadosArr : null,
     destaque_super_promocao: formData.get('super_promocao') === 'on',
-    promocao_expira_em: promocao_expira_em ? new Date(promocao_expira_em).toISOString() : null
+    promocao_expira_em: expiraIso
   };
 
   const { error } = await supabase.from('produtos').update(payload).eq('id', id);
@@ -126,7 +131,7 @@ export default async function EditarProduto(props: { params: Promise<{ id: strin
           </div>
           <div>
             <label className="block text-sm font-bold text-red-600 mb-1">Validade Promoção</label>
-            <input name="promocao_expira_em" type="datetime-local" defaultValue={produto.promocao_expira_em ? new Date(produto.promocao_expira_em).toISOString().slice(0,16) : ''} className="w-full border border-red-300 rounded-lg p-2" />
+            <input name="promocao_expira_em" type="datetime-local" defaultValue={produto.promocao_expira_em ? new Date(new Date(produto.promocao_expira_em).getTime() - 3 * 3600 * 1000).toISOString().slice(0,16) : ''} className="w-full border border-red-300 rounded-lg p-2" />
           </div>
           <div className="col-span-1 flex items-center justify-center pt-6">
             <label className="flex items-center gap-2 cursor-pointer border border-border rounded-lg p-2 bg-gray-50 w-full justify-center">
