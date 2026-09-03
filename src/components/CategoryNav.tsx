@@ -9,6 +9,19 @@ interface Categoria {
   parent_id: string | null;
 }
 
+const EMOJIS: Record<string, string> = {
+  'adesivos': '🎨',
+  'bandanas': '🩲',
+  'cartelas-sticker': '🐶',
+  'colarinhos': '🐾',
+  'faixas-decorativas': '🐶',
+  'gargantilhas': '📿',
+  'gravatinhas': '👔',
+  'lacinhos': '🎀',
+  'outubro-rosa': '🐶',
+  'quadros': '🐶',
+};
+
 export default async function CategoryNav() {
   const { data: categoriasAll } = await supabase
     .from('categorias')
@@ -25,41 +38,52 @@ export default async function CategoryNav() {
   if (pais.length === 0) return null;
 
   return (
-    <nav className="w-full bg-white border-t border-gray-100 shadow-sm text-sm">
+    <nav className="w-full bg-white border-t border-gray-100 py-3 shadow-xs">
       <div className="max-w-7xl mx-auto px-4">
-        <ul className="flex items-center justify-start md:justify-center gap-6 md:gap-8 overflow-x-auto py-3 no-scrollbar scroll-smooth font-medium text-gray-700 whitespace-nowrap">
+        <div className="flex flex-wrap items-center justify-center gap-2.5 md:gap-3">
           {pais.map((cat) => {
             const subs = getSubcategorias(cat.id);
             const temSub = subs.length > 0;
+            const emoji = EMOJIS[cat.slug] || '🐶';
 
             return (
-              <li key={cat.id} className="relative group">
+              <div key={cat.id} className="relative group">
                 <Link
                   href={`/categoria/${cat.slug}`}
-                  className="flex items-center gap-1 hover:text-primary transition py-1 text-xs md:text-sm font-semibold tracking-wide text-gray-800"
+                  className="flex items-center gap-2 bg-white border border-gray-300 rounded-full px-4 py-2 text-xs md:text-sm font-bold text-secondary hover:border-primary hover:text-primary transition shadow-2xs hover:shadow-sm"
                 >
-                  {cat.nome}
-                  {temSub && <ChevronDown size={14} className="text-gray-400 group-hover:text-primary transition" />}
+                  <span className="text-sm md:text-base leading-none">{emoji}</span>
+                  <span>{cat.nome}</span>
+                  {temSub && <ChevronDown size={14} className="text-gray-400 group-hover:text-primary transition ml-0.5" />}
                 </Link>
 
-                {/* Submenu Dropdown ao passar o mouse */}
+                {/* Dropdown de Subcategorias */}
                 {temSub && (
-                  <div className="absolute left-0 top-full hidden group-hover:block bg-white border border-gray-100 shadow-lg rounded-xl py-2 min-w-[180px] z-50 animate-in fade-in slide-in-from-top-1 duration-150">
+                  <div className="absolute left-0 top-full mt-1 hidden group-hover:block bg-white border border-gray-100 shadow-xl rounded-2xl py-2 min-w-[180px] z-50 animate-in fade-in slide-in-from-top-1 duration-150">
                     {subs.map((sub) => (
                       <Link
                         key={sub.id}
                         href={`/categoria/${sub.slug}`}
-                        className="block px-4 py-2 text-xs text-gray-700 hover:bg-gray-50 hover:text-primary transition"
+                        className="block px-4 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 hover:text-primary transition"
                       >
                         {sub.nome}
                       </Link>
                     ))}
                   </div>
                 )}
-              </li>
+              </div>
             );
           })}
-        </ul>
+
+          {/* Botão Laranja Ver Tudo */}
+          <Link
+            href="/categoria/todas"
+            className="flex items-center gap-2 bg-primary text-white border border-primary rounded-full px-5 py-2 text-xs md:text-sm font-bold hover:bg-orange-600 transition shadow-sm"
+          >
+            <span className="text-sm md:text-base leading-none">🛍️</span>
+            <span>Ver Tudo</span>
+          </Link>
+        </div>
       </div>
     </nav>
   );

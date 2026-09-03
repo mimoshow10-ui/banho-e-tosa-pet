@@ -78,7 +78,7 @@ export default async function ProdutoPage({ params }: { params: Promise<{ slug: 
         />
 
         {/* COLUNA DIREITA — Nome, preço, variações, botões, frete */}
-        <div className="flex flex-col gap-5">
+        <div className="flex flex-col gap-4">
 
           {/* Nome */}
           <h1 className="text-2xl md:text-3xl font-heading font-bold text-secondary leading-tight">

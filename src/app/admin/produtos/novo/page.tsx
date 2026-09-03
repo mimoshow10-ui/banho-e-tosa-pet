@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabase';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import ImageManager from '@/components/ImageManager';
+import CategorySelector from '@/components/CategorySelector';
 
 export default async function NovoProduto() {
   const { data: categorias } = await supabase.from('categorias').select('*').order('nome');
@@ -51,27 +52,8 @@ export default async function NovoProduto() {
           </div>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-1">Categoria (ou Subcategoria)</label>
-          <select name="categoria_id" required className="w-full border border-border rounded-lg p-2 bg-white">
-            <option value="">Selecione de onde este produto pertence...</option>
-            {categorias?.map(c => {
-              const isSub = !!c.parent_id;
-              const parent = isSub ? categorias.find(p => p.id === c.parent_id) : null;
-              const nomeFinal = parent ? `${parent.nome} > ${c.nome}` : c.nome;
-              return (
-                <option key={c.id} value={c.id}>
-                  {nomeFinal}
-                </option>
-              );
-            }).sort((a, b) => {
-              // Extract the text content from the option element for sorting
-              const textA = a.props.children;
-              const textB = b.props.children;
-              return textA.localeCompare(textB);
-            })}
-          </select>
-          <p className="text-xs text-gray-400 mt-1">Crie novas categorias lá no menu "Categorias".</p>
+        <div className="mt-2">
+          <CategorySelector categorias={categorias || []} defaultCategoriaId={null} />
         </div>
 
         {/* SEÇÃO DE VARIAÇÕES (PREÇOS INDIVIDUAIS E SKUS) */}
