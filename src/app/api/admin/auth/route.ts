@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { cookies } from 'next/headers';
 import { Resend } from 'resend';
+import nodemailer from 'nodemailer';
 
 const ADMIN_ALLOWED_EMAILS = ['mimoshow01@gmail.com', 'mimoshow10@gmail.com'];
 
@@ -36,13 +37,25 @@ export async function POST(req: Request) {
         }
       }, { onConflict: 'chave' });
 
-      // 1B. Tentar enviar via Resend para AMBOS os e-mails (mimoshow01@gmail.com e mimoshow10@gmail.com)
+      // 1B. Buscar credenciais de e-mail (Resend ou SMTP) no ambiente ou no banco Supabase
       let resendApiKey = process.env.RESEND_API_KEY;
-      if (!resendApiKey) {
-        const { data: rCfg } = await supabase.from('configuracoes').select('valor').eq('chave', 'resend_config').maybeSingle();
-        if (rCfg?.valor?.api_key) {
-          resendApiKey = rCfg.valor.api_key;
-        }
+      let smtpConfig: any = null;
+
+      const { data: rCfg } = await supabase.from('configuracoes').select('valor').eq('chave', 'resend_config').maybeSingle();
+      if (rCfg?.valor?.api_key) {
+        resendApiKey = rCfg.valor.api_key;
+      }
+
+      const { data: sCfg } = await supabase.from('configuracoes').select('valor').eq('chave', 'smtp_config').maybeSingle();
+      if (sCfg?.valor?.host) {
+        smtpConfig = sCfg.valor;
+      } else if (process.env.SMTP_HOST) {
+        smtpConfig = {
+          host: process.env.SMTP_HOST,
+          port: Number(process.env.SMTP_PORT || 587),
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASS,
+        };
       }
 
       const emailHtmlContent = `
@@ -55,6 +68,9 @@ export async function POST(req: Request) {
         </div>
       `;
 
+      let enviado = false;
+
+      // 1C. Tentar envio via Resend
       if (resendApiKey) {
         try {
           const resend = new Resend(resendApiKey);
@@ -64,10 +80,45 @@ export async function POST(req: Request) {
             subject: 'Acesso Banho e Tosa Pet',
             html: emailHtmlContent
           });
-          console.log(`[EMAIL RESEND] E-mail enviado com o assunto "Acesso Banho e Tosa Pet" para ${ADMIN_ALLOWED_EMAILS.join(' e ')}`);
+          enviado = true;
+          console.log(`[EMAIL RESEND] E-mail enviado para ${ADMIN_ALLOWED_EMAILS.join(' e ')}`);
         } catch (e) {
           console.error('[EMAIL RESEND] Erro ao disparar e-mail:', e);
         }
+      }
+
+      // 1D. Tentar envio via Nodemailer SMTP se Resend não enviou
+      if (!enviado && smtpConfig) {
+        try {
+          const transporter = nodemailer.createTransport({
+            host: smtpConfig.host,
+            port: smtpConfig.port || 587,
+            secure: smtpConfig.port === 465,
+            auth: {
+              user: smtpConfig.user,
+              pass: smtpConfig.pass,
+            },
+          });
+
+          await transporter.sendMail({
+            from: `"Banho e Tosa Pet" <${smtpConfig.user || 'contato@banhoetosapet.com'}>`,
+            to: ADMIN_ALLOWED_EMAILS,
+            subject: 'Acesso Banho e Tosa Pet',
+            html: emailHtmlContent
+          });
+          enviado = true;
+          console.log(`[EMAIL SMTP] E-mail enviado via SMTP para ${ADMIN_ALLOWED_EMAILS.join(' e ')}`);
+        } catch (e) {
+          console.error('[EMAIL SMTP] Erro ao disparar via SMTP:', e);
+        }
+      }
+
+      if (!enviado) {
+        console.warn('[SEGURANÇA ADMIN] Nenhuma chave de e-mail (Resend/SMTP) configurada no servidor Vercel/Supabase.');
+        return NextResponse.json({
+          sucesso: false,
+          erro: 'O servidor de e-mail (Resend/SMTP) não possui uma Chave de API configurada na Vercel/Supabase para fazer a entrega no Gmail. Configure RESEND_API_KEY nas variáveis de ambiente da Vercel.'
+        }, { status: 500 });
       }
 
       return NextResponse.json({
