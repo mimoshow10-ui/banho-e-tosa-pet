@@ -33,8 +33,9 @@ export default function CheckoutPage() {
   const [freteSelecionado, setFreteSelecionado] = useState<OpcaoFrete | null>(null);
   const [calculandoFrete, setCalculandoFrete] = useState(false);
 
-  // Cupom de Desconto
+  // Cupom de Desconto e Processamento
   const [cupomAplicado, setCupomAplicado] = useState<{ codigo: string; desconto: number; nome: string } | null>(null);
+  const [processandoPagamento, setProcessandoPagamento] = useState(false);
 
   // Carregar itens do carrinho do localStorage (com fallback)
   useEffect(() => {
@@ -165,6 +166,43 @@ export default function CheckoutPage() {
     }
 
     setCalculandoFrete(false);
+  }
+
+  // Finalizar e redirecionar para o Mercado Pago
+  async function handleFinalizarEPagar() {
+    setProcessandoPagamento(true);
+    try {
+      const payload = {
+        items: itens,
+        cliente: {
+          tipoPessoa,
+          nomeCompleto,
+          cpfCnpj,
+          email,
+          telefone,
+          endereco: { cep, logradouro, numero, complemento, bairro, cidade, uf }
+        },
+        frete: freteSelecionado,
+        total: Math.max(0, subtotal - (cupomAplicado ? cupomAplicado.desconto : 0) + (freteSelecionado ? freteSelecionado.valor : 0))
+      };
+
+      const res = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+      if (res.ok && data.checkoutUrl) {
+        window.location.href = data.checkoutUrl;
+      } else {
+        alert(data.erro || 'Falha ao conectar com o Mercado Pago. Verifique as credenciais.');
+      }
+    } catch {
+      alert('Ocorreu um erro ao comunicar com a central de pagamentos.');
+    } finally {
+      setProcessandoPagamento(false);
+    }
   }
 
   // Cálculos do Pedido

@@ -3,17 +3,19 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { Mail, KeyRound, ShieldCheck, ArrowRight, RefreshCw, CheckCircle2, AlertCircle, Clock } from 'lucide-react';
+import { Mail, KeyRound, ShieldCheck, RefreshCw, CheckCircle2, AlertCircle, Clock, Lock } from 'lucide-react';
 
 export default function AdminLoginPage() {
   const router = useRouter();
+  const [modo, setModo] = useState<'codigo' | 'senha'>('codigo');
   const [email, setEmail] = useState('mimoshow01@gmail.com');
+  const [senha, setSenha] = useState('');
   const [codigo, setCodigo] = useState('');
   const [codigoEnviado, setCodigoEnviado] = useState(false);
   const [codigoDevExibido, setCodigoDevExibido] = useState<string | null>(null);
   const [carregando, setCarregando] = useState(false);
   const [mensagem, setMensagem] = useState<{ tipo: 'sucesso' | 'erro'; texto: string } | null>(null);
-  const [tempoRestante, setTempoRestante] = useState(180); // 3 minutos = 180 segundos
+  const [tempoRestante, setTempoRestante] = useState(180);
 
   useEffect(() => {
     let interval: any = null;
@@ -48,11 +50,11 @@ export default function AdminLoginPage() {
       const data = await res.json();
       if (res.ok) {
         setCodigoEnviado(true);
-        setTempoRestante(180); // Reiniciar cronômetro de 3 min
+        setTempoRestante(180);
         if (data.codigoDev) setCodigoDevExibido(data.codigoDev);
-        setMensagem({ tipo: 'sucesso', texto: data.mensagem || 'Se este e-mail estiver autorizado, enviaremos um código de acesso.' });
+        setMensagem({ tipo: 'sucesso', texto: data.mensagem || 'Código de verificação gerado!' });
       } else {
-        setMensagem({ tipo: 'erro', texto: data.erro || 'Erro ao enviar código.' });
+        setMensagem({ tipo: 'erro', texto: data.erro || 'Erro ao gerar código.' });
       }
     } catch {
       setMensagem({ tipo: 'erro', texto: 'Falha de comunicação com o servidor.' });
@@ -79,9 +81,38 @@ export default function AdminLoginPage() {
         setTimeout(() => {
           router.push('/admin');
           router.refresh();
-        }, 800);
+        }, 600);
       } else {
-        setMensagem({ tipo: 'erro', texto: data.erro || 'Código de confirmação incorreto ou expirado.' });
+        setMensagem({ tipo: 'erro', texto: data.erro || 'Código incorreto ou expirado.' });
+      }
+    } catch {
+      setMensagem({ tipo: 'erro', texto: 'Falha de comunicação com o servidor.' });
+    } finally {
+      setCarregando(false);
+    }
+  }
+
+  async function handleLoginSenha(e: React.FormEvent) {
+    e.preventDefault();
+    if (!senha.trim()) return;
+
+    setCarregando(true);
+    setMensagem(null);
+    try {
+      const res = await fetch('/api/admin/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ acao: 'validar_senha', email: email.trim(), senha: senha.trim() }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setMensagem({ tipo: 'sucesso', texto: 'Senha aceita! Redirecionando para o painel...' });
+        setTimeout(() => {
+          router.push('/admin');
+          router.refresh();
+        }, 600);
+      } else {
+        setMensagem({ tipo: 'erro', texto: data.erro || 'Senha incorreta.' });
       }
     } catch {
       setMensagem({ tipo: 'erro', texto: 'Falha de comunicação com o servidor.' });
@@ -109,8 +140,36 @@ export default function AdminLoginPage() {
             Painel Administrativo
           </h1>
           <p className="text-xs text-blue-200 mt-1 font-medium">
-            Autenticação Exclusiva de Administrador
+            Acesso Exclusivo para mimoshow01@gmail.com
           </p>
+        </div>
+
+        {/* Abas: Código OTP vs Senha Secreta */}
+        <div className="flex border-b border-gray-200 bg-gray-50">
+          <button
+            type="button"
+            onClick={() => setModo('codigo')}
+            className={`flex-1 py-3 text-xs font-bold transition flex items-center justify-center gap-1.5 border-b-2 ${
+              modo === 'codigo'
+                ? 'border-primary text-primary bg-white'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            <KeyRound size={14} />
+            <span>Código de Acesso</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setModo('senha')}
+            className={`flex-1 py-3 text-xs font-bold transition flex items-center justify-center gap-1.5 border-b-2 ${
+              modo === 'senha'
+                ? 'border-primary text-primary bg-white'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            <Lock size={14} />
+            <span>Entrar com Senha</span>
+          </button>
         </div>
 
         {/* Corpo do Form */}
@@ -132,18 +191,136 @@ export default function AdminLoginPage() {
             </div>
           )}
 
-          {/* Notificação Dev / Código Gerado */}
-          {codigoDevExibido && (
-            <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 font-medium">
-              🔑 <strong>Código OTP (Dev Mode):</strong> <span className="font-mono font-black text-sm text-primary">{codigoDevExibido}</span> (Validade: 3 minutos)
-            </div>
+          {/* MODO 1: CÓDIGO DE ACESSO OTP */}
+          {modo === 'codigo' && (
+            <>
+              {codigoDevExibido && (
+                <div className="p-3 bg-amber-50 border border-amber-300 rounded-2xl text-xs text-amber-900 font-bold space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span>🔑 <strong>Seu Código de Acesso:</strong></span>
+                    <span className="font-mono text-base font-black bg-amber-200 px-2 py-0.5 rounded-lg text-primary">{codigoDevExibido}</span>
+                  </div>
+                  <p className="text-[11px] font-normal text-amber-800">
+                    Copie o código acima e cole no campo abaixo para entrar no painel. (Validade: 3 minutos)
+                  </p>
+                </div>
+              )}
+
+              {!codigoEnviado ? (
+                <form onSubmit={handleEnviarCodigo} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">
+                      E-mail do Administrador
+                    </label>
+                    <div className="relative">
+                      <Mail size={16} className="absolute left-3.5 top-3.5 text-gray-400" />
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="mimoshow01@gmail.com"
+                        required
+                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-2xl text-xs font-bold text-gray-800 focus:ring-2 focus:ring-primary focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={carregando}
+                    className="w-full bg-[#0B2545] hover:bg-blue-900 text-white font-black py-3.5 rounded-2xl text-xs transition shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                  >
+                    {carregando ? (
+                      <>
+                        <RefreshCw size={14} className="animate-spin" />
+                        <span>Gerando Código...</span>
+                      </>
+                    ) : (
+                      <>
+                        <KeyRound size={14} />
+                        <span>Gerar Código de Acesso de 6 Dígitos</span>
+                      </>
+                    )}
+                  </button>
+                </form>
+              ) : (
+                <form onSubmit={handleLoginCodigo} className="space-y-4">
+                  <div className="p-3 bg-blue-50/80 border border-blue-200 rounded-2xl flex items-center justify-between text-xs text-blue-900 font-bold">
+                    <span className="flex items-center gap-1.5">
+                      <Clock size={14} className="text-primary" />
+                      Validade do Código:
+                    </span>
+                    <span className={`font-mono text-sm font-black ${tempoRestante < 30 ? 'text-red-600 animate-pulse' : 'text-blue-950'}`}>
+                      {formatarTempo(tempoRestante)}
+                    </span>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">
+                      Digite o Código de 6 Dígitos
+                    </label>
+                    <div className="relative">
+                      <KeyRound size={16} className="absolute left-3.5 top-3.5 text-gray-400" />
+                      <input
+                        type="text"
+                        value={codigo}
+                        onChange={(e) => setCodigo(e.target.value)}
+                        placeholder="Ex: 849201"
+                        maxLength={6}
+                        required
+                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-2xl text-sm font-mono font-bold text-center tracking-widest text-gray-800 focus:ring-2 focus:ring-primary focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={carregando || tempoRestante <= 0}
+                    className="w-full bg-green-600 hover:bg-green-700 text-white font-black py-3.5 rounded-2xl text-xs transition shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                  >
+                    {carregando ? (
+                      <>
+                        <RefreshCw size={14} className="animate-spin" />
+                        <span>Validando...</span>
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 size={14} />
+                        <span>Confirmar e Entrar no Painel</span>
+                      </>
+                    )}
+                  </button>
+
+                  <div className="flex items-center justify-between text-xs pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setCodigoEnviado(false)}
+                      className="text-gray-500 hover:underline font-bold"
+                    >
+                      Alterar e-mail
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={(e) => handleEnviarCodigo(e)}
+                      disabled={carregando}
+                      className="text-primary hover:underline font-black flex items-center gap-1"
+                    >
+                      <RefreshCw size={12} />
+                      <span>Gerar Novo Código</span>
+                    </button>
+                  </div>
+                </form>
+              )}
+            </>
           )}
 
-          {!codigoEnviado ? (
-            <form onSubmit={handleEnviarCodigo} className="space-y-4">
+          {/* MODO 2: ENTRAR COM SENHA */}
+          {modo === 'senha' && (
+            <form onSubmit={handleLoginSenha} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-gray-700 mb-1">
-                  E-mail do Administrador Autorizado
+                  E-mail do Administrador
                 </label>
                 <div className="relative">
                   <Mail size={16} className="absolute left-3.5 top-3.5 text-gray-400" />
@@ -158,93 +335,40 @@ export default function AdminLoginPage() {
                 </div>
               </div>
 
-              <button
-                type="submit"
-                disabled={carregando}
-                className="w-full bg-[#0B2545] hover:bg-blue-900 text-white font-black py-3 rounded-2xl text-xs transition shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-              >
-                {carregando ? (
-                  <>
-                    <RefreshCw size={14} className="animate-spin" />
-                    <span>Enviando Código...</span>
-                  </>
-                ) : (
-                  <>
-                    <Mail size={14} />
-                    <span>Solicitar Código de Acesso por E-mail</span>
-                  </>
-                )}
-              </button>
-            </form>
-          ) : (
-            <form onSubmit={handleLoginCodigo} className="space-y-4">
-              
-              {/* Cronômetro de 3 Minutos */}
-              <div className="p-3 bg-blue-50/80 border border-blue-200 rounded-2xl flex items-center justify-between text-xs text-blue-900 font-bold">
-                <span className="flex items-center gap-1.5">
-                  <Clock size={14} className="text-primary" />
-                  Validade do Código:
-                </span>
-                <span className={`font-mono text-sm font-black ${tempoRestante < 30 ? 'text-red-600 animate-pulse' : 'text-blue-950'}`}>
-                  {formatarTempo(tempoRestante)}
-                </span>
-              </div>
-
               <div>
                 <label className="block text-xs font-bold text-gray-700 mb-1">
-                  Código de Verificação de 6 Dígitos
+                  Senha do Painel
                 </label>
                 <div className="relative">
-                  <KeyRound size={16} className="absolute left-3.5 top-3.5 text-gray-400" />
+                  <Lock size={16} className="absolute left-3.5 top-3.5 text-gray-400" />
                   <input
-                    type="text"
-                    value={codigo}
-                    onChange={(e) => setCodigo(e.target.value)}
-                    placeholder="Ex: 849201"
-                    maxLength={6}
+                    type="password"
+                    value={senha}
+                    onChange={(e) => setSenha(e.target.value)}
+                    placeholder="Sua senha administrativa"
                     required
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-2xl text-sm font-mono font-bold text-center tracking-widest text-gray-800 focus:ring-2 focus:ring-primary focus:outline-none"
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-2xl text-xs font-bold text-gray-800 focus:ring-2 focus:ring-primary focus:outline-none"
                   />
                 </div>
               </div>
 
               <button
                 type="submit"
-                disabled={carregando || tempoRestante <= 0}
-                className="w-full bg-green-600 hover:bg-green-700 text-white font-black py-3 rounded-2xl text-xs transition shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                disabled={carregando}
+                className="w-full bg-[#0B2545] hover:bg-blue-900 text-white font-black py-3.5 rounded-2xl text-xs transition shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
               >
                 {carregando ? (
                   <>
                     <RefreshCw size={14} className="animate-spin" />
-                    <span>Validando...</span>
+                    <span>Validando Senha...</span>
                   </>
                 ) : (
                   <>
                     <CheckCircle2 size={14} />
-                    <span>Confirmar e Entrar no Painel</span>
+                    <span>Entrar no Painel com Senha</span>
                   </>
                 )}
               </button>
-
-              <div className="flex items-center justify-between text-xs pt-1">
-                <button
-                  type="button"
-                  onClick={() => setCodigoEnviado(false)}
-                  className="text-gray-500 hover:underline font-bold"
-                >
-                  Alterar e-mail
-                </button>
-
-                <button
-                  type="button"
-                  onClick={(e) => handleEnviarCodigo(e)}
-                  disabled={carregando}
-                  className="text-primary hover:underline font-black flex items-center gap-1"
-                >
-                  <RefreshCw size={12} />
-                  <span>Reenviar Código</span>
-                </button>
-              </div>
             </form>
           )}
 
@@ -253,7 +377,7 @@ export default function AdminLoginPage() {
         {/* Rodapé */}
         <div className="p-4 bg-gray-50 text-center border-t border-gray-100">
           <p className="text-[11px] text-gray-400 font-medium">
-            Banho & Tosa Pet • Proteção de Acesso por E-mail (3 minutos)
+            Banho & Tosa Pet • Proteção de Acesso Administrativo
           </p>
         </div>
 
