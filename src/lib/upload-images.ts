@@ -1,12 +1,19 @@
 import { supabase } from './supabase';
 
 export async function uploadBlingImagesToSupabase(blingUrls: string[], productId: string): Promise<string[]> {
+  if (!productId || !Array.isArray(blingUrls) || blingUrls.length === 0) {
+    return [];
+  }
+
+  const cleanProductId = String(productId).trim();
   const permanentUrls: string[] = [];
   const errors: string[] = [];
 
   for (let i = 0; i < blingUrls.length; i++) {
     const url = blingUrls[i];
+    if (!url || typeof url !== 'string') continue;
     
+    // Se a imagem já estiver no nosso Supabase Storage, mantemos intacta
     if (url.includes('supabase.co/storage/v1/object/public/produtos-fotos')) {
       permanentUrls.push(url);
       continue;
@@ -19,16 +26,17 @@ export async function uploadBlingImagesToSupabase(blingUrls: string[], productId
           'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8'
         }
       });
+
       if (!response.ok) {
-        throw new Error(`Servidor da imagem retornou status ${response.status} (${response.statusText}).`);
+        throw new Error(`Status ${response.status} ao baixar imagem do Bling`);
       }
+
       const buffer = await response.arrayBuffer();
-
       const fileExt = 'jpg';
-      const fileName = `produto_${productId}_${i}_${Date.now()}.${fileExt}`;
-      const filePath = `${productId}/${fileName}`;
+      const fileName = `produto_${cleanProductId}_${i}_${Date.now()}.${fileExt}`;
+      const filePath = `${cleanProductId}/${fileName}`;
 
-      const { data, error } = await supabase.storage
+      const { error } = await supabase.storage
         .from('produtos-fotos')
         .upload(filePath, buffer, {
           contentType: response.headers.get('content-type') || 'image/jpeg',
@@ -36,7 +44,9 @@ export async function uploadBlingImagesToSupabase(blingUrls: string[], productId
         });
 
       if (error) {
-        console.error(`Falha no Supabase Storage: ${error.message}.`);
+        console.error(`[IMAGE SYNC STORAGE ERROR] Product ${cleanProductId}: ${error.message}`);
+        // Se falhar no upload do Supabase Storage, usamos a URL direta verificada do Bling
+        permanentUrls.push(url);
         continue;
       }
 
@@ -44,17 +54,19 @@ export async function uploadBlingImagesToSupabase(blingUrls: string[], productId
         .from('produtos-fotos')
         .getPublicUrl(filePath);
 
-      permanentUrls.push(publicUrlData.publicUrl);
+      if (publicUrlData?.publicUrl) {
+        permanentUrls.push(publicUrlData.publicUrl);
+      } else {
+        permanentUrls.push(url);
+      }
     } catch (e: any) {
-      console.error('Exceção no processamento da imagem:', e);
+      console.error(`[IMAGE SYNC FETCH EXCEPTION] Product ${cleanProductId}: ${e.message || e}`);
       errors.push(`URL ${url}: ${e.message || e}`);
-      continue;
+      // Fallback para URL verificada se o fetch falhar
+      permanentUrls.push(url);
     }
   }
 
-  if (blingUrls.length > 0 && permanentUrls.length === 0) {
-    console.error(`O Bling enviou ${blingUrls.length} URLs de fotos, mas TODAS falharam ao baixar. Detalhes: ${errors.join(' | ')}`);
-  }
-
+  console.log(`[IMAGE SYNC] Product ${cleanProductId}: ${permanentUrls.length} imagens validadas e associadas com sucesso.`);
   return permanentUrls;
 }

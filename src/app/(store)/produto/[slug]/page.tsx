@@ -7,7 +7,7 @@ import ProductMediaGallery from '@/components/ProductMediaGallery';
 import ProductAiAssistant from '@/components/ProductAiAssistant';
 import ProductCouponsBanner from '@/components/ProductCouponsBanner';
 import AddToCartButtons from '@/components/AddToCartButtons';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import type { Metadata } from 'next';
 
 export const dynamic = 'force-dynamic';
@@ -75,20 +75,19 @@ export default async function ProdutoPage({ params }: { params: Promise<{ slug: 
 
   if (!rawProduto) notFound();
 
-  // Se o produto acessado for um FILHO, redirecionar para a URL do produto PAI
+  // Se o produto acessado for um FILHO, carregar o produto PAI como anúncio principal
+  let produto = rawProduto;
   if (rawProduto.parent_id) {
     const { data: parentProduct } = await supabase
       .from('produtos')
-      .select('slug')
+      .select('*')
       .eq('id', rawProduto.parent_id)
       .maybeSingle();
 
-    if (parentProduct && parentProduct.slug && parentProduct.slug !== slug) {
-      redirect(`/produto/${parentProduct.slug}`);
+    if (parentProduct) {
+      produto = parentProduct;
     }
   }
-
-  const produto = rawProduto;
 
   // Buscar família de variações com segurança
   let family: any[] = [];
