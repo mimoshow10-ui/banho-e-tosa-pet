@@ -107,7 +107,7 @@ export default function AdminLoginPage() {
             Painel Administrativo
           </h1>
           <p className="text-xs text-blue-200 mt-1 font-medium">
-            Autenticação Exclusiva via E-mail
+            Acesso Autorizado: mimoshow01@gmail.com & mimoshow10@gmail.com
           </p>
         </div>
 
@@ -142,7 +142,7 @@ export default function AdminLoginPage() {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="mimoshow01@gmail.com"
+                    placeholder="mimoshow01@gmail.com ou mimoshow10@gmail.com"
                     required
                     className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-2xl text-xs font-bold text-gray-800 focus:ring-2 focus:ring-primary focus:outline-none"
                   />

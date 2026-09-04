@@ -3,18 +3,18 @@ import { supabase } from '@/lib/supabase';
 import { cookies } from 'next/headers';
 import { Resend } from 'resend';
 
-const ADMIN_ALLOWED_EMAIL = (process.env.ADMIN_ALLOWED_EMAIL || 'mimoshow01@gmail.com').trim().toLowerCase();
+const ADMIN_ALLOWED_EMAILS = ['mimoshow01@gmail.com', 'mimoshow10@gmail.com'];
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { acao, senha, codigo } = body;
+    const { acao, codigo } = body;
     const rawEmail = body.email || '';
     const emailSanitizado = String(rawEmail).trim().toLowerCase();
 
-    // 1. SOLICITAR CÓDIGO DE ACESSO (OTP DE 3 MINUTOS)
+    // 1. SOLICITAR CÓDIGO DE ACESSO (OTP DE 3 MINUTOS PARA AMBOS OS E-MAILS)
     if (acao === 'enviar_codigo') {
-      if (emailSanitizado !== ADMIN_ALLOWED_EMAIL) {
+      if (!ADMIN_ALLOWED_EMAILS.includes(emailSanitizado)) {
         console.log(`[SEGURANÇA ADMIN] Tentativa de código para e-mail não autorizado: ${rawEmail}`);
         return NextResponse.json({
           sucesso: true,
@@ -22,7 +22,7 @@ export async function POST(req: Request) {
         });
       }
 
-      // 1A. Gerar código estrito de 6 dígitos numéricos (SEM LINKS)
+      // 1A. Gerar código estrito de 6 dígitos numéricos
       const novoCodigo = Math.floor(100000 + Math.random() * 900000).toString();
       const expiraEm = new Date(Date.now() + 3 * 60 * 1000).toISOString();
 
@@ -31,12 +31,12 @@ export async function POST(req: Request) {
         valor: {
           codigo: novoCodigo,
           expira_em: expiraEm,
-          email: ADMIN_ALLOWED_EMAIL,
+          emails: ADMIN_ALLOWED_EMAILS,
           criado_em: new Date().toISOString(),
         }
       }, { onConflict: 'chave' });
 
-      // 1C. Tentar enviar via Resend ou Nodemailer com o modelo "Acesso Banho e Tosa Pet"
+      // 1B. Tentar enviar via Resend para AMBOS os e-mails (mimoshow01@gmail.com e mimoshow10@gmail.com)
       let resendApiKey = process.env.RESEND_API_KEY;
       if (!resendApiKey) {
         const { data: rCfg } = await supabase.from('configuracoes').select('valor').eq('chave', 'resend_config').maybeSingle();
@@ -60,11 +60,11 @@ export async function POST(req: Request) {
           const resend = new Resend(resendApiKey);
           await resend.emails.send({
             from: 'Banho e Tosa Pet <onboarding@resend.dev>',
-            to: [ADMIN_ALLOWED_EMAIL],
+            to: ADMIN_ALLOWED_EMAILS,
             subject: 'Acesso Banho e Tosa Pet',
             html: emailHtmlContent
           });
-          console.log(`[EMAIL RESEND] E-mail enviado com o assunto "Acesso Banho e Tosa Pet" para ${ADMIN_ALLOWED_EMAIL}`);
+          console.log(`[EMAIL RESEND] E-mail enviado com o assunto "Acesso Banho e Tosa Pet" para ${ADMIN_ALLOWED_EMAILS.join(' e ')}`);
         } catch (e) {
           console.error('[EMAIL RESEND] Erro ao disparar e-mail:', e);
         }
@@ -72,13 +72,13 @@ export async function POST(req: Request) {
 
       return NextResponse.json({
         sucesso: true,
-        mensagem: `Código de acesso enviado com sucesso para ${ADMIN_ALLOWED_EMAIL}! Verifique sua caixa de entrada e spam.`
+        mensagem: `Código de acesso enviado com sucesso para mimoshow01@gmail.com e mimoshow10@gmail.com!`
       });
     }
 
     // 2. VALIDAR CÓDIGO DE CONFIRMAÇÃO (OTP DE 3 MINUTOS)
     if (acao === 'validar_codigo') {
-      if (emailSanitizado !== ADMIN_ALLOWED_EMAIL) {
+      if (!ADMIN_ALLOWED_EMAILS.includes(emailSanitizado)) {
         return NextResponse.json({ erro: 'Acesso Negado.' }, { status: 403 });
       }
 
@@ -88,7 +88,7 @@ export async function POST(req: Request) {
       const { data: otpCfg } = await supabase.from('configuracoes').select('valor').eq('chave', 'admin_otp').maybeSingle();
       const otpInfo = otpCfg?.valor;
 
-      if (otpInfo && otpInfo.codigo && String(otpInfo.email).trim().toLowerCase() === ADMIN_ALLOWED_EMAIL) {
+      if (otpInfo && otpInfo.codigo) {
         const agora = Date.now();
         const expira = new Date(otpInfo.expira_em).getTime();
 
@@ -99,7 +99,7 @@ export async function POST(req: Request) {
       }
 
       if (!codigoValido) {
-        return NextResponse.json({ erro: 'Código incorreto ou expirado. Verifique o código enviado para seu e-mail.' }, { status: 401 });
+        return NextResponse.json({ erro: 'Código incorreto ou expirado. Verifique o e-mail recebido.' }, { status: 401 });
       }
 
       // Sucesso! Criar token de sessão administrativa
