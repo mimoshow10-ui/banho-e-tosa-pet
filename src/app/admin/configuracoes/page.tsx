@@ -49,6 +49,13 @@ export default async function AdminConfiguracoes({ searchParams }: { searchParam
     }
   }
 
+  // Buscar credenciais do Resend salvas
+  let resendCreds = null;
+  try {
+    const { data } = await supabase.from('configuracoes').select('*').eq('chave', 'resend_config').maybeSingle();
+    resendCreds = data?.valor;
+  } catch {}
+
   async function salvarMercadoPago(formData: FormData) {
     'use server'
     const accessToken = (formData.get('mp_access_token') as string || '').trim();
@@ -75,6 +82,32 @@ export default async function AdminConfiguracoes({ searchParams }: { searchParam
       }
     } catch (err) {
       redirect(`/admin/configuracoes?erro=Erro ao salvar Mercado Pago: ${String(err)}`);
+    }
+  }
+
+  async function salvarResend(formData: FormData) {
+    'use server'
+    const apiKey = (formData.get('resend_api_key') as string || '').trim();
+    if (!apiKey) return;
+
+    try {
+      const { error } = await supabase.from('configuracoes').upsert({
+        chave: 'resend_config',
+        valor: {
+          api_key: apiKey,
+          atualizado_em: new Date().toISOString()
+        }
+      }, { onConflict: 'chave' });
+
+      revalidatePath('/admin/configuracoes');
+
+      if (error) {
+        redirect(`/admin/configuracoes?erro=Erro ao salvar Resend: ${error.message}`);
+      } else {
+        redirect('/admin/configuracoes?msg=Chave de E-mail Resend salva com sucesso! Os códigos de acesso agora serão entregues no e-mail.');
+      }
+    } catch (err) {
+      redirect(`/admin/configuracoes?erro=Erro ao salvar Resend: ${String(err)}`);
     }
   }
 
@@ -231,6 +264,42 @@ export default async function AdminConfiguracoes({ searchParams }: { searchParam
               className="bg-sky-600 text-white px-6 py-3 rounded-lg font-bold text-xs hover:bg-sky-700 transition shadow-md cursor-pointer"
             >
               💾 Salvar Credenciais do Mercado Pago
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {/* INTEGRAÇÃO DISPARADOR DE E-MAILS (RESEND) */}
+      <div className="bg-white rounded-xl shadow-sm border border-purple-300 p-8 mb-6 relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-2 h-full bg-purple-600"></div>
+        <h2 className="text-xl font-bold mb-2 text-secondary flex items-center gap-2">
+          📧 Disparador de E-mails (Resend)
+        </h2>
+        <p className="text-sm text-gray-600 mb-6">
+          Para que os códigos de 6 dígitos cheguem diretamente na caixa de entrada do seu <strong>Gmail (`mimoshow01@gmail.com`)</strong>, insira a sua <strong>API Key Gratuita do Resend</strong> abaixo.
+        </p>
+
+        <form action={salvarResend} className="flex flex-col gap-4">
+          <div>
+            <label className="block text-xs font-bold text-gray-700 mb-1">
+              Resend API Key (Começa com re_...) *
+            </label>
+            <input
+              name="resend_api_key"
+              type="password"
+              required
+              defaultValue={resendCreds?.api_key || ''}
+              placeholder="re_123456789_abcdef..."
+              className="w-full border border-gray-300 rounded-lg p-3 text-xs font-mono font-bold focus:ring-2 focus:ring-purple-500 focus:outline-none"
+            />
+          </div>
+
+          <div className="pt-2">
+            <button
+              type="submit"
+              className="bg-purple-600 text-white px-6 py-3 rounded-lg font-bold text-xs hover:bg-purple-700 transition shadow-md cursor-pointer"
+            >
+              ✉️ Salvar Chave do Disparador de E-mails
             </button>
           </div>
         </form>

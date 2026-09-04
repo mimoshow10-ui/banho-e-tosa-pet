@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { cookies } from 'next/headers';
+import { Resend } from 'resend';
 
 const ADMIN_ALLOWED_EMAIL = (process.env.ADMIN_ALLOWED_EMAIL || 'mimoshow01@gmail.com').trim().toLowerCase();
 
@@ -35,11 +36,44 @@ export async function POST(req: Request) {
         }
       }, { onConflict: 'chave' });
 
-      console.log(`[SEGURANÇA ADMIN] OTP enviado para ${ADMIN_ALLOWED_EMAIL}: ${novoCodigo} (Validade: 3 minutos)`);
+      console.log(`[SEGURANÇA ADMIN] OTP gerado para ${ADMIN_ALLOWED_EMAIL}: ${novoCodigo} (Validade: 3 minutos)`);
+
+      // Tentar enviar e-mail real via Resend (se chave estiver configurada no .env ou no banco)
+      let resendApiKey = process.env.RESEND_API_KEY;
+      if (!resendApiKey) {
+        const { data: rCfg } = await supabase.from('configuracoes').select('valor').eq('chave', 'resend_config').maybeSingle();
+        if (rCfg?.valor?.api_key) {
+          resendApiKey = rCfg.valor.api_key;
+        }
+      }
+
+      let emailEnviadoReal = false;
+      if (resendApiKey) {
+        try {
+          const resend = new Resend(resendApiKey);
+          await resend.emails.send({
+            from: 'Banho & Tosa Pet <onboarding@resend.dev>',
+            to: [ADMIN_ALLOWED_EMAIL],
+            subject: '🔑 Código de Acesso do Painel Administrativo',
+            html: `<div style="font-family:sans-serif;padding:20px;background:#f4f6f8;border-radius:10px;">
+              <h2 style="color:#0B2545;">Seu Código de Acesso Administrativo</h2>
+              <p>Use o código de 6 dígitos abaixo para acessar o painel:</p>
+              <div style="font-size:32px;font-weight:bold;letter-spacing:4px;color:#e65100;background:#fff;padding:15px;border-radius:8px;text-align:center;width:200px;margin:20px 0;">${novoCodigo}</div>
+              <p style="color:#666;font-size:12px;">Este código é válido por <strong>3 minutos</strong>.</p>
+            </div>`
+          });
+          emailEnviadoReal = true;
+          console.log(`[EMAIL RESEND] E-mail enviado com sucesso para ${ADMIN_ALLOWED_EMAIL}`);
+        } catch (e) {
+          console.error('[EMAIL RESEND] Erro ao disparar e-mail:', e);
+        }
+      }
 
       const resposta: Record<string, any> = {
         sucesso: true,
-        mensagem: 'Código de acesso de 6 dígitos gerado com sucesso!',
+        mensagem: emailEnviadoReal
+          ? `Código de acesso enviado para ${ADMIN_ALLOWED_EMAIL}!`
+          : 'Código de 6 dígitos gerado com sucesso!',
         codigoDev: novoCodigo
       };
 
