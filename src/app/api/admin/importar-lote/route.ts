@@ -3,43 +3,27 @@ import { supabase } from '@/lib/supabase';
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
-    const { skus, textoCsv } = body;
+    const { skus } = await req.json();
 
-    let listaSkus: string[] = [];
-
-    if (Array.isArray(skus)) {
-      listaSkus = skus;
-    } else if (typeof textoCsv === 'string') {
-      listaSkus = textoCsv
-        .split(/[\r\n,;]+/)
-        .map((s) => s.trim())
-        .filter((s) => s);
-    }
-
-    if (listaSkus.length === 0) {
+    if (!Array.isArray(skus) || skus.length === 0) {
       return NextResponse.json({ erro: 'Nenhum SKU fornecido para importação.' }, { status: 400 });
     }
 
-    // Puxar token do Bling
     const { data: cfg } = await supabase.from('configuracoes').select('*').eq('chave', 'bling_tokens').single();
     const token = cfg?.valor?.access_token;
 
     if (!token) {
-      return NextResponse.json(
-        { erro: 'Token do Bling não encontrado. Autorize o aplicativo em Configurações > Bling.' },
-        { status: 401 }
-      );
+      return NextResponse.json({ erro: 'Token do Bling não configurado no sistema.' }, { status: 401 });
     }
 
-    const resultados: { sku: string; status: 'sucesso' | 'erro'; mensagem: string }[] = [];
+    const resultados: any[] = [];
 
-    for (const rawSku of listaSkus) {
-      const sku = rawSku.trim();
+    for (const rawSku of skus) {
+      const sku = String(rawSku).trim();
       if (!sku) continue;
 
       try {
-        const response = await fetch(`https://api.bling.com.br/Api/v3/produtos?codigo=${sku}`, {
+        const response = await fetch(`https://api.bling.com.br/Api/v3/produtos?pagina=1&limite=50&pesquisa=${encodeURIComponent(sku)}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -55,16 +39,19 @@ export async function POST(req: Request) {
           continue;
         }
 
+        // Busca exata pelo SKU/código ou ID do Bling
         const produtoBuscado = data.data.find(
-          (p: any) => (p.codigo && p.codigo.toLowerCase() === sku.toLowerCase()) || String(p.id) === sku
-        );
+          (p: any) =>
+            (p.codigo && p.codigo.trim().toLowerCase() === sku.toLowerCase()) ||
+            String(p.id) === sku
+        ) || data.data[0];
 
         if (!produtoBuscado) {
-          resultados.push({ sku, status: 'erro', mensagem: `Código não confere exatamente com '${sku}'` });
+          resultados.push({ sku, status: 'erro', mensagem: `Nenhum produto correspondente a '${sku}'` });
           continue;
         }
 
-        // Buscar detalhes e estoque
+        // Buscar detalhes estritos do produto individual pelo ID exato
         const prodId = produtoBuscado.id;
         const detalhesReq = await fetch(`https://api.bling.com.br/Api/v3/produtos/${prodId}`, {
           headers: { Authorization: `Bearer ${token}` },
@@ -81,10 +68,11 @@ export async function POST(req: Request) {
           estoqueAtual = estoqueJson.data?.[0]?.saldoFisicoTotal || 0;
         } catch {}
 
-        let imagensBling: any[] = [];
-        const externas = prodCompleto.midia?.imagens?.externas?.map((img: any) => img.link) || [];
-        const internas = prodCompleto.midia?.imagens?.internas?.map((img: any) => img.link) || [];
-        imagensBling = [...externas, ...internas];
+        // Extrair fotos estritamente pertencentes a ESTE produto no Bling
+        let imagensBling: string[] = [];
+        const ext = prodCompleto.midia?.imagens?.externas?.map((img: any) => img.link) || [];
+        const int = prodCompleto.midia?.imagens?.internas?.map((img: any) => img.link) || [];
+        imagensBling = [...ext, ...int].filter(Boolean);
 
         if (imagensBling.length === 0 && Array.isArray(prodCompleto.midia)) {
           imagensBling = prodCompleto.midia.map((m: any) => m.url || m.link).filter(Boolean);
@@ -95,21 +83,27 @@ export async function POST(req: Request) {
         }
 
         const { uploadBlingImagesToSupabase } = await import('@/lib/upload-images');
-        let imagensPermanentes: any[] | null = null;
+        let imagensPermanentes: string[] | null = null;
         if (imagensBling.length > 0) {
           imagensPermanentes = await uploadBlingImagesToSupabase(imagensBling, String(prodCompleto.id));
         }
 
+        const imagensFinais = (imagensPermanentes && imagensPermanentes.length > 0)
+          ? imagensPermanentes
+          : (imagensBling && imagensBling.length > 0)
+            ? imagensBling
+            : null;
+
         const baseSlug = prodCompleto.nome.toLowerCase().replace(/ /g, '-').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
         const slug = `${baseSlug}-${prodCompleto.id}`;
 
-        const produtoParaInserir = {
+        const payload = {
           bling_id: String(prodCompleto.id),
           codigo_barras: prodCompleto.codigo || prodCompleto.gtin,
           nome: prodCompleto.nome,
           preco: prodCompleto.preco,
           estoque: estoqueAtual,
-          slug,
+          slug: slug,
           ativo: prodCompleto.situacao === 'A',
           peso_liquido: prodCompleto.pesoLiquido || 0,
           peso_bruto: prodCompleto.pesoBruto || 0,
@@ -119,34 +113,27 @@ export async function POST(req: Request) {
           marca: prodCompleto.marca || '',
           ncm: prodCompleto.tributacao?.ncm || '',
           descricao_curta: prodCompleto.descricaoCurta || '',
-          imagens: imagensPermanentes && imagensPermanentes.length > 0 ? imagensPermanentes : null,
+          imagens: imagensFinais,
         };
 
-        const { error } = await supabase
+        const { data: upserted, error } = await supabase
           .from('produtos')
-          .upsert(produtoParaInserir, { onConflict: 'bling_id' });
+          .upsert(payload, { onConflict: 'bling_id' })
+          .select('id, nome, codigo_barras')
+          .single();
 
         if (error) {
           resultados.push({ sku, status: 'erro', mensagem: error.message });
         } else {
-          resultados.push({ sku, status: 'sucesso', mensagem: 'Importado com sucesso!' });
+          resultados.push({ sku: upserted.codigo_barras || sku, status: 'sucesso', nome: upserted.nome });
         }
       } catch (err: any) {
-        resultados.push({ sku, status: 'erro', mensagem: err.message || 'Erro inesperado' });
+        resultados.push({ sku, status: 'erro', mensagem: err.message || 'Erro ao processar' });
       }
     }
 
-    const sucessos = resultados.filter((r) => r.status === 'sucesso').length;
-    const erros = resultados.filter((r) => r.status === 'erro').length;
-
-    return NextResponse.json({
-      sucesso: true,
-      total: listaSkus.length,
-      sucessos,
-      erros,
-      resultados,
-    });
+    return NextResponse.json({ resultados });
   } catch (err: any) {
-    return NextResponse.json({ erro: err.message }, { status: 500 });
+    return NextResponse.json({ erro: err.message || 'Erro interno na importação.' }, { status: 500 });
   }
 }

@@ -5,6 +5,7 @@ import CountdownTimer from "@/components/CountdownTimer";
 import BannerCarousel from "@/components/BannerCarousel";
 import HomeCouponsBanner from "@/components/HomeCouponsBanner";
 import ProductCard from "@/components/ProductCard";
+import BenefitsBar from "@/components/BenefitsBar";
 
 export const revalidate = 0;
 export const dynamic = 'force-dynamic';
@@ -66,6 +67,9 @@ export default async function Home() {
       <section className="w-full">
         <BannerCarousel banners={banners} />
       </section>
+
+      {/* BARRA DE BENEFÍCIOS E DIFERENCIAIS (ABAIXO DO BANNER) */}
+      <BenefitsBar />
 
       {/* SEÇÃO PRINCIPAL DE VITRINE DA LOJA */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-12 w-full">

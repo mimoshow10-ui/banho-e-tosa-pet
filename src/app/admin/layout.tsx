@@ -1,18 +1,36 @@
 import Link from 'next/link';
-import { Package, Tags, ShoppingCart, Settings, Home, LogOut, Bot, Truck, Users, Ticket } from 'lucide-react';
+import { cookies, headers } from 'next/headers';
+import { redirect } from 'next/navigation';
+import { Package, Tags, ShoppingCart, Settings, Home, LogOut, Bot, Truck, Users, Ticket, ShieldCheck } from 'lucide-react';
 
-export default function AdminLayout({
+export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const headerList = await headers();
+  const pathname = headerList.get('x-pathname') || headerList.get('next-url') || '';
+
+  // Se estiver na rota /admin/login, não aplica o layout de sidebar e não exige login
+  const cookieStore = await cookies();
+  const sessionToken = cookieStore.get('admin_session')?.value;
+
+  // Renderizar página de login sem a sidebar do painel
+  if (!sessionToken) {
+    // Se o usuário está tentando acessar qualquer página admin diferente de login, exibimos a página de login
+    return <>{children}</>;
+  }
+
   return (
     <div className="h-screen bg-gray-100 flex flex-col md:flex-row font-sans overflow-hidden">
       {/* Sidebar / Menu Lateral — fixo na tela */}
       <aside className="w-full md:w-64 bg-secondary text-white flex flex-col flex-shrink-0 md:h-screen md:sticky md:top-0">
-        <div className="p-6 border-b border-blue-800">
-          <h2 className="font-heading font-bold text-xl text-accent">Painel Admin</h2>
-          <p className="text-xs text-blue-200 mt-1">Banho e Tosa Pet</p>
+        <div className="p-6 border-b border-blue-800 flex items-center justify-between">
+          <div>
+            <h2 className="font-heading font-bold text-xl text-accent">Painel Admin</h2>
+            <p className="text-xs text-blue-200 mt-1">Banho e Tosa Pet</p>
+          </div>
+          <div title="Segurança Ativa" className="w-3 h-3 rounded-full bg-green-500 animate-pulse" />
         </div>
         
         <nav className="flex-1 p-4 flex flex-col gap-2 overflow-y-auto">
@@ -59,14 +77,21 @@ export default function AdminLayout({
         </nav>
 
         <div className="p-4 border-t border-blue-800 flex flex-col gap-2 flex-shrink-0">
-          <Link href="/" target="_blank" className="flex items-center gap-3 p-3 bg-accent text-secondary font-bold rounded-lg hover:bg-yellow-400 transition">
-            <Home size={20} />
+          <Link href="/" target="_blank" className="flex items-center gap-3 p-3 bg-accent text-secondary font-bold rounded-lg hover:bg-yellow-400 transition text-xs justify-center">
+            <Home size={18} />
             <span>Visualizar Loja</span>
           </Link>
-          <Link href="/" className="flex items-center gap-3 p-3 text-red-300 hover:text-red-100 transition">
-            <LogOut size={20} />
-            <span>Sair do Painel</span>
-          </Link>
+          <form action={async () => {
+            'use server'
+            const c = await cookies();
+            c.delete('admin_session');
+            redirect('/admin/login');
+          }}>
+            <button type="submit" className="w-full flex items-center gap-3 p-3 text-red-300 hover:text-red-100 hover:bg-red-900/30 rounded-lg transition text-xs font-bold justify-center cursor-pointer">
+              <LogOut size={18} />
+              <span>Sair do Painel</span>
+            </button>
+          </form>
         </div>
       </aside>
 
