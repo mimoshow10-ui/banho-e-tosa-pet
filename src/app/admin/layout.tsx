@@ -1,15 +1,25 @@
 import Link from 'next/link';
+import { cookies } from 'next/headers';
 import { Package, Tags, ShoppingCart, Settings, Home, LogOut, Bot, Truck, Users, Ticket } from 'lucide-react';
 
-export default function AdminLayout({
+export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const cookieStore = await cookies();
+  const sessionToken = cookieStore.get('admin_session')?.value;
+
+  // Se NÃO estiver autenticado, exibe APENAS a tela de login (SEM a coluna lateral de ícones)
+  if (!sessionToken || !sessionToken.startsWith('admin_session_')) {
+    return <>{children}</>;
+  }
+
+  // APÓS LOGAR: Exibe a coluna lateral do painel com os ícones e a área principal
   return (
     <div className="h-screen bg-gray-100 flex flex-row font-sans overflow-hidden">
       
-      {/* Sidebar / Menu Lateral Fixo na Tela (h-screen) */}
+      {/* Sidebar / Menu Lateral com Ícones (Visível Apenas Após Logar) */}
       <aside className="w-64 bg-[#0B2545] text-white flex flex-col flex-shrink-0 h-screen sticky top-0 border-r border-blue-900 shadow-xl z-40">
         
         {/* Topo da Sidebar */}
@@ -79,15 +89,21 @@ export default function AdminLayout({
             <Home size={16} />
             <span>Visualizar Loja</span>
           </Link>
-          <Link href="/" className="flex items-center gap-2 px-3 py-1.5 text-red-300 hover:text-red-100 hover:bg-red-900/30 rounded-xl transition text-xs font-bold justify-center">
-            <LogOut size={16} />
-            <span>Sair do Painel</span>
-          </Link>
+          <form action={async () => {
+            'use server';
+            const c = await cookies();
+            c.delete('admin_session');
+          }}>
+            <button type="submit" className="w-full flex items-center gap-2 px-3 py-1.5 text-red-300 hover:text-red-100 hover:bg-red-900/30 rounded-xl transition text-xs font-bold justify-center cursor-pointer">
+              <LogOut size={16} />
+              <span>Sair do Painel</span>
+            </button>
+          </form>
         </div>
 
       </aside>
 
-      {/* Área Principal de Conteúdo — rola de forma independente */}
+      {/* Área Principal de Conteúdo */}
       <main className="flex-1 p-6 md:p-8 overflow-y-auto h-screen">
         {children}
       </main>
