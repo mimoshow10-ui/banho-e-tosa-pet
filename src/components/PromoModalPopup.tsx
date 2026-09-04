@@ -96,57 +96,80 @@ export default function PromoModalPopup() {
   if (!visivel || !popup) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-in fade-in duration-200 font-sans">
-      <div className="relative w-full max-w-lg bg-white rounded-3xl overflow-hidden shadow-2xl border border-gray-100 transform animate-in zoom-in-95 duration-200">
-        
-        {/* Botão Fechar X */}
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-in fade-in duration-200 font-sans"
+      onClick={fechar}
+    >
+      <div
+        className="relative w-full max-w-lg bg-white rounded-3xl overflow-hidden shadow-2xl border border-gray-100 transform animate-in zoom-in-95 duration-200"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Botão Fechar X destacado */}
         <button
           type="button"
           onClick={fechar}
-          className="absolute top-3 right-3 z-20 bg-black/60 hover:bg-black text-white p-2 rounded-full transition shadow-md cursor-pointer"
+          className="absolute top-3 right-3 z-30 bg-black/80 hover:bg-black text-white w-9 h-9 rounded-full transition shadow-lg flex items-center justify-center cursor-pointer border border-white/20"
+          aria-label="Fechar"
           title="Fechar"
         >
-          <X size={18} />
+          <X size={20} />
         </button>
 
-        {/* Banner com Foto se cadastrada */}
-        {popup.imagem_url ? (
-          <div>
-            {popup.link_destino ? (
-              <Link href={popup.link_destino} onClick={fechar}>
+        {/* Conteúdo do Popup */}
+        <div>
+          {/* Banner com Foto (se cadastrada) */}
+          {popup.imagem_url && (
+            <div className="w-full bg-gray-50">
+              {popup.link_destino ? (
+                <Link href={popup.link_destino} onClick={fechar}>
+                  <img
+                    src={popup.imagem_url}
+                    alt={popup.titulo || 'Promoção Exclusiva'}
+                    className="w-full h-auto max-h-[50vh] object-contain mx-auto hover:opacity-95 transition cursor-pointer"
+                  />
+                </Link>
+              ) : (
                 <img
                   src={popup.imagem_url}
                   alt={popup.titulo || 'Promoção Exclusiva'}
-                  className="w-full h-auto max-h-[75vh] object-cover hover:opacity-95 transition cursor-pointer"
+                  className="w-full h-auto max-h-[50vh] object-contain mx-auto"
                 />
-              </Link>
-            ) : (
-              <img
-                src={popup.imagem_url}
-                alt={popup.titulo || 'Promoção Exclusiva'}
-                className="w-full h-auto max-h-[75vh] object-cover"
-              />
-            )}
-          </div>
-        ) : (
-          <div className="p-8 text-center space-y-4">
-            <div className="w-12 h-12 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center mx-auto">
-              <Sparkles size={24} />
+              )}
             </div>
-            {popup.titulo && <h2 className="text-2xl font-bold text-secondary">{popup.titulo}</h2>}
-            {popup.subtitulo && <p className="text-sm text-gray-600">{popup.subtitulo}</p>}
-            {popup.link_destino && (
-              <Link
-                href={popup.link_destino}
-                onClick={fechar}
-                className="inline-block bg-primary hover:bg-orange-600 text-white font-bold px-6 py-3 rounded-xl text-sm transition shadow-md"
-              >
-                Aproveitar Agora
-              </Link>
-            )}
-          </div>
-        )}
+          )}
 
+          {/* Frases Promocionais e Botão de Ação */}
+          {(popup.titulo || popup.subtitulo || !popup.imagem_url) && (
+            <div className="p-6 text-center space-y-3 bg-white">
+              {!popup.imagem_url && (
+                <div className="w-12 h-12 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center mx-auto mb-2">
+                  <Sparkles size={24} />
+                </div>
+              )}
+              {popup.titulo && (
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-900 leading-tight">
+                  {popup.titulo}
+                </h2>
+              )}
+              {popup.subtitulo && (
+                <p className="text-sm text-gray-600 leading-relaxed">
+                  {popup.subtitulo}
+                </p>
+              )}
+              {popup.link_destino && (
+                <div className="pt-2">
+                  <Link
+                    href={popup.link_destino}
+                    onClick={fechar}
+                    className="inline-block w-full sm:w-auto bg-primary hover:bg-orange-600 text-white font-bold px-8 py-3 rounded-xl text-sm transition shadow-md"
+                  >
+                    Aproveitar Agora
+                  </Link>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
