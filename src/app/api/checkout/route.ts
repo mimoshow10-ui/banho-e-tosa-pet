@@ -1,22 +1,30 @@
 import { NextResponse } from 'next/server';
 import { MercadoPagoConfig, Preference } from 'mercadopago';
+import { supabase } from '@/lib/supabase';
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { items, cliente, frete, total } = body;
 
-    const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
+    let accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
 
-    // Se o token do Mercado Pago não estiver configurado nas variáveis de ambiente, simular checkout (dev mode)
     if (!accessToken) {
-      console.log('[MERCADO PAGO] MERCADOPAGO_ACCESS_TOKEN não configurado em .env. Simulando Checkout.');
+      const { data: mpCfg } = await supabase.from('configuracoes').select('valor').eq('chave', 'mercadopago_config').maybeSingle();
+      if (mpCfg?.valor?.access_token) {
+        accessToken = mpCfg.valor.access_token;
+      }
+    }
+
+    // Se o token do Mercado Pago não estiver configurado nas variáveis nem no painel, simular checkout
+    if (!accessToken) {
+      console.log('[MERCADO PAGO] Access Token não configurado. Simulando Checkout.');
       const mockCheckoutUrl = 'https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=mock-banho-e-tosa-12345';
       return NextResponse.json({
         sucesso: true,
         checkoutUrl: mockCheckoutUrl,
         modo: 'simulacao',
-        mensagem: 'Simulação realizada. Insira MERCADOPAGO_ACCESS_TOKEN no .env.local para gerar cobranças reais.'
+        mensagem: 'Simulação realizada. Insira o Access Token nas Configurações do Painel para gerar cobranças reais.'
       });
     }
 
