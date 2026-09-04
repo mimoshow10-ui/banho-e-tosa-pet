@@ -12,7 +12,7 @@ export async function POST(req: Request) {
     const rawEmail = body.email || '';
     const emailSanitizado = String(rawEmail).trim().toLowerCase();
 
-    // 1. SOLICITAR CÓDIGO DE ACESSO (OTP DE 3 MINUTOS VIA SUPABASE AUTH E EMAIL NATIVO)
+    // 1. SOLICITAR CÓDIGO DE ACESSO (OTP DE 3 MINUTOS)
     if (acao === 'enviar_codigo') {
       if (emailSanitizado !== ADMIN_ALLOWED_EMAIL) {
         console.log(`[SEGURANÇA ADMIN] Tentativa de código para e-mail não autorizado: ${rawEmail}`);
@@ -22,21 +22,7 @@ export async function POST(req: Request) {
         });
       }
 
-      // 1A. Disparo de e-mail via Supabase Auth Nativo (Garante a entrega no Gmail)
-      const { error: sbAuthError } = await supabase.auth.signInWithOtp({
-        email: ADMIN_ALLOWED_EMAIL,
-        options: {
-          shouldCreateUser: true
-        }
-      });
-
-      if (sbAuthError) {
-        console.error('[SEGURANÇA ADMIN] Supabase Auth OTP error:', sbAuthError.message);
-      } else {
-        console.log(`[SEGURANÇA ADMIN] E-mail de acesso enviado via Supabase Auth para ${ADMIN_ALLOWED_EMAIL}`);
-      }
-
-      // 1B. Gerar código de backup de 6 dígitos no banco
+      // 1A. Gerar código estrito de 6 dígitos numéricos (SEM LINKS)
       const novoCodigo = Math.floor(100000 + Math.random() * 900000).toString();
       const expiraEm = new Date(Date.now() + 3 * 60 * 1000).toISOString();
 
@@ -98,28 +84,17 @@ export async function POST(req: Request) {
 
       const inputCodigo = String(codigo).trim();
 
-      // 2A. Testar validação via Supabase Auth
-      const { data: sbVerifyData, error: sbVerifyError } = await supabase.auth.verifyOtp({
-        email: ADMIN_ALLOWED_EMAIL,
-        token: inputCodigo,
-        type: 'email'
-      });
+      let codigoValido = false;
+      const { data: otpCfg } = await supabase.from('configuracoes').select('valor').eq('chave', 'admin_otp').maybeSingle();
+      const otpInfo = otpCfg?.valor;
 
-      let codigoValido = !sbVerifyError && sbVerifyData?.session !== null;
+      if (otpInfo && otpInfo.codigo && String(otpInfo.email).trim().toLowerCase() === ADMIN_ALLOWED_EMAIL) {
+        const agora = Date.now();
+        const expira = new Date(otpInfo.expira_em).getTime();
 
-      // 2B. Se falhou no Supabase Auth, testar no banco configuracoes -> admin_otp
-      if (!codigoValido) {
-        const { data: otpCfg } = await supabase.from('configuracoes').select('valor').eq('chave', 'admin_otp').maybeSingle();
-        const otpInfo = otpCfg?.valor;
-
-        if (otpInfo && otpInfo.codigo && String(otpInfo.email).trim().toLowerCase() === ADMIN_ALLOWED_EMAIL) {
-          const agora = Date.now();
-          const expira = new Date(otpInfo.expira_em).getTime();
-
-          if (agora <= expira && inputCodigo === String(otpInfo.codigo).trim()) {
-            codigoValido = true;
-            await supabase.from('configuracoes').delete().eq('chave', 'admin_otp');
-          }
+        if (agora <= expira && inputCodigo === String(otpInfo.codigo).trim()) {
+          codigoValido = true;
+          await supabase.from('configuracoes').delete().eq('chave', 'admin_otp');
         }
       }
 
