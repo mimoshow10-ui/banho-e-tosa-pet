@@ -7,73 +7,91 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="h-screen bg-gray-100 flex flex-col md:flex-row font-sans overflow-hidden">
-      {/* Sidebar / Menu Lateral — fixo na tela */}
-      <aside className="w-full md:w-64 bg-secondary text-white flex flex-col flex-shrink-0 md:h-screen md:sticky md:top-0">
-        <div className="p-6 border-b border-blue-800">
-          <h2 className="font-heading font-bold text-xl text-accent">Painel Admin</h2>
-          <p className="text-xs text-blue-200 mt-1">Banho e Tosa Pet</p>
+    <div className="min-h-screen bg-gray-100 flex flex-row font-sans overflow-x-hidden">
+      
+      {/* Sidebar / Menu Lateral Fixa e Sempre Visível */}
+      <aside className="w-64 bg-[#0B2545] text-white flex flex-col flex-shrink-0 min-h-screen sticky top-0 border-r border-blue-900 shadow-xl z-40">
+        
+        {/* Topo da Sidebar */}
+        <div className="p-5 border-b border-blue-800/60 bg-blue-950/50">
+          <h2 className="font-heading font-black text-xl text-amber-400 tracking-wide flex items-center gap-2">
+            <span>🐾 Painel Admin</span>
+          </h2>
+          <p className="text-xs text-blue-200 mt-1 font-semibold">Banho & Tosa Pet</p>
         </div>
         
-        <nav className="flex-1 p-4 flex flex-col gap-2 overflow-y-auto">
-          <Link href="/admin" className="flex items-center gap-3 p-3 rounded-lg hover:bg-blue-800 transition bg-blue-900">
-            <Home size={20} />
+        {/* Navegação Principal */}
+        <nav className="flex-1 p-3 flex flex-col gap-1.5 overflow-y-auto">
+          <Link href="/admin" className="flex items-center gap-3 px-3.5 py-3 rounded-xl hover:bg-blue-800/80 transition text-xs font-bold bg-blue-900/90 text-white shadow-2xs">
+            <Home size={18} className="text-amber-400" />
             <span>Dashboard</span>
           </Link>
-          <Link href="/admin/produtos" className="flex items-center gap-3 p-3 rounded-lg hover:bg-blue-800 transition">
-            <Package size={20} />
+
+          <Link href="/admin/produtos" className="flex items-center gap-3 px-3.5 py-3 rounded-xl hover:bg-blue-800/80 transition text-xs font-bold text-blue-100 hover:text-white">
+            <Package size={18} className="text-blue-300" />
             <span>Produtos</span>
           </Link>
-          <Link href="/admin/categorias" className="flex items-center gap-3 p-3 rounded-lg hover:bg-blue-800 transition">
-            <Tags size={20} />
+
+          <Link href="/admin/categorias" className="flex items-center gap-3 px-3.5 py-3 rounded-xl hover:bg-blue-800/80 transition text-xs font-bold text-blue-100 hover:text-white">
+            <Tags size={18} className="text-blue-300" />
             <span>Grupos e Subgrupos</span>
           </Link>
-          <Link href="/admin/pedidos" className="flex items-center gap-3 p-3 rounded-lg hover:bg-blue-800 transition">
-            <ShoppingCart size={20} />
+
+          <Link href="/admin/pedidos" className="flex items-center gap-3 px-3.5 py-3 rounded-xl hover:bg-blue-800/80 transition text-xs font-bold text-blue-100 hover:text-white">
+            <ShoppingCart size={18} className="text-blue-300" />
             <span>Pedidos</span>
           </Link>
-          <Link href="/admin/cupons" className="flex items-center gap-3 p-3 rounded-lg hover:bg-blue-800 transition bg-orange-900/40 text-orange-200 border border-orange-500/30">
-            <Ticket size={20} className="text-orange-300" />
+
+          <Link href="/admin/cupons" className="flex items-center gap-3 px-3.5 py-3 rounded-xl bg-orange-950/50 hover:bg-orange-900/60 transition text-xs font-bold text-orange-200 border border-orange-500/30">
+            <Ticket size={18} className="text-orange-400" />
             <span>Cupons de Desconto</span>
           </Link>
-          <Link href="/admin/transportadoras" className="flex items-center gap-3 p-3 rounded-lg hover:bg-blue-800 transition">
-            <Truck size={20} />
+
+          <Link href="/admin/transportadoras" className="flex items-center gap-3 px-3.5 py-3 rounded-xl hover:bg-blue-800/80 transition text-xs font-bold text-blue-100 hover:text-white">
+            <Truck size={18} className="text-blue-300" />
             <span>Transportadoras (Fretes)</span>
           </Link>
-          <Link href="/admin/clientes" className="flex items-center gap-3 p-3 rounded-lg hover:bg-blue-800 transition">
-            <Users size={20} />
+
+          <Link href="/admin/clientes" className="flex items-center gap-3 px-3.5 py-3 rounded-xl hover:bg-blue-800/80 transition text-xs font-bold text-blue-100 hover:text-white">
+            <Users size={18} className="text-blue-300" />
             <span>Clientes</span>
           </Link>
-          <Link href="/admin/marketing" className="flex items-center gap-3 p-3 rounded-lg hover:bg-blue-800 transition">
-            <Settings size={20} />
+
+          <Link href="/admin/marketing" className="flex items-center gap-3 px-3.5 py-3 rounded-xl hover:bg-blue-800/80 transition text-xs font-bold text-blue-100 hover:text-white">
+            <Settings size={18} className="text-blue-300" />
             <span>Marketing (Banners)</span>
           </Link>
-          <Link href="/admin/configuracoes" className="flex items-center gap-3 p-3 rounded-lg hover:bg-blue-800 transition">
-            <Settings size={20} />
+
+          <Link href="/admin/configuracoes" className="flex items-center gap-3 px-3.5 py-3 rounded-xl hover:bg-blue-800/80 transition text-xs font-bold text-blue-100 hover:text-white">
+            <Settings size={18} className="text-blue-300" />
             <span>Configurações</span>
           </Link>
-          <Link href="/admin/treinamento-ia" className="flex items-center gap-3 p-3 rounded-lg bg-purple-900/60 hover:bg-purple-800 transition border border-purple-500/30 text-purple-200">
-            <Bot size={20} className="text-purple-300" />
+
+          <Link href="/admin/treinamento-ia" className="flex items-center gap-3 px-3.5 py-3 rounded-xl bg-purple-950/60 hover:bg-purple-900/70 transition border border-purple-500/30 text-purple-200 text-xs font-bold mt-2">
+            <Bot size={18} className="text-purple-400" />
             <span>Treinar IA (Robô)</span>
           </Link>
         </nav>
 
-        <div className="p-4 border-t border-blue-800 flex flex-col gap-2 flex-shrink-0">
-          <Link href="/" target="_blank" className="flex items-center gap-3 p-3 bg-accent text-secondary font-bold rounded-lg hover:bg-yellow-400 transition">
-            <Home size={20} />
+        {/* Rodapé da Sidebar */}
+        <div className="p-4 border-t border-blue-800/60 bg-blue-950/40 flex flex-col gap-2 flex-shrink-0">
+          <Link href="/" target="_blank" className="flex items-center gap-2.5 px-3 py-2.5 bg-amber-400 text-blue-950 font-black rounded-xl hover:bg-amber-300 transition text-xs justify-center shadow-xs">
+            <Home size={16} />
             <span>Visualizar Loja</span>
           </Link>
-          <Link href="/" className="flex items-center gap-3 p-3 text-red-300 hover:text-red-100 transition">
-            <LogOut size={20} />
+          <Link href="/" className="flex items-center gap-2 px-3 py-2 text-red-300 hover:text-red-100 hover:bg-red-900/30 rounded-xl transition text-xs font-bold justify-center">
+            <LogOut size={16} />
             <span>Sair do Painel</span>
           </Link>
         </div>
+
       </aside>
 
-      {/* Área Principal de Conteúdo — rola independente */}
-      <main className="flex-1 p-8 overflow-y-auto h-screen">
+      {/* Área Principal de Conteúdo */}
+      <main className="flex-1 p-6 md:p-8 overflow-y-auto min-h-screen">
         {children}
       </main>
+
     </div>
   );
 }
