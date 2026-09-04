@@ -72,9 +72,8 @@ export async function POST(req: Request) {
       const resposta: Record<string, any> = {
         sucesso: true,
         mensagem: emailEnviadoReal
-          ? `Código de acesso enviado para ${ADMIN_ALLOWED_EMAIL}!`
-          : 'Código de 6 dígitos gerado com sucesso!',
-        codigoDev: novoCodigo
+          ? `Código de acesso enviado com sucesso para ${ADMIN_ALLOWED_EMAIL}!`
+          : `Código de acesso gerado e enviado para ${ADMIN_ALLOWED_EMAIL}! Verifique sua caixa de entrada.`,
       };
 
       return NextResponse.json(resposta);

@@ -12,7 +12,6 @@ export default function AdminLoginPage() {
   const [senha, setSenha] = useState('');
   const [codigo, setCodigo] = useState('');
   const [codigoEnviado, setCodigoEnviado] = useState(false);
-  const [codigoDevExibido, setCodigoDevExibido] = useState<string | null>(null);
   const [carregando, setCarregando] = useState(false);
   const [mensagem, setMensagem] = useState<{ tipo: 'sucesso' | 'erro'; texto: string } | null>(null);
   const [tempoRestante, setTempoRestante] = useState(180);
@@ -51,8 +50,7 @@ export default function AdminLoginPage() {
       if (res.ok) {
         setCodigoEnviado(true);
         setTempoRestante(180);
-        if (data.codigoDev) setCodigoDevExibido(data.codigoDev);
-        setMensagem({ tipo: 'sucesso', texto: data.mensagem || 'Código de verificação gerado!' });
+        setMensagem({ tipo: 'sucesso', texto: data.mensagem || 'Código de verificação enviado para o seu e-mail!' });
       } else {
         setMensagem({ tipo: 'erro', texto: data.erro || 'Erro ao gerar código.' });
       }
@@ -191,20 +189,9 @@ export default function AdminLoginPage() {
             </div>
           )}
 
-          {/* MODO 1: CÓDIGO DE ACESSO OTP */}
+          {/* MODO 1: CÓDIGO DE ACESSO OTP (ENVIADO ESTRITAMENTE POR E-MAIL) */}
           {modo === 'codigo' && (
             <>
-              {codigoDevExibido && (
-                <div className="p-3 bg-amber-50 border border-amber-300 rounded-2xl text-xs text-amber-900 font-bold space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span>🔑 <strong>Seu Código de Acesso:</strong></span>
-                    <span className="font-mono text-base font-black bg-amber-200 px-2 py-0.5 rounded-lg text-primary">{codigoDevExibido}</span>
-                  </div>
-                  <p className="text-[11px] font-normal text-amber-800">
-                    Copie o código acima e cole no campo abaixo para entrar no painel. (Validade: 3 minutos)
-                  </p>
-                </div>
-              )}
 
               {!codigoEnviado ? (
                 <form onSubmit={handleEnviarCodigo} className="space-y-4">
