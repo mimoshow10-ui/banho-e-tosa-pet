@@ -59,14 +59,12 @@ export default async function Home() {
 
   return (
     <div className="flex flex-col min-h-screen">
-      {/* BANNER PRINCIPAL COM CARROSEL */}
-      <section className="w-full relative">
-        <BannerCarousel banners={banners} />
+      {/* FAIXA DE CUPONS DA LOJA (ESTRITA E POSICIONADA ACIMA DO BANNER) */}
+      <HomeCouponsBanner />
 
-        {/* FAIXA FLUTUANTE DE CUPONS NO TOPO DO BANNER */}
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 w-full max-w-6xl px-4 pointer-events-auto">
-          <HomeCouponsBanner />
-        </div>
+      {/* BANNER PRINCIPAL COM CARROSEL */}
+      <section className="w-full">
+        <BannerCarousel banners={banners} />
       </section>
 
       {/* SEÇÃO PRINCIPAL DE VITRINE DA LOJA */}

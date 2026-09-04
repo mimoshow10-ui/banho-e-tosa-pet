@@ -28,7 +28,7 @@ export default function TopBar({ topbar }: { topbar: any }) {
         .animate-marquee-slow {
           display: inline-block;
           white-space: nowrap;
-          animation: marqueeSlow 25s linear infinite;
+          animation: marqueeSlow 30s linear infinite;
         }
         .animate-marquee-slow:hover {
           animation-play-state: paused;
@@ -36,12 +36,12 @@ export default function TopBar({ topbar }: { topbar: any }) {
       `}</style>
 
       <div className="w-full flex items-center justify-center">
-        <div className="animate-marquee-slow text-base md:text-lg font-black tracking-wide flex items-center gap-12">
-          <span>{texto}</span>
-          <span>•</span>
-          <span>{texto}</span>
-          <span>•</span>
-          <span>{texto}</span>
+        <div className="animate-marquee-slow text-base md:text-lg font-black tracking-wider flex items-center gap-32 md:gap-48 px-8">
+          <span className="flex items-center gap-3">{texto}</span>
+          <span className="opacity-50 text-xl">•</span>
+          <span className="flex items-center gap-3">{texto}</span>
+          <span className="opacity-50 text-xl">•</span>
+          <span className="flex items-center gap-3">{texto}</span>
         </div>
       </div>
     </div>

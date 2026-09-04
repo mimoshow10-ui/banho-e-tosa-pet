@@ -75,18 +75,20 @@ export default async function ProdutoPage({ params }: { params: Promise<{ slug: 
 
   if (!rawProduto) notFound();
 
-  // Se o produto acessado for um FILHO, buscar o produto PAI como anúncio principal
-  let produto = rawProduto;
+  // Se o produto acessado for um FILHO, redirecionar para a URL do produto PAI
   if (rawProduto.parent_id) {
     const { data: parentProduct } = await supabase
       .from('produtos')
-      .select('*')
+      .select('slug')
       .eq('id', rawProduto.parent_id)
       .maybeSingle();
-    if (parentProduct) {
-      produto = parentProduct;
+
+    if (parentProduct && parentProduct.slug && parentProduct.slug !== slug) {
+      redirect(`/produto/${parentProduct.slug}`);
     }
   }
+
+  const produto = rawProduto;
 
   // Buscar família de variações com segurança
   let family: any[] = [];

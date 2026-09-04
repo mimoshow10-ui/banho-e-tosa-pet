@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Ticket, Check, Sparkles, Tag, ArrowRight } from 'lucide-react';
+import { Check, Sparkles, Tag } from 'lucide-react';
 import { CupomDesconto } from '@/lib/types/coupon';
 
 export default function HomeCouponsBanner() {
@@ -45,32 +45,10 @@ export default function HomeCouponsBanner() {
   ];
 
   return (
-    <div className="w-full bg-gradient-to-r from-orange-600 via-amber-500 to-orange-500 py-4 px-4 text-white shadow-md border-b border-orange-600/30">
-      <div className="max-w-[1500px] mx-auto space-y-3">
-        
-        {/* Cabeçalho da Seção de Cupons */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-xs flex items-center justify-center text-yellow-200">
-              <Ticket size={18} />
-            </div>
-            <div>
-              <h2 className="text-sm md:text-base font-heading font-black tracking-tight uppercase flex items-center gap-1.5">
-                <span>🎟️ Cupons da Loja</span>
-                <span className="text-[10px] bg-red-600 text-white font-bold px-2 py-0.5 rounded-full tracking-normal lowercase font-sans">
-                  economize já
-                </span>
-              </h2>
-            </div>
-          </div>
-          
-          <span className="text-xs font-bold text-yellow-100 hidden sm:flex items-center gap-1">
-            Clique em PEGAR para aplicar no carrinho <ArrowRight size={14} />
-          </span>
-        </div>
-
-        {/* Cards Estilo Ticket de Cupom */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+    <div className="w-full bg-gradient-to-r from-orange-600 via-amber-500 to-orange-500 py-2 px-4 text-white shadow-xs border-b border-orange-600/30">
+      <div className="max-w-7xl mx-auto">
+        {/* Grid Estrito e Compacto de Cupons (Sem frase de cabeçalho) */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
           {listaExibida.map((c) => {
             const isColetado = !!coletados[c.codigo!];
             const badgeTexto = c.tipo === 'percentual'
@@ -82,28 +60,22 @@ export default function HomeCouponsBanner() {
             return (
               <div
                 key={c.codigo}
-                className="bg-white text-secondary rounded-2xl p-3.5 shadow-sm hover:shadow-md transition-all duration-200 border-l-4 border-l-orange-500 border border-gray-200 flex items-center justify-between gap-3 group relative"
+                className="bg-white text-secondary rounded-xl p-2 shadow-2xs hover:shadow-xs transition-all duration-200 border-l-4 border-l-orange-500 border border-gray-200 flex items-center justify-between gap-2 group relative"
               >
                 {/* Detalhes do Cupom */}
-                <div className="space-y-1 overflow-hidden">
+                <div className="space-y-0.5 overflow-hidden">
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="bg-red-600 text-white font-black text-[11px] px-2 py-0.5 rounded-md uppercase tracking-tight shadow-2xs">
+                    <span className="bg-red-600 text-white font-black text-[10px] px-1.5 py-0.5 rounded uppercase tracking-tight shadow-2xs">
                       {badgeTexto}
                     </span>
-                    <span className="font-mono font-bold text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded border border-gray-200 flex items-center gap-1">
-                      <Tag size={10} className="text-orange-500" />
+                    <span className="font-mono font-bold text-[11px] bg-gray-100 text-gray-700 px-1.5 py-0.5 rounded border border-gray-200 flex items-center gap-1">
+                      <Tag size={9} className="text-orange-500" />
                       {c.codigo}
                     </span>
                   </div>
                   
-                  <p className="text-xs font-bold text-gray-800 line-clamp-1 group-hover:text-primary transition">
+                  <p className="text-[11px] font-bold text-gray-800 line-clamp-1 group-hover:text-primary transition leading-tight">
                     {c.nome_interno}
-                  </p>
-
-                  <p className="text-[10px] text-gray-400 font-medium">
-                    {c.compra_minima && c.compra_minima > 0
-                      ? `Mínimo R$ ${Number(c.compra_minima).toFixed(2).replace('.', ',')}`
-                      : 'Sem valor mínimo exigido'}
                   </p>
                 </div>
 
@@ -111,20 +83,20 @@ export default function HomeCouponsBanner() {
                 <button
                   type="button"
                   onClick={() => coletarCupom(c)}
-                  className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all duration-200 flex items-center gap-1 flex-shrink-0 cursor-pointer ${
+                  className={`px-3 py-1.5 rounded-lg text-[11px] font-black transition-all duration-200 flex items-center gap-1 flex-shrink-0 cursor-pointer ${
                     isColetado
                       ? 'bg-green-600 text-white shadow-2xs'
-                      : 'bg-primary text-white hover:bg-orange-600 shadow-sm active:scale-95'
+                      : 'bg-primary text-white hover:bg-orange-600 shadow-2xs active:scale-95'
                   }`}
                 >
                   {isColetado ? (
                     <>
-                      <Check size={14} />
+                      <Check size={12} />
                       <span>Coletado</span>
                     </>
                   ) : (
                     <>
-                      <Sparkles size={14} />
+                      <Sparkles size={12} />
                       <span>Pegar</span>
                     </>
                   )}
@@ -133,7 +105,6 @@ export default function HomeCouponsBanner() {
             );
           })}
         </div>
-
       </div>
     </div>
   );
