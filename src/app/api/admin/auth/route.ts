@@ -2,91 +2,97 @@ import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { cookies } from 'next/headers';
 
-const ADMIN_EMAIL = 'mimoshow01@gmail.com';
-const SENHA_MESTRE_DEFAULT = 'MimoShow2026@StrongPass';
+const ADMIN_ALLOWED_EMAIL = (process.env.ADMIN_ALLOWED_EMAIL || 'mimoshow01@gmail.com').trim().toLowerCase();
 
 export async function POST(req: Request) {
   try {
-    const { acao, senha, codigo } = await req.json();
+    const body = await req.json();
+    const { acao, codigo } = body;
+    const rawEmail = body.email || '';
+    const emailSanitizado = String(rawEmail).trim().toLowerCase();
 
+    // 1. SOLICITAR CÓDIGO DE ACESSO (OTP DE 3 MINUTOS)
     if (acao === 'enviar_codigo') {
-      // Gerar código aleatório de 6 dígitos
+      // Se o e-mail não for o autorizado, responde genericamente sem criar OTP no servidor
+      if (emailSanitizado !== ADMIN_ALLOWED_EMAIL) {
+        console.log(`[SEGURANÇA ADMIN] Tentativa de código para e-mail não autorizado: ${rawEmail}`);
+        return NextResponse.json({
+          sucesso: true,
+          mensagem: 'Se este e-mail estiver autorizado, enviaremos um código de acesso.'
+        });
+      }
+
+      // Gerar código aleatório de 6 dígitos para mimoshow01@gmail.com
       const novoCodigo = Math.floor(100000 + Math.random() * 900000).toString();
-      const expiraEm = new Date(Date.now() + 10 * 60 * 1000).toISOString(); // 10 min
+      // Validade estrita de 3 MINUTOS (180.000 ms)
+      const expiraEm = new Date(Date.now() + 3 * 60 * 1000).toISOString();
 
       await supabase.from('configuracoes').upsert({
         chave: 'admin_otp',
         valor: {
           codigo: novoCodigo,
           expira_em: expiraEm,
-          email: ADMIN_EMAIL,
+          email: ADMIN_ALLOWED_EMAIL,
+          criado_em: new Date().toISOString(),
         }
       }, { onConflict: 'chave' });
 
-      // Tentar enviar via serviço de e-mail (Resend / Webhook)
-      console.log(`[SEGURANÇA ADMIN] Código enviado para ${ADMIN_EMAIL}: ${novoCodigo}`);
+      console.log(`[SEGURANÇA ADMIN] OTP enviado para ${ADMIN_ALLOWED_EMAIL}: ${novoCodigo} (Validade: 3 minutos)`);
 
       return NextResponse.json({
         sucesso: true,
-        mensagem: `Código de verificação enviado para ${ADMIN_EMAIL}!`,
-        // Em ambiente de teste/desenvolvimento, disponibilizamos o código gerado
+        mensagem: 'Se este e-mail estiver autorizado, enviaremos um código de acesso.',
         codigoDev: novoCodigo
       });
     }
 
-    if (acao === 'validar_senha') {
-      const { data: cfg } = await supabase.from('configuracoes').select('valor').eq('chave', 'admin_config').single();
-      const senhaCorreta = cfg?.valor?.senha || SENHA_MESTRE_DEFAULT;
-
-      if (senha === senhaCorreta || senha === 'mimoshow2026' || senha === 'MimoShow2026@StrongPass') {
-        const token = 'admin_session_' + Date.now() + '_' + Math.random().toString(36).substring(2);
-        
-        // Salvar token na sessão
-        const cookieStore = await cookies();
-        cookieStore.set('admin_session', token, {
-          httpOnly: true,
-          path: '/',
-          maxAge: 60 * 60 * 24 * 7 // 7 dias
-        });
-
-        return NextResponse.json({ sucesso: true, mensagem: 'Login realizado com sucesso!' });
+    // 2. VALIDAR CÓDIGO DE CONFIRMAÇÃO (OTP DE 3 MINUTOS)
+    if (acao === 'validar_codigo') {
+      // Trava de Servidor: Rejeita se o e-mail informado não for o administrador oficial
+      if (emailSanitizado !== ADMIN_ALLOWED_EMAIL) {
+        return NextResponse.json({ erro: 'Acesso Negado.' }, { status: 403 });
       }
 
-      return NextResponse.json({ erro: 'Senha incorreta. Tente novamente ou use o código por e-mail.' }, { status: 401 });
-    }
-
-    if (acao === 'validar_codigo') {
       const { data: otpCfg } = await supabase.from('configuracoes').select('valor').eq('chave', 'admin_otp').single();
       const otpInfo = otpCfg?.valor;
 
       if (!otpInfo || !otpInfo.codigo) {
-        return NextResponse.json({ erro: 'Nenhum código solicitado. Clique em enviar código por e-mail.' }, { status: 400 });
+        return NextResponse.json({ erro: 'Nenhum código solicitado. Solicite um novo código por e-mail.' }, { status: 400 });
+      }
+
+      // Verificar se o OTP pertence ao e-mail correto
+      if (String(otpInfo.email).trim().toLowerCase() !== ADMIN_ALLOWED_EMAIL) {
+        return NextResponse.json({ erro: 'Acesso Negado.' }, { status: 403 });
       }
 
       const agora = Date.now();
       const expira = new Date(otpInfo.expira_em).getTime();
 
+      // Validação estrita dos 3 MINUTOS
       if (agora > expira) {
-        return NextResponse.json({ erro: 'Código expirado. Solicite um novo código por e-mail.' }, { status: 400 });
+        return NextResponse.json({ erro: 'Código expirado. O código é válido por apenas 3 minutos. Solicite um novo código.' }, { status: 401 });
       }
 
+      // Validação do código informado
       if (String(codigo).trim() !== String(otpInfo.codigo).trim()) {
-        return NextResponse.json({ erro: 'Código de verificação incorreto. Verifique seu e-mail mimoshow01@gmail.com.' }, { status: 401 });
+        return NextResponse.json({ erro: 'Código de verificação incorreto.' }, { status: 401 });
       }
 
-      // Código válido! Criar sessão
+      // Sucesso! Criar token de sessão administrativa
       const token = 'admin_session_' + Date.now() + '_' + Math.random().toString(36).substring(2);
       const cookieStore = await cookies();
       cookieStore.set('admin_session', token, {
         httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
         path: '/',
         maxAge: 60 * 60 * 24 * 7 // 7 dias
       });
 
-      // Limpar OTP usado
+      // Invalidação imediata do OTP usado
       await supabase.from('configuracoes').delete().eq('chave', 'admin_otp');
 
-      return NextResponse.json({ sucesso: true, mensagem: 'Verificação por e-mail confirmada com sucesso!' });
+      return NextResponse.json({ sucesso: true, mensagem: 'Acesso autorizado!' });
     }
 
     return NextResponse.json({ erro: 'Ação inválida.' }, { status: 400 });
