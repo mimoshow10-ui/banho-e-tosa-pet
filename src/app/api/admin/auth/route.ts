@@ -3,7 +3,6 @@ import { supabase } from '@/lib/supabase';
 import { cookies } from 'next/headers';
 
 const ADMIN_ALLOWED_EMAIL = (process.env.ADMIN_ALLOWED_EMAIL || 'mimoshow01@gmail.com').trim().toLowerCase();
-const SENHA_MESTRE_DEFAULT = 'mimoshow2026';
 
 export async function POST(req: Request) {
   try {
@@ -38,11 +37,16 @@ export async function POST(req: Request) {
 
       console.log(`[SEGURANÇA ADMIN] OTP enviado para ${ADMIN_ALLOWED_EMAIL}: ${novoCodigo} (Validade: 3 minutos)`);
 
-      return NextResponse.json({
+      const resposta: Record<string, any> = {
         sucesso: true,
         mensagem: 'Se este e-mail estiver autorizado, enviaremos um código de acesso.',
-        codigoDev: novoCodigo
-      });
+      };
+
+      if (process.env.NODE_ENV === 'development') {
+        resposta.codigoDev = novoCodigo;
+      }
+
+      return NextResponse.json(resposta);
     }
 
     // 2. VALIDAR CÓDIGO DE CONFIRMAÇÃO (OTP DE 3 MINUTOS)
@@ -89,13 +93,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ sucesso: true, mensagem: 'Acesso autorizado!' });
     }
 
-    // 3. LOGIN POR SENHA ADMINISTRATIVA MESTRE
+    // 3. LOGIN POR SENHA ADMINISTRATIVA MESTRE (OPCIONAL VIA VARIAVEL DE AMBIENTE SECRETA NO SERVIDOR)
     if (acao === 'validar_senha') {
+      const senhaMestreEnv = process.env.ADMIN_MASTER_PASSWORD;
       const { data: cfg } = await supabase.from('configuracoes').select('valor').eq('chave', 'admin_config').maybeSingle();
-      const senhaCorreta = cfg?.valor?.senha || SENHA_MESTRE_DEFAULT;
+      const senhaCorretaDb = cfg?.valor?.senha;
 
       const s = String(senha).trim();
-      if (s === senhaCorreta || s === 'mimoshow2026' || s === 'MimoShow2026@StrongPass') {
+      const autenticado = (senhaMestreEnv && s === senhaMestreEnv) || (senhaCorretaDb && s === senhaCorretaDb);
+
+      if (autenticado) {
         const token = 'admin_session_' + Date.now() + '_' + Math.random().toString(36).substring(2);
         const cookieStore = await cookies();
         cookieStore.set('admin_session', token, {
@@ -109,7 +116,7 @@ export async function POST(req: Request) {
         return NextResponse.json({ sucesso: true, mensagem: 'Login realizado com sucesso!' });
       }
 
-      return NextResponse.json({ erro: 'Senha incorreta. Tente novamente.' }, { status: 401 });
+      return NextResponse.json({ erro: 'Senha incorreta ou não configurada no servidor.' }, { status: 401 });
     }
 
     return NextResponse.json({ erro: 'Ação inválida.' }, { status: 400 });
