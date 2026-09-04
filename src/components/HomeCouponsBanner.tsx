@@ -39,16 +39,16 @@ export default function HomeCouponsBanner() {
   }
 
   const listaExibida: Partial<CupomDesconto>[] = cupons.length > 0 ? cupons : [
-    { id: '1', codigo: 'BEMVINDO10', tipo: 'percentual', valor: 10, compra_minima: 50, nome_interno: '10% OFF na Primeira Compra' },
-    { id: '2', codigo: 'FRETEGRATIS', tipo: 'frete_gratis', valor: 0, compra_minima: 99, nome_interno: 'Frete Grátis acima de R$ 99' },
-    { id: '3', codigo: 'PET20', tipo: 'fixo', valor: 20, compra_minima: 150, nome_interno: 'R$ 20 OFF acima de R$ 150' },
+    { id: '1', codigo: 'BEMVINDO10', tipo: 'percentual', valor: 10, compra_minima: 50, nome_interno: 'Cupom de Boas-Vindas 10% OFF' },
+    { id: '2', codigo: 'FRETEGRATIS', tipo: 'frete_gratis', valor: 0, compra_minima: 99, nome_interno: 'Cupom Frete Grátis acima R$ 99' },
+    { id: '3', codigo: 'PET20', tipo: 'fixo', valor: 20, compra_minima: 150, nome_interno: 'Cupom R$ 20 OFF Especial' },
   ];
 
   return (
-    <div className="w-full bg-gradient-to-r from-orange-600 via-amber-500 to-orange-500 py-2 px-4 text-white shadow-xs border-b border-orange-600/30">
+    <div className="w-full bg-gradient-to-r from-orange-600 via-amber-500 to-orange-500 py-3.5 px-4 text-white shadow-sm border-b border-orange-600/30">
       <div className="max-w-7xl mx-auto">
-        {/* Grid Estrito e Compacto de Cupons (Sem frase de cabeçalho) */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+        {/* Grid Ampliado (+1/3 em tamanho) de Cupons */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {listaExibida.map((c) => {
             const isColetado = !!coletados[c.codigo!];
             const badgeTexto = c.tipo === 'percentual'
@@ -60,43 +60,44 @@ export default function HomeCouponsBanner() {
             return (
               <div
                 key={c.codigo}
-                className="bg-white text-secondary rounded-xl p-2 shadow-2xs hover:shadow-xs transition-all duration-200 border-l-4 border-l-orange-500 border border-gray-200 flex items-center justify-between gap-2 group relative"
+                className="bg-white text-secondary rounded-2xl p-3 md:p-3.5 shadow-sm hover:shadow-md transition-all duration-200 border-l-4 border-l-orange-500 border border-gray-200 flex items-center justify-between gap-3 group relative"
               >
                 {/* Detalhes do Cupom */}
-                <div className="space-y-0.5 overflow-hidden">
+                <div className="space-y-1 overflow-hidden">
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="bg-red-600 text-white font-black text-[10px] px-1.5 py-0.5 rounded uppercase tracking-tight shadow-2xs">
+                    <span className="bg-red-600 text-white font-black text-xs md:text-sm px-2 py-0.5 rounded-md uppercase tracking-tight shadow-2xs">
                       {badgeTexto}
                     </span>
-                    <span className="font-mono font-bold text-[11px] bg-gray-100 text-gray-700 px-1.5 py-0.5 rounded border border-gray-200 flex items-center gap-1">
-                      <Tag size={9} className="text-orange-500" />
+                    <span className="font-mono font-black text-xs bg-gray-100 text-gray-800 px-2 py-0.5 rounded-md border border-gray-300 flex items-center gap-1">
+                      <Tag size={11} className="text-orange-500" />
                       {c.codigo}
                     </span>
                   </div>
                   
-                  <p className="text-[11px] font-bold text-gray-800 line-clamp-1 group-hover:text-primary transition leading-tight">
+                  {/* Nome/Descrição do Cupom com Fonte Maior e Destacada */}
+                  <p className="text-xs md:text-sm font-black text-gray-900 line-clamp-1 group-hover:text-primary transition leading-snug">
                     {c.nome_interno}
                   </p>
                 </div>
 
-                {/* Botão de Coletar */}
+                {/* Botão de Coletar Ampliado */}
                 <button
                   type="button"
                   onClick={() => coletarCupom(c)}
-                  className={`px-3 py-1.5 rounded-lg text-[11px] font-black transition-all duration-200 flex items-center gap-1 flex-shrink-0 cursor-pointer ${
+                  className={`px-4 py-2 rounded-xl text-xs md:text-sm font-black transition-all duration-200 flex items-center gap-1.5 flex-shrink-0 cursor-pointer ${
                     isColetado
                       ? 'bg-green-600 text-white shadow-2xs'
-                      : 'bg-primary text-white hover:bg-orange-600 shadow-2xs active:scale-95'
+                      : 'bg-primary text-white hover:bg-orange-600 shadow-xs active:scale-95'
                   }`}
                 >
                   {isColetado ? (
                     <>
-                      <Check size={12} />
+                      <Check size={14} />
                       <span>Coletado</span>
                     </>
                   ) : (
                     <>
-                      <Sparkles size={12} />
+                      <Sparkles size={14} />
                       <span>Pegar</span>
                     </>
                   )}
