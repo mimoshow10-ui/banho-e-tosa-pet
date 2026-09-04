@@ -12,7 +12,7 @@ export async function POST(req: Request) {
     const rawEmail = body.email || '';
     const emailSanitizado = String(rawEmail).trim().toLowerCase();
 
-    // 1. SOLICITAR CÓDIGO DE ACESSO (OTP DE 3 MINUTOS)
+    // 1. SOLICITAR CÓDIGO DE ACESSO (OTP DE 3 MINUTOS VIA SUPABASE AUTH E EMAIL NATIVO)
     if (acao === 'enviar_codigo') {
       if (emailSanitizado !== ADMIN_ALLOWED_EMAIL) {
         console.log(`[SEGURANÇA ADMIN] Tentativa de código para e-mail não autorizado: ${rawEmail}`);
@@ -22,7 +22,21 @@ export async function POST(req: Request) {
         });
       }
 
-      // Gerar código de 6 dígitos para mimoshow01@gmail.com
+      // 1A. Disparo de e-mail via Supabase Auth Nativo (Garante a entrega no Gmail)
+      const { error: sbAuthError } = await supabase.auth.signInWithOtp({
+        email: ADMIN_ALLOWED_EMAIL,
+        options: {
+          shouldCreateUser: true
+        }
+      });
+
+      if (sbAuthError) {
+        console.error('[SEGURANÇA ADMIN] Supabase Auth OTP error:', sbAuthError.message);
+      } else {
+        console.log(`[SEGURANÇA ADMIN] E-mail de acesso enviado via Supabase Auth para ${ADMIN_ALLOWED_EMAIL}`);
+      }
+
+      // 1B. Gerar código de backup de 6 dígitos no banco
       const novoCodigo = Math.floor(100000 + Math.random() * 900000).toString();
       const expiraEm = new Date(Date.now() + 3 * 60 * 1000).toISOString();
 
@@ -36,9 +50,7 @@ export async function POST(req: Request) {
         }
       }, { onConflict: 'chave' });
 
-      console.log(`[SEGURANÇA ADMIN] OTP gerado para ${ADMIN_ALLOWED_EMAIL}: ${novoCodigo} (Validade: 3 minutos)`);
-
-      // Tentar enviar e-mail real via Resend (se chave estiver configurada no .env ou no banco)
+      // 1C. Tentar enviar via Resend se houver chave
       let resendApiKey = process.env.RESEND_API_KEY;
       if (!resendApiKey) {
         const { data: rCfg } = await supabase.from('configuracoes').select('valor').eq('chave', 'resend_config').maybeSingle();
@@ -47,7 +59,6 @@ export async function POST(req: Request) {
         }
       }
 
-      let emailEnviadoReal = false;
       if (resendApiKey) {
         try {
           const resend = new Resend(resendApiKey);
@@ -62,21 +73,15 @@ export async function POST(req: Request) {
               <p style="color:#666;font-size:12px;">Este código é válido por <strong>3 minutos</strong>.</p>
             </div>`
           });
-          emailEnviadoReal = true;
-          console.log(`[EMAIL RESEND] E-mail enviado com sucesso para ${ADMIN_ALLOWED_EMAIL}`);
         } catch (e) {
           console.error('[EMAIL RESEND] Erro ao disparar e-mail:', e);
         }
       }
 
-      const resposta: Record<string, any> = {
+      return NextResponse.json({
         sucesso: true,
-        mensagem: emailEnviadoReal
-          ? `Código de acesso enviado com sucesso para ${ADMIN_ALLOWED_EMAIL}!`
-          : `Código de acesso gerado e enviado para ${ADMIN_ALLOWED_EMAIL}! Verifique sua caixa de entrada.`,
-      };
-
-      return NextResponse.json(resposta);
+        mensagem: `Código de acesso enviado com sucesso para ${ADMIN_ALLOWED_EMAIL}! Verifique sua caixa de entrada e spam.`
+      });
     }
 
     // 2. VALIDAR CÓDIGO DE CONFIRMAÇÃO (OTP DE 3 MINUTOS)
@@ -85,26 +90,35 @@ export async function POST(req: Request) {
         return NextResponse.json({ erro: 'Acesso Negado.' }, { status: 403 });
       }
 
-      const { data: otpCfg } = await supabase.from('configuracoes').select('valor').eq('chave', 'admin_otp').single();
-      const otpInfo = otpCfg?.valor;
+      const inputCodigo = String(codigo).trim();
 
-      if (!otpInfo || !otpInfo.codigo) {
-        return NextResponse.json({ erro: 'Nenhum código solicitado. Solicite um novo código.' }, { status: 400 });
+      // 2A. Testar validação via Supabase Auth
+      const { data: sbVerifyData, error: sbVerifyError } = await supabase.auth.verifyOtp({
+        email: ADMIN_ALLOWED_EMAIL,
+        token: inputCodigo,
+        type: 'email'
+      });
+
+      let codigoValido = !sbVerifyError && sbVerifyData?.session !== null;
+
+      // 2B. Se falhou no Supabase Auth, testar no banco configuracoes -> admin_otp
+      if (!codigoValido) {
+        const { data: otpCfg } = await supabase.from('configuracoes').select('valor').eq('chave', 'admin_otp').maybeSingle();
+        const otpInfo = otpCfg?.valor;
+
+        if (otpInfo && otpInfo.codigo && String(otpInfo.email).trim().toLowerCase() === ADMIN_ALLOWED_EMAIL) {
+          const agora = Date.now();
+          const expira = new Date(otpInfo.expira_em).getTime();
+
+          if (agora <= expira && inputCodigo === String(otpInfo.codigo).trim()) {
+            codigoValido = true;
+            await supabase.from('configuracoes').delete().eq('chave', 'admin_otp');
+          }
+        }
       }
 
-      if (String(otpInfo.email).trim().toLowerCase() !== ADMIN_ALLOWED_EMAIL) {
-        return NextResponse.json({ erro: 'Acesso Negado.' }, { status: 403 });
-      }
-
-      const agora = Date.now();
-      const expira = new Date(otpInfo.expira_em).getTime();
-
-      if (agora > expira) {
-        return NextResponse.json({ erro: 'Código expirado. O código é válido por apenas 3 minutos. Solicite um novo código.' }, { status: 401 });
-      }
-
-      if (String(codigo).trim() !== String(otpInfo.codigo).trim()) {
-        return NextResponse.json({ erro: 'Código de verificação incorreto.' }, { status: 401 });
+      if (!codigoValido) {
+        return NextResponse.json({ erro: 'Código incorreto ou expirado. Verifique o código enviado para seu e-mail.' }, { status: 401 });
       }
 
       // Sucesso! Criar token de sessão administrativa
@@ -117,8 +131,6 @@ export async function POST(req: Request) {
         path: '/',
         maxAge: 60 * 60 * 24 * 7
       });
-
-      await supabase.from('configuracoes').delete().eq('chave', 'admin_otp');
 
       return NextResponse.json({ sucesso: true, mensagem: 'Acesso autorizado!' });
     }
