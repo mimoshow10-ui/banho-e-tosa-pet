@@ -141,36 +141,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ sucesso: true, mensagem: 'Acesso autorizado!' });
     }
 
-    // 3. LOGIN POR SENHA ADMINISTRATIVA (MIMOSHOW01@GMAIL.COM)
-    if (acao === 'validar_senha') {
-      if (emailSanitizado !== ADMIN_ALLOWED_EMAIL) {
-        return NextResponse.json({ erro: 'E-mail não autorizado para o painel administrativo.' }, { status: 403 });
-      }
-
-      const senhaMestreEnv = process.env.ADMIN_MASTER_PASSWORD;
-      const { data: cfg } = await supabase.from('configuracoes').select('valor').eq('chave', 'admin_config').maybeSingle();
-      const senhaCorretaDb = cfg?.valor?.senha;
-
-      const s = String(senha).trim();
-      const autenticado = (senhaMestreEnv && s === senhaMestreEnv) || (senhaCorretaDb && s === senhaCorretaDb) || s === 'mimoshow2026';
-
-      if (autenticado) {
-        const token = 'admin_session_' + Date.now() + '_' + Math.random().toString(36).substring(2);
-        const cookieStore = await cookies();
-        cookieStore.set('admin_session', token, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'lax',
-          path: '/',
-          maxAge: 60 * 60 * 24 * 7
-        });
-
-        return NextResponse.json({ sucesso: true, mensagem: 'Login realizado com sucesso!' });
-      }
-
-      return NextResponse.json({ erro: 'Senha incorreta. Tente novamente.' }, { status: 401 });
-    }
-
     return NextResponse.json({ erro: 'Ação inválida.' }, { status: 400 });
   } catch (err: any) {
     return NextResponse.json({ erro: err.message || 'Erro ao processar autenticação.' }, { status: 500 });
