@@ -50,7 +50,7 @@ export async function POST(req: Request) {
         }
       }, { onConflict: 'chave' });
 
-      // 1C. Tentar enviar via Resend se houver chave
+      // 1C. Tentar enviar via Resend ou Nodemailer com o modelo "Acesso Banho e Tosa Pet"
       let resendApiKey = process.env.RESEND_API_KEY;
       if (!resendApiKey) {
         const { data: rCfg } = await supabase.from('configuracoes').select('valor').eq('chave', 'resend_config').maybeSingle();
@@ -59,20 +59,26 @@ export async function POST(req: Request) {
         }
       }
 
+      const emailHtmlContent = `
+        <div style="font-family: Arial, sans-serif; padding: 30px; background: #0B2545; color: #ffffff; border-radius: 20px; max-width: 480px; margin: 0 auto; text-align: center;">
+          <h1 style="color: #FFB703; font-size: 24px; margin-bottom: 6px; font-weight: 900;">Banho e Tosa Pet</h1>
+          <h2 style="color: #ffffff; font-size: 18px; font-weight: bold; margin-top: 0;">Acesso Banho e Tosa Pet</h2>
+          <p style="color: #E0E1DD; font-size: 14px; margin-top: 15px;">Digite o código de verificação abaixo para acessar o seu painel:</p>
+          <div style="font-size: 40px; font-weight: 900; letter-spacing: 8px; color: #0B2545; background: #ffffff; padding: 16px 28px; border-radius: 14px; display: inline-block; margin: 25px 0; border: 3px solid #FFB703;">${novoCodigo}</div>
+          <p style="color: #A3CEF1; font-size: 12px; margin-bottom: 0;">Este código de acesso é válido por <strong>3 minutos</strong>.</p>
+        </div>
+      `;
+
       if (resendApiKey) {
         try {
           const resend = new Resend(resendApiKey);
           await resend.emails.send({
-            from: 'Banho & Tosa Pet <onboarding@resend.dev>',
+            from: 'Banho e Tosa Pet <onboarding@resend.dev>',
             to: [ADMIN_ALLOWED_EMAIL],
-            subject: '🔑 Código de Acesso do Painel Administrativo',
-            html: `<div style="font-family:sans-serif;padding:20px;background:#f4f6f8;border-radius:10px;">
-              <h2 style="color:#0B2545;">Seu Código de Acesso Administrativo</h2>
-              <p>Use o código de 6 dígitos abaixo para acessar o painel:</p>
-              <div style="font-size:32px;font-weight:bold;letter-spacing:4px;color:#e65100;background:#fff;padding:15px;border-radius:8px;text-align:center;width:200px;margin:20px 0;">${novoCodigo}</div>
-              <p style="color:#666;font-size:12px;">Este código é válido por <strong>3 minutos</strong>.</p>
-            </div>`
+            subject: 'Acesso Banho e Tosa Pet',
+            html: emailHtmlContent
           });
+          console.log(`[EMAIL RESEND] E-mail enviado com o assunto "Acesso Banho e Tosa Pet" para ${ADMIN_ALLOWED_EMAIL}`);
         } catch (e) {
           console.error('[EMAIL RESEND] Erro ao disparar e-mail:', e);
         }
