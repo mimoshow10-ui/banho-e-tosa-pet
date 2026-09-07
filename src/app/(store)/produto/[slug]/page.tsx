@@ -7,6 +7,7 @@ import ProductMediaGallery, { extractImageUrls } from '@/components/ProductMedia
 import ProductAiAssistant from '@/components/ProductAiAssistant';
 import ProductCouponsBanner from '@/components/ProductCouponsBanner';
 import AddToCartButtons from '@/components/AddToCartButtons';
+import SafeComponent from '@/components/SafeComponent';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 
@@ -128,11 +129,13 @@ export default async function ProdutoPage({ params }: { params: Promise<{ slug: 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-10 mb-12">
 
         {/* COLUNA ESQUERDA — Galeria de fotos e vídeo */}
-        <ProductMediaGallery
-          imagens={produto.imagens || []}
-          videoUrl={produto.video_url}
-          nome={produto.nome || 'Produto'}
-        />
+        <SafeComponent>
+          <ProductMediaGallery
+            imagens={produto.imagens || []}
+            videoUrl={produto.video_url}
+            nome={produto.nome || 'Produto'}
+          />
+        </SafeComponent>
 
         {/* COLUNA DIREITA — Nome, preço, variações, botões, frete */}
         <div className="flex flex-col gap-4">
@@ -154,17 +157,21 @@ export default async function ProdutoPage({ params }: { params: Promise<{ slug: 
             )}
             {promoValida && produto.promocao_expira_em && (
               <div className="ml-2">
-                <CountdownTimer targetDate={produto.promocao_expira_em} />
+                <SafeComponent>
+                  <CountdownTimer targetDate={produto.promocao_expira_em} />
+                </SafeComponent>
               </div>
             )}
           </div>
 
           {/* Variações (só aparece se tiver filhos vinculados) */}
           {temVariacoes && (
-            <div>
-              <p className="text-sm font-bold text-gray-500 mb-2">Escolha uma opção:</p>
-              <VariationSelector currentSlug={produto.slug} family={family || []} />
-            </div>
+            <SafeComponent>
+              <div>
+                <p className="text-sm font-bold text-gray-500 mb-2">Escolha uma opção:</p>
+                <VariationSelector currentSlug={produto.slug} family={family || []} />
+              </div>
+            </SafeComponent>
           )}
 
           {/* Tamanhos (se houver) */}
@@ -182,20 +189,28 @@ export default async function ProdutoPage({ params }: { params: Promise<{ slug: 
           )}
 
           {/* Botões de compra interativos de e-commerce */}
-          <AddToCartButtons produto={produto} />
+          <SafeComponent>
+            <AddToCartButtons produto={produto} />
+          </SafeComponent>
 
           {/* Cupons da Loja Disponíveis (Shopee Style) */}
-          <ProductCouponsBanner
-            produtoId={produto.id}
-            categoriaId={produto.categoria_id}
-            sku={produto.codigo_barras}
-          />
+          <SafeComponent>
+            <ProductCouponsBanner
+              produtoId={produto.id}
+              categoriaId={produto.categoria_id}
+              sku={produto.codigo_barras}
+            />
+          </SafeComponent>
 
           {/* Calculadora de Frete por CEP */}
-          <FreteCalculator />
+          <SafeComponent>
+            <FreteCalculator />
+          </SafeComponent>
 
           {/* Campo Pergunte sobre este Produto (IA Assistente) */}
-          <ProductAiAssistant produto={produto} />
+          <SafeComponent>
+            <ProductAiAssistant produto={produto} />
+          </SafeComponent>
 
           {/* Estoque */}
           {Number(produto.estoque) > 0 && Number(produto.estoque) < 20 && (

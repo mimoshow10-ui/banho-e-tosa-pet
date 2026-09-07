@@ -28,44 +28,32 @@ export default function ProductCouponsBanner({ produtoId, categoriaId, sku }: Pr
         const res = await fetch('/api/cupons/disponiveis');
         if (res.ok) {
           const data = await res.json();
-          const disponiveis: Cupom[] = data.cupons || [];
+          const disponiveis: Cupom[] = Array.isArray(data?.cupons) ? data.cupons : [];
 
           const elegiveis = disponiveis.filter(c => {
-            if (!c.ativo) return false;
+            if (!c || !c.ativo) return false;
             if (c.tipo_elegibilidade === 'todos') return true;
-            if (c.tipo_elegibilidade === 'produtos' && c.elegiveis_ids?.includes(produtoId)) return true;
-            if (c.tipo_elegibilidade === 'subgrupos' && categoriaId && c.elegiveis_ids?.includes(categoriaId)) return true;
-            if (c.tipo_elegibilidade === 'skus' && sku && c.elegiveis_ids?.includes(sku)) return true;
+
+            const elegIds = Array.isArray(c.elegiveis_ids) ? c.elegiveis_ids : [];
+            if (c.tipo_elegibilidade === 'produtos' && produtoId && elegIds.includes(produtoId)) return true;
+            if (c.tipo_elegibilidade === 'subgrupos' && categoriaId && elegIds.includes(categoriaId)) return true;
+            if (c.tipo_elegibilidade === 'skus' && sku && elegIds.includes(sku)) return true;
             return false;
           });
 
           setCupons(elegiveis);
         }
-      } catch {
-        setCupons([
-          {
-            id: 'cupom-bemvindo',
-            nome_interno: 'Desconto de Boas-Vindas',
-            codigo: 'BEMVINDO10',
-            tipo_desconto: 'percentual',
-            valor_desconto: 10,
-            compra_minima_reais: 50,
-            ativo: true,
-            usos_realizados: 0,
-            permitir_produtos_promocionais: true,
-            tipo_elegibilidade: 'todos',
-            criado_em: new Date().toISOString(),
-          }
-        ]);
+      } catch {}
+      finally {
+        setLoading(false);
       }
-      setLoading(false);
     }
 
     carregarCupons();
   }, [produtoId, categoriaId, sku]);
 
   function coletarCupom(codigo: string) {
-    if (coletados.includes(codigo)) return;
+    if (!codigo || coletados.includes(codigo)) return;
     const novos = [...coletados, codigo];
     setColetados(novos);
     try {
@@ -73,7 +61,7 @@ export default function ProductCouponsBanner({ produtoId, categoriaId, sku }: Pr
     } catch {}
   }
 
-  if (loading || cupons.length === 0) return null;
+  if (loading || !Array.isArray(cupons) || cupons.length === 0) return null;
 
   return (
     <div className="border border-orange-200 bg-gradient-to-r from-orange-50/80 to-amber-50/50 rounded-2xl p-4 shadow-2xs my-4">
@@ -87,6 +75,7 @@ export default function ProductCouponsBanner({ produtoId, categoriaId, sku }: Pr
 
       <div className="flex gap-3 overflow-x-auto pb-1 no-scrollbar">
         {cupons.map((c) => {
+          if (!c || !c.codigo) return null;
           const isColetado = coletados.includes(c.codigo);
           const valorDesc = Number(c.valor_desconto || 0);
           const minReais = c.compra_minima_reais ? Number(c.compra_minima_reais) : null;
