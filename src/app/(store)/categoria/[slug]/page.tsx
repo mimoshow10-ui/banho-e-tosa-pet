@@ -82,6 +82,9 @@ export default async function CategoriaPage({
     if (data) produtos = data;
   }
 
+  // Filtrar apenas produtos que possuem foto cadastrada e válida
+  produtos = (produtos || []).filter(p => Array.isArray(p.imagens) && p.imagens.length > 0 && typeof p.imagens[0] === 'string' && p.imagens[0].length > 0);
+
   const tituloExibido = slug === 'todas' ? 'Todos os Produtos' : catAtual?.nome || slug;
 
   return (
