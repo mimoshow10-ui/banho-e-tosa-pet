@@ -1,16 +1,24 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { Pencil, Trash2, Plus, Edit3, X } from 'lucide-react';
+import { Pencil, Trash2, Plus, Edit3, X, LayoutList, Save } from 'lucide-react';
 import { Cupom } from '@/lib/types/coupon';
 
 interface Props {
   cupons: Cupom[];
+  posicaoHomeAtual: string;
   salvarCupomAction: (formData: FormData) => Promise<void>;
   excluirCupomAction: (formData: FormData) => Promise<void>;
+  salvarPosicaoAction: (formData: FormData) => Promise<void>;
 }
 
-export default function CuponsClient({ cupons, salvarCupomAction, excluirCupomAction }: Props) {
+export default function CuponsClient({
+  cupons,
+  posicaoHomeAtual,
+  salvarCupomAction,
+  excluirCupomAction,
+  salvarPosicaoAction,
+}: Props) {
   const [cupomEditando, setCupomEditando] = useState<Cupom | null>(null);
   const formRef = useRef<HTMLDivElement>(null);
 
@@ -67,6 +75,43 @@ export default function CuponsClient({ cupons, salvarCupomAction, excluirCupomAc
 
   return (
     <div className="space-y-6">
+      {/* 🎯 CONFIGURAÇÃO DE POSIÇÃO DOS CUPONS NA HOME */}
+      <div className="bg-gradient-to-r from-orange-50 to-amber-50 p-6 rounded-2xl border border-orange-200 shadow-xs">
+        <form action={salvarPosicaoAction} className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div>
+            <h3 className="font-bold text-secondary text-base flex items-center gap-2">
+              <LayoutList size={20} className="text-primary" />
+              Posição dos Cupons na Tela Principal (Home)
+            </h3>
+            <p className="text-xs text-gray-600 mt-0.5">
+              Escolha exatamente em qual posição da página inicial a faixa de cupons em destaque deve aparecer.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 w-full md:w-auto">
+            <select
+              name="posicao_home"
+              defaultValue={posicaoHomeAtual || 'topo'}
+              className="border border-orange-300 rounded-xl p-2.5 text-xs font-bold text-gray-800 bg-white focus:ring-2 focus:ring-primary focus:outline-none flex-1 md:w-72"
+            >
+              <option value="topo">📌 No Topo (Acima do Banner Principal)</option>
+              <option value="abaixo_banner">🖼️ Logo Abaixo do Banner Principal</option>
+              <option value="abaixo_beneficios">🚚 Abaixo da Barra de Benefícios</option>
+              <option value="acima_ofertas">🔥 Acima da Vitrine de Ofertas</option>
+              <option value="oculto">🚫 Ocultar Faixa de Cupons na Home</option>
+            </select>
+
+            <button
+              type="submit"
+              className="bg-primary hover:bg-orange-600 text-white font-bold px-4 py-2.5 rounded-xl text-xs transition shadow-2xs flex items-center gap-1.5 whitespace-nowrap cursor-pointer"
+            >
+              <Save size={14} />
+              <span>Salvar Posição</span>
+            </button>
+          </div>
+        </form>
+      </div>
+
       {/* Tabela de Cupons Cadastrados */}
       <div className="bg-white rounded-2xl border border-gray-200 shadow-xs overflow-hidden">
         <div className="p-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center text-xs text-gray-500 font-bold">

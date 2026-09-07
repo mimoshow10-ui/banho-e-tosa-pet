@@ -5,7 +5,7 @@ import { revalidatePath } from 'next/cache';
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { ids, acao, valor, preco_promocional } = body;
+    const { ids, acao, valor, preco_promocional, promocao_expira_em } = body;
 
     if (!Array.isArray(ids) || ids.length === 0) {
       return NextResponse.json({ erro: 'Nenhum produto selecionado.' }, { status: 400 });
@@ -15,12 +15,34 @@ export async function POST(req: Request) {
       const isSuperPromo = valor === 'super_promocao';
       const updateData: any = { destaque_super_promocao: isSuperPromo };
 
+      if (isSuperPromo) {
+        if (promocao_expira_em) {
+          const pExp = new Date(promocao_expira_em);
+          updateData.promocao_expira_em = isNaN(pExp.getTime()) ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() : pExp.toISOString();
+        } else {
+          updateData.promocao_expira_em = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+        }
+      }
+
       if (preco_promocional !== undefined && preco_promocional !== null && preco_promocional !== '') {
         const pVal = parseFloat(String(preco_promocional).replace(',', '.'));
         updateData.preco_promocional = isNaN(pVal) ? null : pVal;
       }
 
       await supabase.from('produtos').update(updateData).in('id', ids);
+
+      // Se for super promoção e os produtos não tiverem preço promocional, gerar 10% OFF automático
+      if (isSuperPromo && (!preco_promocional || parseFloat(String(preco_promocional)) <= 0)) {
+        const { data: prods } = await supabase.from('produtos').select('id, preco, preco_promocional').in('id', ids);
+        if (prods) {
+          for (const p of prods) {
+            if (!p.preco_promocional || Number(p.preco_promocional) >= Number(p.preco)) {
+              const autoPromo = Number((Number(p.preco || 0) * 0.9).toFixed(2));
+              await supabase.from('produtos').update({ preco_promocional: autoPromo }).eq('id', p.id);
+            }
+          }
+        }
+      }
 
       const { data: currentConfig } = await supabase
         .from('configuracoes')

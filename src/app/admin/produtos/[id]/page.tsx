@@ -29,6 +29,16 @@ async function atualizarProduto(formData: FormData) {
   const relacionadosArr = relacionadosTxt ? relacionadosTxt.split(',').map(s => s.trim()).filter(s => s) : [];
 
   const codigo_barras = formData.get('codigo_barras') as string;
+
+  // Data de Início do Período de Promoção
+  const promocao_inicio_em = formData.get('promocao_inicio_em') as string;
+  let inicioIso = null;
+  if (promocao_inicio_em) {
+    const dateStr = promocao_inicio_em.length === 16 ? `${promocao_inicio_em}:00-03:00` : promocao_inicio_em;
+    inicioIso = new Date(dateStr).toISOString();
+  }
+
+  // Data de Fim do Período de Promoção
   const promocao_expira_em = formData.get('promocao_expira_em') as string;
   let expiraIso = null;
   if (promocao_expira_em) {
@@ -39,7 +49,7 @@ async function atualizarProduto(formData: FormData) {
   const destaque_home = formData.get('destaque_home') as string;
   const isSuperPromo = destaque_home === 'super_promocao';
 
-  const payload = { 
+  const payload: any = { 
     nome, 
     codigo_barras,
     preco, 
@@ -50,7 +60,8 @@ async function atualizarProduto(formData: FormData) {
     imagens: imagensArr.length > 0 ? imagensArr : null,
     produtos_relacionados: relacionadosArr.length > 0 ? relacionadosArr : null,
     destaque_super_promocao: isSuperPromo,
-    promocao_expira_em: expiraIso
+    promocao_expira_em: expiraIso,
+    promocao_inicio_em: inicioIso
   };
 
   const { error } = await supabase.from('produtos').update(payload).eq('id', id);
@@ -142,7 +153,7 @@ export default async function EditarProduto(props: { params: Promise<{ id: strin
   }
 
   return (
-    <div className="max-w-2xl bg-white p-8 rounded-xl shadow-sm border border-border">
+    <div className="max-w-4xl bg-white p-8 rounded-xl shadow-sm border border-border font-sans">
       <h1 className="text-2xl font-bold mb-6 text-secondary">Editar Produto</h1>
       
       <form action={atualizarProduto} className="flex flex-col gap-6">
@@ -158,7 +169,8 @@ export default async function EditarProduto(props: { params: Promise<{ id: strin
           </div>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+        {/* CAMPOS DE PREÇO E PERÍODO PROMOCIONAL (INÍCIO E FIM) */}
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-3 items-end bg-gray-50/70 p-4 rounded-2xl border border-gray-200">
           <div>
             <label className="block text-xs font-bold text-gray-700 mb-1 min-h-[36px] flex items-end">
               Preço Normal (R$)
@@ -168,7 +180,7 @@ export default async function EditarProduto(props: { params: Promise<{ id: strin
               type="text"
               defaultValue={produto.preco}
               required
-              className="w-full border border-gray-300 rounded-xl p-2.5 h-11 text-sm font-bold text-gray-800 focus:ring-2 focus:ring-primary focus:outline-none"
+              className="w-full border border-gray-300 rounded-xl p-2.5 h-11 text-sm font-bold text-gray-800 focus:ring-2 focus:ring-primary focus:outline-none bg-white"
             />
           </div>
 
@@ -180,19 +192,31 @@ export default async function EditarProduto(props: { params: Promise<{ id: strin
               name="preco_promocional"
               type="text"
               defaultValue={produto.preco_promocional || ''}
-              className="w-full border border-green-500 rounded-xl p-2.5 h-11 text-sm font-bold text-green-700 focus:ring-2 focus:ring-green-500 focus:outline-none bg-green-50/30"
+              className="w-full border border-green-500 rounded-xl p-2.5 h-11 text-sm font-bold text-green-700 focus:ring-2 focus:ring-green-500 focus:outline-none bg-green-50/40"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-green-700 mb-1 min-h-[36px] flex items-end">
+              🟢 Início Promoção
+            </label>
+            <input
+              name="promocao_inicio_em"
+              type="datetime-local"
+              defaultValue={produto.promocao_inicio_em ? new Date(new Date(produto.promocao_inicio_em).getTime() - 3 * 3600 * 1000).toISOString().slice(0,16) : ''}
+              className="w-full border border-green-300 rounded-xl p-2.5 h-11 text-xs font-bold text-green-800 focus:ring-2 focus:ring-green-500 focus:outline-none bg-white"
             />
           </div>
 
           <div>
             <label className="block text-xs font-bold text-red-600 mb-1 min-h-[36px] flex items-end">
-              Validade Promoção
+              🔴 Fim Promoção
             </label>
             <input
               name="promocao_expira_em"
               type="datetime-local"
               defaultValue={produto.promocao_expira_em ? new Date(new Date(produto.promocao_expira_em).getTime() - 3 * 3600 * 1000).toISOString().slice(0,16) : ''}
-              className="w-full border border-red-300 rounded-xl p-2.5 h-11 text-xs font-bold text-red-700 focus:ring-2 focus:ring-red-500 focus:outline-none bg-red-50/30"
+              className="w-full border border-red-300 rounded-xl p-2.5 h-11 text-xs font-bold text-red-700 focus:ring-2 focus:ring-red-500 focus:outline-none bg-white"
             />
           </div>
 
@@ -294,7 +318,7 @@ export default async function EditarProduto(props: { params: Promise<{ id: strin
           <p className="text-xs text-gray-500 mt-1">IDs dos produtos que aparecerão na seção "Compre Junto".</p>
         </div>
 
-        <button type="submit" className="bg-primary text-white py-3 rounded-lg font-bold hover:bg-orange-600 transition mt-4">
+        <button type="submit" className="bg-primary text-white py-3 rounded-lg font-bold hover:bg-orange-600 transition mt-4 cursor-pointer">
           Salvar Alterações
         </button>
       </form>

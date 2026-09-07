@@ -72,6 +72,7 @@ async function salvarCupom(formData: FormData) {
   }
 
   revalidatePath('/admin/cupons');
+  revalidatePath('/');
   redirect('/admin/cupons?msg=Cupom salvo com sucesso!');
 }
 
@@ -91,7 +92,22 @@ async function excluirCupom(formData: FormData) {
   await supabase.from('configuracoes').update({ valor: lista }).eq('chave', 'cupons_db');
 
   revalidatePath('/admin/cupons');
+  revalidatePath('/');
   redirect('/admin/cupons?msg=Cupom removido!');
+}
+
+async function salvarPosicaoCupons(formData: FormData) {
+  'use server';
+  const posicao_home = (formData.get('posicao_home') as string) || 'topo';
+
+  await supabase.from('configuracoes').upsert({
+    chave: 'cupons_config',
+    valor: { posicao_home }
+  }, { onConflict: 'chave' });
+
+  revalidatePath('/admin/cupons');
+  revalidatePath('/');
+  redirect('/admin/cupons?msg=Posição dos cupons na Home atualizada com sucesso!');
 }
 
 export default async function AdminCuponsPage({
@@ -107,7 +123,14 @@ export default async function AdminCuponsPage({
     .eq('chave', 'cupons_db')
     .single();
 
+  const { data: configPosicao } = await supabase
+    .from('configuracoes')
+    .select('valor')
+    .eq('chave', 'cupons_config')
+    .maybeSingle();
+
   let cupons: Cupom[] = config?.valor || [];
+  const posicaoHomeAtual = configPosicao?.valor?.posicao_home || 'topo';
 
   if (cupons.length === 0) {
     cupons = [
@@ -139,7 +162,7 @@ export default async function AdminCuponsPage({
             Cupons de Desconto
           </h1>
           <p className="text-sm text-gray-500 mt-1">
-            Cadastre e edite cupons de desconto (percentual, valor fixo ou frete grátis) com regras e limites seguros.
+            Cadastre e edite cupons de desconto (percentual, valor fixo ou frete grátis) e defina sua posição na tela principal.
           </p>
         </div>
       </div>
@@ -160,8 +183,10 @@ export default async function AdminCuponsPage({
 
       <CuponsClient
         cupons={cupons}
+        posicaoHomeAtual={posicaoHomeAtual}
         salvarCupomAction={salvarCupom}
         excluirCupomAction={excluirCupom}
+        salvarPosicaoAction={salvarPosicaoCupons}
       />
     </div>
   );

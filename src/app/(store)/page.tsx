@@ -14,6 +14,9 @@ export default async function Home() {
   const { data: configs } = await supabase.from('configuracoes').select('*');
   const banners = configs?.find(c => c.chave === 'marketing_banners')?.valor?.urls || ['/banner-pet.jpg'];
 
+  const cuponsConfig = configs?.find(c => c.chave === 'cupons_config')?.valor || { posicao_home: 'topo' };
+  const posicaoCupons = cuponsConfig.posicao_home || 'topo';
+
   // Destaques da vitrine
   const destaquesConfig = configs?.find(c => c.chave === 'vitrine_destaques')?.valor || { mais_vendidos: [], novidades: [] };
 
@@ -36,13 +39,25 @@ export default async function Home() {
 
   const produtos = todosProdutos || [];
   
-  // Apenas produtos com RELÓGIO ATIVADO (promocao_expira_em válido no futuro)
+  // Apenas produtos com PROMOÇÃO ATIVA DENTRO DO PERÍODO
   const agora = Date.now();
   const produtosPromocao = (superPromocoes || []).filter((prod) => {
     if (prod.estoque !== null && prod.estoque !== undefined && Number(prod.estoque) <= 0) return false;
-    if (!prod.promocao_expira_em) return false; // Exige relógio ativado
-    const expira = new Date(prod.promocao_expira_em).getTime();
-    if (isNaN(expira) || expira <= agora) return false; // Exige validade ativa no futuro
+    
+    // Checagem do Início da Promoção (se cadastrado)
+    if (prod.promocao_inicio_em) {
+      const inicio = new Date(prod.promocao_inicio_em).getTime();
+      if (!isNaN(inicio) && inicio > agora) return false; // Promoção futura
+    }
+
+    // Checagem de Validade / Fim da Promoção
+    if (prod.promocao_expira_em) {
+      const expira = new Date(prod.promocao_expira_em).getTime();
+      if (isNaN(expira) || expira <= agora) return false; // Promoção expirada
+    } else {
+      return false; // Requer data de expiração cadastrada
+    }
+
     return true;
   }).slice(0, 8);
 
@@ -60,21 +75,30 @@ export default async function Home() {
 
   return (
     <div className="flex flex-col min-h-screen">
-      {/* FAIXA DE CUPONS DA LOJA (ESTRITA E POSICIONADA ACIMA DO BANNER) */}
-      <HomeCouponsBanner />
+      {/* 1. FAIXA DE CUPONS NO TOPO */}
+      {posicaoCupons === 'topo' && <HomeCouponsBanner />}
 
       {/* BANNER PRINCIPAL COM CARROSEL */}
       <section className="w-full">
         <BannerCarousel banners={banners} />
       </section>
 
-      {/* BARRA DE BENEFÍCIOS E DIFERENCIAIS (ABAIXO DO BANNER) */}
+      {/* 2. FAIXA DE CUPONS LOGO ABAIXO DO BANNER */}
+      {posicaoCupons === 'abaixo_banner' && <HomeCouponsBanner />}
+
+      {/* BARRA DE BENEFÍCIOS E DIFERENCIAIS */}
       <BenefitsBar />
+
+      {/* 3. FAIXA DE CUPONS ABAIXO DOS BENEFÍCIOS */}
+      {posicaoCupons === 'abaixo_beneficios' && <HomeCouponsBanner />}
 
       {/* SEÇÃO PRINCIPAL DE VITRINE DA LOJA */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-12 w-full">
         
-        {/* 1. Super Promoção do Dia (APENAS COM RELÓGIO ATIVADO) */}
+        {/* 4. FAIXA DE CUPONS ACIMA DAS OFERTAS */}
+        {posicaoCupons === 'acima_ofertas' && <HomeCouponsBanner />}
+
+        {/* 1. Super Promoção do Dia (APENAS DENTRO DO PERÍODO) */}
         {produtosPromocao.length > 0 && (
           <section className="py-8 px-6 bg-red-50/60 rounded-3xl border border-red-100 shadow-xs">
             <div className="flex justify-between items-end mb-6">
@@ -82,7 +106,7 @@ export default async function Home() {
                 <h2 className="text-2xl md:text-3xl font-heading font-black text-red-600 uppercase tracking-tight flex items-center gap-2">
                   🔥 Super Ofertas por Tempo Limitado
                 </h2>
-                <p className="text-red-500 font-bold text-xs md:text-sm mt-0.5">Ofertas exclusivas com cronômetro ativado!</p>
+                <p className="text-red-500 font-bold text-xs md:text-sm mt-0.5">Ofertas exclusivas no período promocional!</p>
               </div>
               <Link href="/categoria/todas" className="text-red-600 font-bold hover:underline text-xs md:text-sm hidden md:block">
                 Ver todas as ofertas &rarr;
