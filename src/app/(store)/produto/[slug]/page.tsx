@@ -14,17 +14,50 @@ import type { Metadata } from 'next';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
+async function buscarProdutoMultiEstagio(slugOrQuery: string) {
+  const raw = decodeURIComponent(slugOrQuery || '').trim();
+  if (!raw) return null;
+
+  try {
+    // 1. Busca exata por Slug, ID, Código de Barras ou SKU
+    const { data: d1 } = await supabase
+      .from('produtos')
+      .select('*')
+      .or(`slug.eq.${raw},id.eq.${raw},codigo_barras.ilike.${raw},sku.ilike.${raw}`)
+      .limit(1);
+
+    if (d1 && d1.length > 0) return d1[0];
+
+    // 2. Tentar busca limpando sufixos numéricos (ex: -15831840276) ou prefixos numéricos (ex: 1-)
+    const clean = raw.replace(/-\d+$/, '').replace(/^\d+-/, '').trim();
+    if (clean) {
+      const { data: d2 } = await supabase
+        .from('produtos')
+        .select('*')
+        .or(`slug.ilike.%${clean}%,id.ilike.%${clean}%,codigo_barras.ilike.%${clean}%,sku.ilike.%${clean}%`)
+        .limit(1);
+      if (d2 && d2.length > 0) return d2[0];
+    }
+
+    // 3. Tentar busca por palavras-chave principais do slug
+    const palavras = (clean || raw).split('-').filter((w) => w.length > 2).slice(0, 4).join(' ');
+    if (palavras) {
+      const { data: d3 } = await supabase
+        .from('produtos')
+        .select('*')
+        .or(`nome.ilike.%${palavras}%,slug.ilike.%${palavras}%`)
+        .limit(1);
+      if (d3 && d3.length > 0) return d3[0];
+    }
+  } catch {}
+
+  return null;
+}
+
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   try {
     const { slug } = await params;
-    
-    const { data: produtos } = await supabase
-      .from('produtos')
-      .select('nome, descricao_curta, seo_title, seo_description, imagens, parent_id')
-      .eq('slug', slug)
-      .limit(1);
-
-    const rawProduto = produtos && produtos.length > 0 ? produtos[0] : null;
+    const rawProduto = await buscarProdutoMultiEstagio(slug);
 
     if (!rawProduto) return { title: 'Produto não encontrado | Banho & Tosa Pet' };
 
@@ -66,17 +99,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 export default async function ProdutoPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   
-  let produtos: any[] = [];
-  try {
-    const { data } = await supabase
-      .from('produtos')
-      .select('*')
-      .or(`slug.eq.${slug},id.eq.${slug},codigo_barras.ilike.${slug},sku.ilike.${slug}`)
-      .limit(1);
-    if (data) produtos = data;
-  } catch {}
-
-  const rawProduto = produtos && produtos.length > 0 ? produtos[0] : null;
+  const rawProduto = await buscarProdutoMultiEstagio(slug);
 
   if (!rawProduto) notFound();
 
