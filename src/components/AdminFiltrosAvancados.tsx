@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Search, Filter, RotateCcw, Image as ImageIcon, Flame, Tag, CheckSquare, Square, FolderTree } from 'lucide-react';
+import { Search, Filter, RotateCcw, Image as ImageIcon, Flame, Tag, FolderTree, CheckCircle2, AlertTriangle, XCircle } from 'lucide-react';
 
 interface Categoria {
   id: string;
@@ -24,6 +24,7 @@ export default function AdminFiltrosAvancados({ categorias }: Props) {
   const [comFoto, setComFoto] = useState(searchParams.get('com_foto') || '');
   const [promocao, setPromocao] = useState(searchParams.get('promocao') || '');
   const [status, setStatus] = useState(searchParams.get('status') || '');
+  const [classificacao, setClassificacao] = useState(searchParams.get('classificacao') || '');
 
   // Separar Grupos Principais (sem parent_id) e Subgrupos
   const gruposPrincipais = categorias.filter(c => !c.parent_id);
@@ -31,16 +32,31 @@ export default function AdminFiltrosAvancados({ categorias }: Props) {
     ? categorias.filter(c => c.parent_id === grupoId)
     : categorias.filter(c => !!c.parent_id);
 
-  function aplicarFiltros(e?: React.FormEvent) {
-    if (e) e.preventDefault();
+  function aplicarFiltrosDireto(novosValores?: {
+    q?: string;
+    grupoId?: string;
+    subgrupoId?: string;
+    comFoto?: string;
+    promocao?: string;
+    status?: string;
+    classificacao?: string;
+  }) {
+    const valQ = novosValores?.q !== undefined ? novosValores.q : q;
+    const valGrupo = novosValores?.grupoId !== undefined ? novosValores.grupoId : grupoId;
+    const valSubgrupo = novosValores?.subgrupoId !== undefined ? novosValores.subgrupoId : subgrupoId;
+    const valFoto = novosValores?.comFoto !== undefined ? novosValores.comFoto : comFoto;
+    const valPromo = novosValores?.promocao !== undefined ? novosValores.promocao : promocao;
+    const valStatus = novosValores?.status !== undefined ? novosValores.status : status;
+    const valClass = novosValores?.classificacao !== undefined ? novosValores.classificacao : classificacao;
 
     const params = new URLSearchParams();
-    if (q.trim()) params.set('q', q.trim());
-    if (grupoId) params.set('grupo_id', grupoId);
-    if (subgrupoId) params.set('subgrupo_id', subgrupoId);
-    if (comFoto) params.set('com_foto', comFoto);
-    if (promocao) params.set('promocao', promocao);
-    if (status) params.set('status', status);
+    if (valQ.trim()) params.set('q', valQ.trim());
+    if (valGrupo) params.set('grupo_id', valGrupo);
+    if (valSubgrupo) params.set('subgrupo_id', valSubgrupo);
+    if (valFoto) params.set('com_foto', valFoto);
+    if (valPromo) params.set('promocao', valPromo);
+    if (valStatus) params.set('status', valStatus);
+    if (valClass) params.set('classificacao', valClass);
     params.set('pagina', '1');
 
     router.push(`/admin/produtos?${params.toString()}`);
@@ -53,13 +69,14 @@ export default function AdminFiltrosAvancados({ categorias }: Props) {
     setComFoto('');
     setPromocao('');
     setStatus('');
+    setClassificacao('');
     router.push('/admin/produtos');
   }
 
-  const temFiltroAtivo = !!(q || grupoId || subgrupoId || comFoto || promocao || status);
+  const temFiltroAtivo = !!(q || grupoId || subgrupoId || comFoto || promocao || status || classificacao);
 
   return (
-    <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-xs space-y-4">
+    <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-xs space-y-4 font-sans">
       <div className="flex items-center justify-between border-b border-gray-100 pb-3">
         <h3 className="font-bold text-secondary text-sm flex items-center gap-2">
           <Filter size={16} className="text-primary" />
@@ -77,7 +94,7 @@ export default function AdminFiltrosAvancados({ categorias }: Props) {
         )}
       </div>
 
-      <form onSubmit={aplicarFiltros} className="space-y-4">
+      <form onSubmit={(e) => { e.preventDefault(); aplicarFiltrosDireto(); }} className="space-y-4">
         {/* 1. Busca por Nome ou SKU */}
         <div className="flex gap-2">
           <div className="relative flex-1">
@@ -109,8 +126,10 @@ export default function AdminFiltrosAvancados({ categorias }: Props) {
             <select
               value={grupoId}
               onChange={(e) => {
-                setGrupoId(e.target.value);
+                const val = e.target.value;
+                setGrupoId(val);
                 setSubgrupoId('');
+                aplicarFiltrosDireto({ grupoId: val, subgrupoId: '' });
               }}
               className="w-full border border-gray-300 rounded-xl px-3 py-2 text-xs font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary bg-white cursor-pointer"
             >
@@ -130,7 +149,11 @@ export default function AdminFiltrosAvancados({ categorias }: Props) {
             </label>
             <select
               value={subgrupoId}
-              onChange={(e) => setSubgrupoId(e.target.value)}
+              onChange={(e) => {
+                const val = e.target.value;
+                setSubgrupoId(val);
+                aplicarFiltrosDireto({ subgrupoId: val });
+              }}
               className="w-full border border-gray-300 rounded-xl px-3 py-2 text-xs font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary bg-white cursor-pointer"
             >
               <option value="">Todos os Subgrupos</option>
@@ -143,15 +166,21 @@ export default function AdminFiltrosAvancados({ categorias }: Props) {
           </div>
         </div>
 
-        {/* 3. Caixa de Opções Ticáveis (Checkboxes) */}
-        <div className="pt-2 border-t border-gray-100 flex flex-wrap items-center gap-4 text-xs font-bold text-gray-700">
+        {/* 3. Caixa de Opções Ticáveis Instantâneas (Checkboxes) */}
+        <div className="pt-2 border-t border-gray-100 flex flex-wrap items-center gap-3 text-xs font-bold text-gray-700">
           
           {/* Opção Foto: Apenas com Foto */}
-          <label className="flex items-center gap-2 cursor-pointer select-none bg-gray-50 hover:bg-gray-100 px-3 py-1.5 rounded-xl border border-gray-200">
+          <label className={`flex items-center gap-2 cursor-pointer select-none px-3 py-1.5 rounded-xl border transition ${
+            comFoto === 'sim' ? 'bg-blue-100 border-blue-400 text-blue-900 shadow-2xs font-black' : 'bg-gray-50 hover:bg-gray-100 border-gray-200'
+          }`}>
             <input
               type="checkbox"
               checked={comFoto === 'sim'}
-              onChange={(e) => setComFoto(e.target.checked ? 'sim' : '')}
+              onChange={(e) => {
+                const val = e.target.checked ? 'sim' : '';
+                setComFoto(val);
+                aplicarFiltrosDireto({ comFoto: val });
+              }}
               className="accent-primary w-4 h-4 cursor-pointer"
             />
             <span className="flex items-center gap-1">
@@ -161,11 +190,17 @@ export default function AdminFiltrosAvancados({ categorias }: Props) {
           </label>
 
           {/* Opção Foto: Apenas Sem Foto */}
-          <label className="flex items-center gap-2 cursor-pointer select-none bg-amber-50/60 hover:bg-amber-100/60 px-3 py-1.5 rounded-xl border border-amber-200">
+          <label className={`flex items-center gap-2 cursor-pointer select-none px-3 py-1.5 rounded-xl border transition ${
+            comFoto === 'nao' ? 'bg-amber-200 border-amber-400 text-amber-950 shadow-2xs font-black' : 'bg-amber-50/60 hover:bg-amber-100/60 border-amber-200'
+          }`}>
             <input
               type="checkbox"
               checked={comFoto === 'nao'}
-              onChange={(e) => setComFoto(e.target.checked ? 'nao' : '')}
+              onChange={(e) => {
+                const val = e.target.checked ? 'nao' : '';
+                setComFoto(val);
+                aplicarFiltrosDireto({ comFoto: val });
+              }}
               className="accent-amber-600 w-4 h-4 cursor-pointer"
             />
             <span className="flex items-center gap-1 text-amber-800">
@@ -173,26 +208,98 @@ export default function AdminFiltrosAvancados({ categorias }: Props) {
             </span>
           </label>
 
+          {/* 🟢 Filtro de Classificação: Grupo & Subgrupo OK */}
+          <label className={`flex items-center gap-2 cursor-pointer select-none px-3 py-1.5 rounded-xl border transition ${
+            classificacao === 'ok' ? 'bg-emerald-200 border-emerald-500 text-emerald-950 shadow-2xs font-black' : 'bg-emerald-50 hover:bg-emerald-100 border-emerald-200'
+          }`}>
+            <input
+              type="checkbox"
+              checked={classificacao === 'ok'}
+              onChange={(e) => {
+                const val = e.target.checked ? 'ok' : '';
+                setClassificacao(val);
+                aplicarFiltrosDireto({ classificacao: val });
+              }}
+              className="accent-emerald-600 w-4 h-4 cursor-pointer"
+            />
+            <span className="flex items-center gap-1 text-emerald-900">
+              <CheckCircle2 size={14} className="text-emerald-600" />
+              <span>🟢 Grupo & Subgrupo OK</span>
+            </span>
+          </label>
+
+          {/* 🟠 Filtro de Classificação: Apenas Grupo (Falta Subgrupo) */}
+          <label className={`flex items-center gap-2 cursor-pointer select-none px-3 py-1.5 rounded-xl border transition ${
+            classificacao === 'apenas_grupo' ? 'bg-orange-200 border-orange-400 text-orange-950 shadow-2xs font-black' : 'bg-orange-50 hover:bg-orange-100 border-orange-200'
+          }`}>
+            <input
+              type="checkbox"
+              checked={classificacao === 'apenas_grupo'}
+              onChange={(e) => {
+                const val = e.target.checked ? 'apenas_grupo' : '';
+                setClassificacao(val);
+                aplicarFiltrosDireto({ classificacao: val });
+              }}
+              className="accent-orange-600 w-4 h-4 cursor-pointer"
+            />
+            <span className="flex items-center gap-1 text-orange-900">
+              <AlertTriangle size={14} className="text-orange-600" />
+              <span>🟠 Apenas Grupo (Falta Subgrupo)</span>
+            </span>
+          </label>
+
+          {/* 🔴 Filtro de Classificação: Sem Categoria */}
+          <label className={`flex items-center gap-2 cursor-pointer select-none px-3 py-1.5 rounded-xl border transition ${
+            classificacao === 'sem_categoria' ? 'bg-red-200 border-red-400 text-red-950 shadow-2xs font-black' : 'bg-red-50 hover:bg-red-100 border-red-200'
+          }`}>
+            <input
+              type="checkbox"
+              checked={classificacao === 'sem_categoria'}
+              onChange={(e) => {
+                const val = e.target.checked ? 'sem_categoria' : '';
+                setClassificacao(val);
+                aplicarFiltrosDireto({ classificacao: val });
+              }}
+              className="accent-red-600 w-4 h-4 cursor-pointer"
+            />
+            <span className="flex items-center gap-1 text-red-900">
+              <XCircle size={14} className="text-red-600" />
+              <span>🔴 Sem Categoria</span>
+            </span>
+          </label>
+
           {/* Opção Promoção */}
-          <label className="flex items-center gap-2 cursor-pointer select-none bg-red-50/60 hover:bg-red-100/60 px-3 py-1.5 rounded-xl border border-red-200">
+          <label className={`flex items-center gap-2 cursor-pointer select-none px-3 py-1.5 rounded-xl border transition ${
+            promocao === 'sim' ? 'bg-rose-200 border-rose-400 text-rose-950 shadow-2xs font-black' : 'bg-rose-50/60 hover:bg-rose-100/60 border-rose-200'
+          }`}>
             <input
               type="checkbox"
               checked={promocao === 'sim'}
-              onChange={(e) => setPromocao(e.target.checked ? 'sim' : '')}
-              className="accent-red-600 w-4 h-4 cursor-pointer"
+              onChange={(e) => {
+                const val = e.target.checked ? 'sim' : '';
+                setPromocao(val);
+                aplicarFiltrosDireto({ promocao: val });
+              }}
+              className="accent-rose-600 w-4 h-4 cursor-pointer"
             />
-            <span className="flex items-center gap-1 text-red-700">
-              <Flame size={14} className="text-red-600" />
+            <span className="flex items-center gap-1 text-rose-800">
+              <Flame size={14} className="text-rose-600" />
               <span>🔥 Em Promoção</span>
             </span>
           </label>
 
           {/* Opção Status: Ativo */}
-          <label className="flex items-center gap-2 cursor-pointer select-none bg-green-50 hover:bg-green-100 px-3 py-1.5 rounded-xl border border-green-200">
+          <label className={`flex items-center gap-2 cursor-pointer select-none px-3 py-1.5 rounded-xl border transition ${
+            status === 'ativo' ? 'bg-green-200 border-green-400 text-green-950 shadow-2xs font-black' : 'bg-green-50 hover:bg-green-100 border-green-200'
+          }`}>
             <input
               type="checkbox"
               checked={status === 'ativo'}
-              onChange={(e) => setStatus(e.target.checked ? 'ativo' : '')}
+              onChange={(e) => {
+                const val = e.target.checked ? 'ativo' : '';
+                setStatus(val);
+                aplicarFiltrosDireto({ status: val });
+              }}
               className="accent-green-600 w-4 h-4 cursor-pointer"
             />
             <span className="flex items-center gap-1 text-green-800">
@@ -201,11 +308,17 @@ export default function AdminFiltrosAvancados({ categorias }: Props) {
           </label>
 
           {/* Opção Status: Inativo */}
-          <label className="flex items-center gap-2 cursor-pointer select-none bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-xl border border-gray-300">
+          <label className={`flex items-center gap-2 cursor-pointer select-none px-3 py-1.5 rounded-xl border transition ${
+            status === 'inativo' ? 'bg-gray-300 border-gray-400 text-gray-950 shadow-2xs font-black' : 'bg-gray-100 hover:bg-gray-200 border-gray-300'
+          }`}>
             <input
               type="checkbox"
               checked={status === 'inativo'}
-              onChange={(e) => setStatus(e.target.checked ? 'inativo' : '')}
+              onChange={(e) => {
+                const val = e.target.checked ? 'inativo' : '';
+                setStatus(val);
+                aplicarFiltrosDireto({ status: val });
+              }}
               className="accent-gray-600 w-4 h-4 cursor-pointer"
             />
             <span className="flex items-center gap-1 text-gray-700">

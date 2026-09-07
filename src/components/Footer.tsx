@@ -1,5 +1,5 @@
 import Link from 'next/link';
-
+import Image from 'next/image';
 
 export default function Footer() {
   return (
@@ -7,10 +7,20 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           
-          {/* Sobre */}
-          <div>
-            <h3 className="text-xl font-heading font-bold text-accent mb-4">Grupo MimoShow</h3>
-            <p className="text-sm text-gray-300">
+          {/* Sobre com Logomarca MimoShow */}
+          <div className="space-y-3">
+            <Link href="/">
+              <div className="relative w-56 h-16 cursor-pointer">
+                <Image
+                  src="/logo-mimoshow.png"
+                  alt="Logomarca Grupo MimoShow"
+                  fill
+                  className="object-contain object-left"
+                />
+              </div>
+            </Link>
+            <h3 className="text-xl font-heading font-bold text-accent">Grupo MimoShow</h3>
+            <p className="text-sm text-gray-300 leading-relaxed">
               O maior fabricante de acessórios para banho e tosa do Brasil. Seu pet merece estilo e conforto todos os dias.
             </p>
           </div>
