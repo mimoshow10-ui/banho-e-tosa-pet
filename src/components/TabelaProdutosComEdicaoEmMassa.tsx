@@ -123,9 +123,9 @@ export default function TabelaProdutosComEdicaoEmMassa({ produtos, categorias, p
         </div>
       )}
 
-      {/* BARRA FLUTUANTE DE EDIÇÃO EM MASSA (Fixada no topo exato top-0) */}
+      {/* BARRA FIXA DE EDIÇÃO EM MASSA NO TOPO SUPERIOR DA TELA */}
       {selecionados.length > 0 && (
-        <div className="sticky top-0 z-30 bg-secondary text-white p-4 rounded-2xl shadow-2xl border border-blue-900 flex flex-col md:flex-row items-center justify-between gap-4 animate-in slide-in-from-top-2 duration-200 mb-2">
+        <div className="fixed top-4 left-4 right-4 md:left-72 md:right-8 z-50 bg-[#0B2545] text-white p-4 rounded-2xl shadow-2xl border-2 border-blue-600 flex flex-col md:flex-row items-center justify-between gap-4 animate-in slide-in-from-top-4 duration-300">
           <div className="flex items-center gap-3">
             <span className="bg-primary text-white font-black text-xs px-3 py-1 rounded-full shadow-2xs">
               {selecionados.length} Selecionado(s)
