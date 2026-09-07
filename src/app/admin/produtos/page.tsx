@@ -203,7 +203,9 @@ export default async function AdminProdutos(props: {
 
       {/* Navegação de Paginação */}
       <div className="flex flex-col sm:flex-row items-center justify-between bg-white p-4 rounded-2xl border border-gray-200 shadow-xs text-xs font-bold text-gray-600 gap-3">
-        <span>Exibindo Página {pagina} de {totalPaginas} (Total de {totalNoBanco || 0} produtos para este filtro)</span>
+        <span>
+          Exibindo anúncios <strong className="text-primary font-black">{(pagina - 1) * limite + 1} a {Math.min(pagina * limite, totalNoBanco || 0)}</strong> nesta página (<strong>200 anúncios por página</strong> • Total de <strong>{totalNoBanco || 0}</strong> produtos em {totalPaginas} páginas)
+        </span>
         <div className="flex items-center gap-2">
           {pagina > 1 && (
             <Link 
