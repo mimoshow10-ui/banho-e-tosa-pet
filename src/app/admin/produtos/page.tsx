@@ -104,20 +104,55 @@ export default async function AdminProdutos(props: {
     };
   });
 
-  const produtosFormatados = (produtos || []).map(p => {
+  const { data: addCatDb } = await supabase.from('configuracoes').select('valor').eq('chave', 'produtos_categorias_adicionais').maybeSingle();
+  const adicionaisMap: Record<string, string[]> = addCatDb?.valor || {};
+
+  let produtosFormatados = (produtos || []).map(p => {
     let catNome = 'Sem Categoria';
-    if (p.categoria_id && catMap.has(p.categoria_id)) {
-      const cat = catMap.get(p.categoria_id);
-      if (cat?.parent_id && catMap.has(cat.parent_id)) {
-        const pai = catMap.get(cat.parent_id);
-        catNome = `${pai?.nome} > ${cat.nome}`;
-      } else if (cat?.nome) {
-        catNome = cat.nome;
+    let statusClassificacao: 'ok' | 'apenas_grupo' | 'sem_categoria' = 'sem_categoria';
+
+    const mainCatId = p.categoria_id;
+    const addCatIds: string[] = adicionaisMap[p.id] || [];
+    const allCatIds = Array.from(new Set([mainCatId, ...addCatIds].filter(Boolean)));
+
+    if (allCatIds.length > 0) {
+      let temSub = false;
+      let temGrupo = false;
+      let nomeCompleto = '';
+
+      for (const cid of allCatIds) {
+        if (catMap.has(cid)) {
+          const cat = catMap.get(cid)!;
+          if (cat.parent_id && catMap.has(cat.parent_id)) {
+            temSub = true;
+            temGrupo = true;
+            const pai = catMap.get(cat.parent_id)!;
+            nomeCompleto = `${pai.nome} > ${cat.nome}`;
+            break;
+          } else {
+            temGrupo = true;
+            if (!nomeCompleto) nomeCompleto = cat.nome;
+          }
+        }
+      }
+
+      if (nomeCompleto) catNome = nomeCompleto;
+
+      if (temSub) {
+        statusClassificacao = 'ok';
+      } else if (temGrupo) {
+        statusClassificacao = 'apenas_grupo';
       }
     } else if (p.categorias?.nome) {
       catNome = p.categorias.nome;
+      statusClassificacao = p.categorias.parent_id ? 'ok' : 'apenas_grupo';
     }
-    return { ...p, categoria_nome_exibicao: catNome };
+
+    return { 
+      ...p, 
+      categoria_nome_exibicao: catNome,
+      status_classificacao: statusClassificacao 
+    };
   });
 
   const { data: filhos } = await supabase.from('produtos').select('parent_id').not('parent_id', 'is', null);

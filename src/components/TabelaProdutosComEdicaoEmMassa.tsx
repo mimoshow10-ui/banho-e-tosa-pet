@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { ExternalLink, Trash2, Edit, CheckSquare, Square, Zap, RefreshCw, CheckCircle2, AlertCircle } from 'lucide-react';
+import { ExternalLink, Trash2, Edit, CheckSquare, Square, Zap, RefreshCw, CheckCircle2, AlertCircle, AlertTriangle, XCircle } from 'lucide-react';
 import DeleteProductButton from '@/app/admin/produtos/DeleteProductButton';
 
 interface Produto {
@@ -347,9 +347,55 @@ export default function TabelaProdutosComEdicaoEmMassa({ produtos, categorias, p
                           </div>
                         </td>
 
-                        {/* Categoria / Subcategoria */}
-                        <td className="p-4 text-xs font-semibold text-gray-600">
-                          {(item as any).categoria_nome_exibicao || item.categorias?.nome || 'Sem Categoria'}
+                        {/* Categoria / Subcategoria & Sinalização Visual */}
+                        <td className="p-4 text-xs font-semibold">
+                          {(() => {
+                            const status = (item as any).status_classificacao || (
+                              (item as any).categoria_nome_exibicao?.includes('>') ? 'ok' :
+                              (item as any).categoria_nome_exibicao && (item as any).categoria_nome_exibicao !== 'Sem Categoria' ? 'apenas_grupo' : 'sem_categoria'
+                            );
+                            const nomeExibicao = (item as any).categoria_nome_exibicao || item.categorias?.nome || 'Sem Categoria';
+
+                            if (status === 'ok') {
+                              return (
+                                <div className="space-y-1">
+                                  <span className="bg-emerald-100 text-emerald-950 border border-emerald-300 text-[10px] font-black px-2.5 py-0.5 rounded-full inline-flex items-center gap-1 shadow-2xs">
+                                    <CheckCircle2 size={12} className="text-emerald-600" />
+                                    Grupo & Subgrupo OK
+                                  </span>
+                                  <div className="font-bold text-gray-800 text-xs">
+                                    🏷️ {nomeExibicao}
+                                  </div>
+                                </div>
+                              );
+                            }
+
+                            if (status === 'apenas_grupo') {
+                              return (
+                                <div className="space-y-1">
+                                  <span className="bg-amber-100 text-amber-950 border border-amber-300 text-[10px] font-black px-2 py-0.5 rounded-full inline-flex items-center gap-1 shadow-2xs">
+                                    <AlertTriangle size={12} className="text-amber-600" />
+                                    Apenas Grupo (Falta Subgrupo)
+                                  </span>
+                                  <div className="font-bold text-amber-900 text-xs">
+                                    📂 {nomeExibicao}
+                                  </div>
+                                </div>
+                              );
+                            }
+
+                            return (
+                              <div className="space-y-1">
+                                <span className="bg-red-100 text-red-900 border border-red-300 text-[10px] font-black px-2 py-0.5 rounded-full inline-flex items-center gap-1 shadow-2xs">
+                                  <XCircle size={12} className="text-red-600" />
+                                  Sem Categoria (Não Classificado)
+                                </span>
+                                <div className="font-medium text-gray-400 text-[11px]">
+                                  Pendente de Grupo e Subgrupo
+                                </div>
+                              </div>
+                            );
+                          })()}
                         </td>
 
                         {/* Preço Normal */}
