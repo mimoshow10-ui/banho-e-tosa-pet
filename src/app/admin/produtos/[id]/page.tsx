@@ -60,12 +60,21 @@ async function atualizarProduto(formData: FormData) {
     imagens: imagensArr.length > 0 ? imagensArr : null,
     produtos_relacionados: relacionadosArr.length > 0 ? relacionadosArr : null,
     destaque_super_promocao: isSuperPromo,
-    promocao_expira_em: expiraIso,
-    promocao_inicio_em: inicioIso
+    promocao_expira_em: expiraIso
   };
 
-  const { error } = await supabase.from('produtos').update(payload).eq('id', id);
+  if (inicioIso) {
+    payload.promocao_inicio_em = inicioIso;
+  }
+
+  let { error } = await supabase.from('produtos').update(payload).eq('id', id);
   
+  if (error && (error.code === 'PGRST204' || error.message?.includes('promocao_inicio_em'))) {
+    delete payload.promocao_inicio_em;
+    const res = await supabase.from('produtos').update(payload).eq('id', id);
+    error = res.error;
+  }
+
   if (error) {
     redirect(`/admin/produtos/${id}?erro=Erro ao salvar: ${error.message}`);
   }
