@@ -137,6 +137,7 @@ export default async function ProdutoPage({ params }: { params: Promise<{ slug: 
             imagens={produto.imagens || []}
             videoUrl={produto.video_url}
             nome={produto.nome || 'Produto'}
+            sku={produto.codigo_barras || produto.sku}
           />
         </SafeComponent>
 

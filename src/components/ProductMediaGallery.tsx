@@ -7,6 +7,7 @@ interface Props {
   imagens: any;
   videoUrl?: string | null;
   nome: string;
+  sku?: string | null;
 }
 
 export function extractImageUrls(input: any): string[] {
@@ -49,7 +50,7 @@ export function extractImageUrls(input: any): string[] {
   }
 }
 
-export default function ProductMediaGallery({ imagens, videoUrl, nome }: Props) {
+export default function ProductMediaGallery({ imagens, videoUrl, nome, sku }: Props) {
   const [activeMedia, setActiveMedia] = useState<'video' | number>(videoUrl ? 'video' : 0);
 
   const safeImages = extractImageUrls(imagens);
@@ -69,6 +70,12 @@ export default function ProductMediaGallery({ imagens, videoUrl, nome }: Props) 
     <div className="flex flex-col gap-4">
       {/* CAIXA DE MÍDIA PRINCIPAL */}
       <div className="w-full aspect-square bg-white rounded-2xl border border-border relative overflow-hidden flex items-center justify-center shadow-xs">
+        {sku && (
+          <span className="absolute bottom-2 left-2 bg-gray-900/80 backdrop-blur-xs text-white font-mono text-[10px] font-bold px-2 py-0.5 rounded shadow-2xs z-10 pointer-events-none uppercase">
+            SKU: {sku}
+          </span>
+        )}
+
         {activeMedia === 'video' && videoUrl ? (
           videoId ? (
             <iframe

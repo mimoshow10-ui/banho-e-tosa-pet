@@ -499,6 +499,11 @@ export default function TabelaProdutosComEdicaoEmMassa({ produtos, categorias, p
                                 alt={item.nome}
                                 className="w-20 h-20 md:w-24 md:h-24 object-contain bg-white rounded-2xl border-2 border-gray-200 shadow-xs group-hover:border-primary group-hover:scale-105 transition-all p-1"
                               />
+                              {(item.codigo_barras || (item as any).sku) && (
+                                <span className="absolute top-1 left-1 bg-gray-900/80 backdrop-blur-xs text-white text-[8px] font-mono font-bold px-1 py-0.5 rounded shadow-2xs z-10 pointer-events-none uppercase">
+                                  {item.codigo_barras || (item as any).sku}
+                                </span>
+                              )}
                               <span className="absolute bottom-1 right-1 bg-black/70 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md opacity-0 group-hover:opacity-100 transition">
                                 🔍 Ampliar
                               </span>
