@@ -56,6 +56,39 @@ export default async function AdminConfiguracoes({ searchParams }: { searchParam
     resendCreds = data?.valor;
   } catch {}
 
+  // Buscar senha secreta do admin salvação
+  let adminSenhaAtual = 'mimoshow2026';
+  try {
+    const { data: cfgAdmin } = await supabase.from('configuracoes').select('*').eq('chave', 'admin_config').maybeSingle();
+    if (cfgAdmin?.valor?.senha) adminSenhaAtual = cfgAdmin.valor.senha;
+  } catch {}
+
+  async function salvarSenhaAdmin(formData: FormData) {
+    'use server'
+    const novaSenha = (formData.get('nova_senha_admin') as string || '').trim();
+    if (!novaSenha) return;
+
+    try {
+      const { error } = await supabase.from('configuracoes').upsert({
+        chave: 'admin_config',
+        valor: {
+          senha: novaSenha,
+          atualizado_em: new Date().toISOString()
+        }
+      }, { onConflict: 'chave' });
+
+      revalidatePath('/admin/configuracoes');
+
+      if (error) {
+        redirect(`/admin/configuracoes?erro=Erro ao salvar nova senha: ${error.message}`);
+      } else {
+        redirect('/admin/configuracoes?msg=Senha Secreta do Sistema atualizada com sucesso!');
+      }
+    } catch (err) {
+      redirect(`/admin/configuracoes?erro=Erro ao salvar nova senha: ${String(err)}`);
+    }
+  }
+
   async function salvarMercadoPago(formData: FormData) {
     'use server'
     const accessToken = (formData.get('mp_access_token') as string || '').trim();
@@ -184,6 +217,40 @@ export default async function AdminConfiguracoes({ searchParams }: { searchParam
           ❌ ERRO: {searchParams.erro}
         </div>
       )}
+
+      {/* SEGURANÇA E SENHA SECRETA DE ACESSO AO SISTEMA */}
+      <div className="bg-white rounded-xl shadow-sm border border-emerald-300 p-8 mb-6 relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-2 h-full bg-emerald-600"></div>
+        <h2 className="text-xl font-bold mb-2 text-secondary flex items-center gap-2">
+          🔒 Segurança do Sistema e Senha Secreta de Acesso
+        </h2>
+        <p className="text-sm text-gray-600 mb-6">
+          Defina a senha secreta para login no Painel Administrativo. Em caso de esquecimento, o código de recuperação será enviado para <strong>mimosrtes10@hotmail.com</strong> com cópia para <strong>mimoshow10@hotmail.com</strong>.
+        </p>
+
+        <form action={salvarSenhaAdmin} className="flex flex-col md:flex-row gap-4 items-end">
+          <div className="flex-1 w-full">
+            <label className="block text-xs font-bold text-gray-700 mb-1">
+              Nova Senha Secreta de Acesso *
+            </label>
+            <input
+              name="nova_senha_admin"
+              type="text"
+              required
+              defaultValue={adminSenhaAtual}
+              placeholder="Digite a nova senha secreta"
+              className="w-full border border-gray-300 rounded-lg p-3 text-sm font-bold bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+            />
+          </div>
+
+          <button
+            type="submit"
+            className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-lg font-bold text-xs shadow-sm cursor-pointer whitespace-nowrap transition"
+          >
+            💾 Atualizar Senha Secreta
+          </button>
+        </form>
+      </div>
 
       {/* Passo 1: Salvar Senhas */}
       <div className="bg-white rounded-xl shadow-sm border border-blue-200 p-8 mb-6 relative overflow-hidden">
