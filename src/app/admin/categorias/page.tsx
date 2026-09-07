@@ -13,11 +13,15 @@ async function addGrupo(formData: FormData) {
   if (!nome) return;
   const slug = nome.toLowerCase().replace(/ /g, '-').normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9-]/g, '');
 
-  await supabase.from('categorias').insert([{
+  const { error } = await supabase.from('categorias').insert([{
     nome,
     slug,
     parent_id: null
   }]);
+
+  if (error) {
+    redirect(`/admin/categorias?erro=Erro ao criar Grupo: ${encodeURIComponent(error.message)}`);
+  }
 
   revalidatePath('/admin/categorias');
   revalidatePath('/');
@@ -29,13 +33,21 @@ async function addSubgrupo(formData: FormData) {
   const nome = (formData.get('nome') as string || '').trim();
   const group_id = formData.get('group_id') as string;
   if (!nome || !group_id) return;
-  const slug = nome.toLowerCase().replace(/ /g, '-').normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9-]/g, '');
 
-  await supabase.from('categorias').insert([{
+  const { data: parentCat } = await supabase.from('categorias').select('slug').eq('id', group_id).maybeSingle();
+  const baseSlug = nome.toLowerCase().replace(/ /g, '-').normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9-]/g, '');
+  const parentSlug = parentCat?.slug || 'sub';
+  const slug = `${parentSlug}-${baseSlug}`;
+
+  const { error } = await supabase.from('categorias').insert([{
     nome,
     slug,
     parent_id: group_id
   }]);
+
+  if (error) {
+    redirect(`/admin/categorias?erro=Erro ao criar Subgrupo: ${encodeURIComponent(error.message)}`);
+  }
 
   revalidatePath('/admin/categorias');
   revalidatePath('/');
@@ -49,14 +61,24 @@ async function editarCategoria(formData: FormData) {
   const parent_id = formData.get('parent_id') ? (formData.get('parent_id') as string) : null;
   if (!id || !nome) return;
 
-  const slug = nome.toLowerCase().replace(/ /g, '-').normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9-]/g, '');
+  let slug = nome.toLowerCase().replace(/ /g, '-').normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9-]/g, '');
+  if (parent_id) {
+    const { data: parentCat } = await supabase.from('categorias').select('slug').eq('id', parent_id).maybeSingle();
+    if (parentCat?.slug) {
+      slug = `${parentCat.slug}-${slug}`;
+    }
+  }
 
   const payload: any = { nome, slug };
   if (parent_id !== undefined && parent_id !== '') {
     payload.parent_id = parent_id || null;
   }
 
-  await supabase.from('categorias').update(payload).eq('id', id);
+  const { error } = await supabase.from('categorias').update(payload).eq('id', id);
+
+  if (error) {
+    redirect(`/admin/categorias?erro=Erro ao atualizar Categoria: ${encodeURIComponent(error.message)}`);
+  }
 
   revalidatePath('/admin/categorias');
   revalidatePath('/');

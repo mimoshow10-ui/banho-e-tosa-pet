@@ -57,8 +57,8 @@ export default async function AdminProdutos(props: {
 
   // Filter by Com Foto vs Sem Foto
   if (com_foto === 'sim') {
-    countQuery = countQuery.not('imagens', 'is', null);
-    query = query.not('imagens', 'is', null);
+    countQuery = countQuery.not('imagens', 'is', null).neq('imagens', '{}');
+    query = query.not('imagens', 'is', null).neq('imagens', '{}');
   } else if (com_foto === 'nao') {
     countQuery = countQuery.or('imagens.is.null,imagens.eq.{}');
     query = query.or('imagens.is.null,imagens.eq.{}');
