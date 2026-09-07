@@ -58,6 +58,7 @@ export async function POST(request: Request) {
     const resPref = await preference.create({
       body: {
         items: mpItems,
+        statement_descriptor: 'MIMOSHOWPET',
         payer: {
           name: cliente?.nomeCompleto || 'Cliente Banho & Tosa',
           email: cliente?.email || 'cliente@email.com',
