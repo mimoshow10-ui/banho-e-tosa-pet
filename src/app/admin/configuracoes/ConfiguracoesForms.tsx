@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { salvarSenhaAdmin, salvarCredenciais, salvarMercadoPago, salvarFreteConfig } from './actions';
-import { CheckCircle2, AlertCircle, RefreshCw } from 'lucide-react';
+import { CheckCircle2, AlertCircle, RefreshCw, Eye, EyeOff } from 'lucide-react';
 
 interface Props {
   adminSenhaAtual: string;
@@ -18,6 +18,7 @@ interface Props {
 }
 
 export default function ConfiguracoesForms({ adminSenhaAtual, creds, mpCreds, freteConfig }: Props) {
+  const [mostrarSenhaConfig, setMostrarSenhaConfig] = useState(false);
   const [msgSenha, setMsgSenha] = useState<{ tipo: 'sucesso' | 'erro'; texto: string } | null>(null);
   const [msgCreds, setMsgCreds] = useState<{ tipo: 'sucesso' | 'erro'; texto: string } | null>(null);
   const [msgMp, setMsgMp] = useState<{ tipo: 'sucesso' | 'erro'; texto: string } | null>(null);
@@ -130,14 +131,24 @@ export default function ConfiguracoesForms({ adminSenhaAtual, creds, mpCreds, fr
             <label className="block text-xs font-bold text-gray-700 mb-1">
               Nova Senha Secreta de Acesso *
             </label>
-            <input
-              name="nova_senha_admin"
-              type="text"
-              required
-              defaultValue={adminSenhaAtual}
-              placeholder="Digite a nova senha secreta"
-              className="w-full border border-gray-300 rounded-lg p-3 text-sm font-bold bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-            />
+            <div className="relative">
+              <input
+                name="nova_senha_admin"
+                type={mostrarSenhaConfig ? 'text' : 'password'}
+                required
+                defaultValue={adminSenhaAtual}
+                placeholder="Digite a nova senha secreta"
+                className="w-full border border-gray-300 rounded-lg p-3 pr-10 text-sm font-bold bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+              />
+              <button
+                type="button"
+                onClick={() => setMostrarSenhaConfig(!mostrarSenhaConfig)}
+                className="absolute right-3 top-3 text-gray-400 hover:text-gray-700 cursor-pointer"
+                title={mostrarSenhaConfig ? "Ocultar Senha" : "Mostrar Senha"}
+              >
+                {mostrarSenhaConfig ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
           </div>
 
           <button

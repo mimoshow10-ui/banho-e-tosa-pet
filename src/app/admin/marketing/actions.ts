@@ -236,6 +236,96 @@ export async function dispararEmailTeste(formData: FormData) {
     listaCupons.unshift(novoCupom);
     await supabase.from('configuracoes').upsert({ chave: 'cupons_db', valor: listaCupons }, { onConflict: 'chave' });
 
+    if (!cliente_email) {
+      return { sucesso: false, erro: 'Informe o e-mail do cliente para enviar o cupom de teste.' };
+    }
+
+    // ── DISPARAR O E-MAIL REALMENTE VIA RESEND ──
+    const { data: resendDb } = await supabase.from('configuracoes').select('valor').eq('chave', 'resend_config').maybeSingle();
+    const resendApiKey = resendDb?.valor?.api_key || process.env.RESEND_API_KEY;
+
+    if (!resendApiKey) {
+      return {
+        sucesso: false,
+        erro: 'Chave de E-mail Resend não cadastrada. Acesse Admin -> Configurações para cadastrar a API Key do Resend.'
+      };
+    }
+
+    let emailEnviadoReal = false;
+    let erroResend = '';
+
+    try {
+      const emailRes = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${resendApiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          from: 'Mimo Show Pet <onboarding@resend.dev>',
+          to: [cliente_email],
+          subject: config.assunto || 'Obrigado por sua compra na Mimo Show Pet! Ganhe desconto na próxima compra 🐾',
+          html: `
+            <div style="font-family: sans-serif; padding: 24px; background-color: #f8fafc; color: #1e293b;">
+              <div style="max-width: 550px; margin: 0 auto; background: #ffffff; border-radius: 24px; padding: 36px; border: 1px solid #e2e8f0; box-shadow: 0 10px 25px rgba(0,0,0,0.05);">
+                
+                <div style="text-align: center; margin-bottom: 24px;">
+                  <h1 style="font-size: 24px; font-weight: 900; color: #0B2545; margin: 0;">🐾 Mimo Show Pet</h1>
+                  <p style="font-size: 13px; color: #64748b; margin-top: 4px;">Agradecimento Pós-Venda Especial</p>
+                </div>
+
+                <div style="font-size: 14px; color: #334155; line-height: 1.6; margin-bottom: 24px;">
+                  <p style="font-weight: 700; font-size: 16px;">Olá, ${cliente_nome}!</p>
+                  <p>${config.mensagem || 'Ficamos muito felizes em atender você e seu pet! Como forma de agradecimento, preparamos um presente exclusivo para seu próximo pedido.'}</p>
+                </div>
+
+                <div style="background-color: #fff7ed; border: 2px dashed #f97316; border-radius: 20px; padding: 24px; text-align: center; margin: 28px 0;">
+                  <span style="font-size: 12px; font-weight: 800; color: #c2410c; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 8px;">
+                    SEU CUPOM DE DESCONTO EXCLUSIVO (${descontoTexto})
+                  </span>
+                  <span style="font-size: 32px; font-weight: 900; font-family: monospace; letter-spacing: 4px; color: #ea580c; display: block; margin: 10px 0;">
+                    ${codigoCupom}
+                  </span>
+                  <span style="font-size: 11px; font-weight: 700; color: #7c2d12;">
+                    ⏰ Válido por ${diasValidade} dias no site oficial.
+                  </span>
+                </div>
+
+                <div style="text-align: center; margin-top: 32px;">
+                  <a href="https://banhoetosapet.com.br" style="background-color: #f97316; color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 14px; font-weight: 800; font-size: 14px; display: inline-block; box-shadow: 0 4px 12px rgba(249,115,22,0.3);">
+                    Aproveitar Cupom Agora &rarr;
+                  </a>
+                </div>
+
+                <div style="border-top: 1px solid #f1f5f9; margin-top: 32px; padding-top: 16px; text-align: center;">
+                  <p style="font-size: 11px; color: #94a3b8; margin: 16px 0 0 0;">
+                    Mimo Show Pet Shop • E-mail automático enviado em ${dataEnvio.toLocaleDateString('pt-BR')}.
+                  </p>
+                </div>
+
+              </div>
+            </div>
+          `
+        })
+      });
+
+      const resData = await emailRes.json();
+      if (emailRes.ok) {
+        emailEnviadoReal = true;
+      } else {
+        erroResend = resData.message || JSON.stringify(resData);
+      }
+    } catch (e: any) {
+      erroResend = e.message || 'Erro ao conectar no servidor de e-mails Resend.';
+    }
+
+    if (!emailEnviadoReal) {
+      return {
+        sucesso: false,
+        erro: `O cupom ${codigoCupom} foi gerado, mas o e-mail não pôde ser entregue pelo Resend: ${erroResend}`
+      };
+    }
+
     const { data: logCfg } = await supabase.from('configuracoes').select('valor').eq('chave', 'emails_enviados_log').single();
     let logLista = logCfg?.valor || [];
 
@@ -256,7 +346,7 @@ export async function dispararEmailTeste(formData: FormData) {
 
     revalidatePath('/admin/marketing');
     revalidatePath('/admin/cupons');
-    return { sucesso: true, mensagem: `E-mail de teste disparado com sucesso! Cupom ${codigoCupom} emitido.` };
+    return { sucesso: true, mensagem: `E-mail de agradecimento enviado com sucesso para ${cliente_email}! Cupom ${codigoCupom} entregue.` };
   } catch (err: any) {
     return { sucesso: false, erro: err.message || 'Erro ao disparar e-mail de teste.' };
   }
