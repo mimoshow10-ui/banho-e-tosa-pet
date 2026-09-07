@@ -96,9 +96,25 @@ async function excluirCupom(formData: FormData) {
   redirect('/admin/cupons?msg=Cupom removido!');
 }
 
-async function salvarPosicaoCupons(formData: FormData) {
+async function salvarListaCupons(cuponsNovos: Cupom[]) {
   'use server';
-  const posicao_home = (formData.get('posicao_home') as string) || 'topo';
+  await supabase.from('configuracoes').upsert({
+    chave: 'cupons_db',
+    valor: cuponsNovos
+  }, { onConflict: 'chave' });
+
+  revalidatePath('/admin/cupons');
+  revalidatePath('/');
+}
+
+async function salvarPosicaoCupons(formDataOrPosicao: FormData | string) {
+  'use server';
+  let posicao_home = 'topo';
+  if (typeof formDataOrPosicao === 'string') {
+    posicao_home = formDataOrPosicao;
+  } else if (formDataOrPosicao && typeof formDataOrPosicao.get === 'function') {
+    posicao_home = (formDataOrPosicao.get('posicao_home') as string) || 'topo';
+  }
 
   await supabase.from('configuracoes').upsert({
     chave: 'cupons_config',
@@ -107,7 +123,9 @@ async function salvarPosicaoCupons(formData: FormData) {
 
   revalidatePath('/admin/cupons');
   revalidatePath('/');
-  redirect('/admin/cupons?msg=Posição dos cupons na Home atualizada com sucesso!');
+  if (typeof formDataOrPosicao !== 'string') {
+    redirect('/admin/cupons?msg=Posição dos cupons na Home atualizada com sucesso!');
+  }
 }
 
 export default async function AdminCuponsPage({
@@ -187,6 +205,7 @@ export default async function AdminCuponsPage({
         salvarCupomAction={salvarCupom}
         excluirCupomAction={excluirCupom}
         salvarPosicaoAction={salvarPosicaoCupons}
+        salvarListaAction={salvarListaCupons}
       />
     </div>
   );
