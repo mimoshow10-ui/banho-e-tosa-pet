@@ -549,28 +549,38 @@ export default function TabelaProdutosComEdicaoEmMassa({ produtos, categorias, p
                           {item.codigo_barras || 'Sem SKU'}
                         </td>
 
-                        {/* Nome */}
+                        {/* Nome do Produto e Status Pai/Filho */}
                         <td className="p-4 font-bold text-gray-800">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            {paiIds.has(item.id) && (
-                              <span title="Produto Pai (tem variações)" className="text-amber-500 text-base leading-none">
-                                ★
+                          <div className="flex items-center gap-2 flex-wrap mb-1">
+                            {paiIds.has(item.id) ? (
+                              <span title="Produto Pai (Possui Variações)" className="bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-black px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-2xs">
+                                👑 Produto Pai
+                              </span>
+                            ) : item.parent_id ? (
+                              <span title="Produto Filho (Variação de outro produto)" className="bg-blue-100 text-blue-900 border border-blue-300 text-[10px] font-black px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-2xs">
+                                🔗 Produto Filho
+                              </span>
+                            ) : (
+                              <span title="Produto Único Independente" className="bg-gray-100 text-gray-600 border border-gray-200 text-[10px] font-semibold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-2xs">
+                                📦 Produto Único
                               </span>
                             )}
-                            <Link
-                              href={`/produto/${item.slug}`}
-                              target="_blank"
-                              className="hover:text-primary hover:underline transition flex items-center gap-1"
-                            >
-                              <span>{item.nome}</span>
-                              <ExternalLink size={12} className="text-gray-400" />
-                            </Link>
+
                             {!fotoValida && (
                               <span className="bg-amber-100 text-amber-800 border border-amber-300 text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-1 shadow-2xs">
                                 🟡 Sem Foto (Não Publicado)
                               </span>
                             )}
                           </div>
+
+                          <Link
+                            href={`/produto/${item.slug}`}
+                            target="_blank"
+                            className="hover:text-primary hover:underline transition flex items-center gap-1 leading-snug"
+                          >
+                            <span>{item.nome}</span>
+                            <ExternalLink size={12} className="text-gray-400 flex-shrink-0" />
+                          </Link>
                         </td>
 
                         {/* Categoria / Subcategoria & Sinalização Visual */}
