@@ -3,22 +3,40 @@
 import Link from 'next/link';
 import { extractImageUrls } from './ProductMediaGallery';
 
+function extrairQuantidade(nome: string, preco: number): number {
+  const match = (nome || '').match(/\b(\d+)\s*(unidades|unidade|unid|un|pcs|pc|pares|par)?\b/i);
+  if (match) {
+    const num = parseInt(match[1], 10);
+    if (!isNaN(num) && num > 0) return num;
+  }
+  // Se não encontrar número no nome, ordena secundariamente pelo preço
+  return 100000 + (preco || 0);
+}
+
 export default function VariationSelector({ currentSlug, family }: { currentSlug: string, family: any[] }) {
   if (!family || family.length <= 1) return null;
 
+  // Ordenar as variações da MENOR para a MAIOR quantidade (ex: 10un -> 20un -> 30un -> 50un -> 100un)
   const sortedFamily = [...family].sort((a, b) => {
-    const nomeA = String(a?.nome || '');
-    const nomeB = String(b?.nome || '');
-    return nomeA.localeCompare(nomeB);
+    const qA = extrairQuantidade(a?.nome || '', Number(a?.preco || 0));
+    const qB = extrairQuantidade(b?.nome || '', Number(b?.preco || 0));
+    if (qA !== qB) return qA - qB;
+    return (a?.nome || '').localeCompare(b?.nome || '', 'pt-BR');
   });
 
   return (
-    <div className="border border-gray-200 rounded-xl p-3 bg-gray-50/50">
-      <h3 className="font-bold text-secondary mb-2 text-xs uppercase tracking-wide">Opções Disponíveis:</h3>
+    <div className="border border-gray-200 rounded-xl p-3 bg-gray-50/50 space-y-2">
+      <div className="flex items-center justify-between">
+        <h3 className="font-bold text-secondary text-xs uppercase tracking-wide flex items-center gap-1.5">
+          <span>📦 Opções de Quantidade Disponíveis:</span>
+        </h3>
+        <span className="text-[11px] text-gray-500 font-medium">(Menor para Maior)</span>
+      </div>
+
       <div className="flex flex-wrap gap-2">
         {sortedFamily.map((item) => {
           if (!item || !item.slug) return null;
-          const isActive = item.slug === currentSlug;
+          const isActive = item.slug === currentSlug || item.id === currentSlug;
           const fotos = extractImageUrls(item.imagens);
           const image = fotos[0] || null;
           const priceVal = Number(item.preco_promocional || item.preco || 0);
@@ -27,13 +45,14 @@ export default function VariationSelector({ currentSlug, family }: { currentSlug
             <Link 
               key={item.id || item.slug} 
               href={`/produto/${item.slug}`}
-              scroll={false}
-              className={`group relative flex items-center gap-2 p-1.5 rounded-lg border transition-all ${
-                isActive ? 'border-primary bg-white shadow-sm ring-1 ring-primary/20' : 'border-gray-200 bg-white hover:border-gray-300 opacity-80 hover:opacity-100'
+              className={`group relative flex items-center gap-2 p-2 rounded-xl border-2 transition-all cursor-pointer select-none ${
+                isActive
+                  ? 'border-primary bg-orange-50/40 shadow-sm ring-2 ring-primary/20 scale-[1.02]'
+                  : 'border-gray-200 bg-white hover:border-primary/50 hover:shadow-xs opacity-90 hover:opacity-100'
               }`}
             >
               {image && (
-                <div className="w-9 h-9 relative rounded-md overflow-hidden bg-gray-100 flex-shrink-0">
+                <div className="w-10 h-10 relative rounded-lg overflow-hidden bg-gray-100 flex-shrink-0 border border-gray-200">
                   <img
                     src={image}
                     alt={item.nome || 'Opção'}
@@ -45,17 +64,17 @@ export default function VariationSelector({ currentSlug, family }: { currentSlug
                 </div>
               )}
               <div className="flex flex-col pr-1">
-                <span className={`text-[11px] font-bold line-clamp-1 max-w-[120px] ${isActive ? 'text-primary' : 'text-gray-700'}`}>
+                <span className={`text-[11px] font-extrabold line-clamp-1 max-w-[140px] ${isActive ? 'text-primary' : 'text-gray-800'}`}>
                   {item.nome || 'Opção'}
                 </span>
-                <span className="text-[10px] font-medium text-gray-500">
+                <span className="text-[11px] font-black text-secondary">
                   R$ {priceVal.toFixed(2).replace('.', ',')}
                 </span>
               </div>
               
               {isActive && (
                 <div className="absolute -top-1.5 -right-1.5 bg-primary text-white rounded-full p-0.5 shadow-sm">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
                 </div>
               )}
             </Link>

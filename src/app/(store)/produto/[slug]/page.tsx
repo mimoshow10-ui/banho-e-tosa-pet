@@ -103,33 +103,35 @@ export default async function ProdutoPage({ params }: { params: Promise<{ slug: 
 
   if (!rawProduto) notFound();
 
-  // Se o produto acessado for um FILHO, carregar o produto PAI como anúncio principal
-  let produto = rawProduto;
+  // O produto ativo é exatamente a variação clicada pelo cliente (para exibir preço e SKU correspondentes)
+  let produto = { ...rawProduto };
   if (rawProduto.parent_id) {
     try {
       const { data: parentProduct } = await supabase
         .from('produtos')
-        .select('*')
+        .select('imagens')
         .eq('id', rawProduto.parent_id)
         .maybeSingle();
 
       if (parentProduct) {
-        produto = parentProduct;
+        const fotosFilho = extractImageUrls(rawProduto.imagens);
+        if (fotosFilho.length === 0 && parentProduct.imagens) {
+          produto.imagens = parentProduct.imagens;
+        }
       }
     } catch {}
   }
 
-  // Buscar família de variações com segurança
+  // Buscar família de variações completa (Pai + todos os Filhos)
   let family: any[] = [];
   try {
-    const familyId = produto.parent_id || produto.id;
+    const familyId = rawProduto.parent_id || rawProduto.id;
     if (familyId) {
       const { data: familyData } = await supabase
         .from('produtos')
-        .select('id, nome, slug, imagens, preco, preco_promocional, estoque, ativo')
+        .select('id, nome, slug, imagens, preco, preco_promocional, estoque, ativo, parent_id')
         .or(`id.eq.${familyId},parent_id.eq.${familyId}`)
-        .eq('ativo', true)
-        .order('id');
+        .eq('ativo', true);
       family = familyData || [];
     }
   } catch {}
