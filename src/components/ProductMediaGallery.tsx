@@ -1,37 +1,54 @@
 'use client';
 
 import { useState } from 'react';
-import Image from 'next/image';
 import { Play } from 'lucide-react';
 
 interface Props {
-  imagens: string[];
+  imagens: any;
   videoUrl?: string | null;
   nome: string;
 }
 
 export default function ProductMediaGallery({ imagens, videoUrl, nome }: Props) {
-  // Se tiver vídeo, o item ativo padrão é 'video', senão é a foto de índice 0
   const [activeMedia, setActiveMedia] = useState<'video' | number>(videoUrl ? 'video' : 0);
 
-  // Trata URLs de imagens que podem vir separadas por \r\n ou vírgula
-  const processedImages = (imagens || []).flatMap(img =>
-    typeof img === 'string' ? img.split(/[\r\n,]+/).map(s => s.trim()).filter(Boolean) : []
-  );
+  // Normalizar array de imagens independentemente do formato
+  const safeImages: string[] = [];
+  try {
+    let input = imagens;
+    if (typeof input === 'string') {
+      const trimmed = input.trim();
+      if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+        try { input = JSON.parse(trimmed); } catch { input = [trimmed]; }
+      } else {
+        input = [trimmed];
+      }
+    }
+    if (Array.isArray(input)) {
+      for (const item of input) {
+        if (typeof item === 'string' && item.trim()) {
+          const parts = item.split(/[\r\n,]+/).map(s => s.trim()).filter(Boolean);
+          safeImages.push(...parts);
+        }
+      }
+    }
+  } catch {}
 
-  // Extrair ID do YouTube se for link do YT
   const getYouTubeId = (url: string) => {
-    if (url.includes('v=')) return url.split('v=')[1]?.split('&')[0];
-    if (url.includes('youtu.be/')) return url.split('youtu.be/')[1]?.split('?')[0];
+    try {
+      if (url.includes('v=')) return url.split('v=')[1]?.split('&')[0];
+      if (url.includes('youtu.be/')) return url.split('youtu.be/')[1]?.split('?')[0];
+    } catch {}
     return null;
   };
 
   const videoId = videoUrl ? getYouTubeId(videoUrl) : null;
+  const currentImg = typeof activeMedia === 'number' && safeImages[activeMedia] ? safeImages[activeMedia] : (safeImages[0] || '/banner-pet.jpg');
 
   return (
     <div className="flex flex-col gap-4">
-      {/* CAIXA DE MÍDIA PRINCIPAL (FOTO OU VÍDEO SELECIONADO) */}
-      <div className="w-full aspect-square bg-black rounded-2xl border border-border relative overflow-hidden flex items-center justify-center">
+      {/* CAIXA DE MÍDIA PRINCIPAL */}
+      <div className="w-full aspect-square bg-white rounded-2xl border border-border relative overflow-hidden flex items-center justify-center shadow-xs">
         {activeMedia === 'video' && videoUrl ? (
           videoId ? (
             <iframe
@@ -47,30 +64,26 @@ export default function ProductMediaGallery({ imagens, videoUrl, nome }: Props) 
               <source src={videoUrl} />
             </video>
           )
-        ) : typeof activeMedia === 'number' && processedImages[activeMedia] ? (
-          <Image
-            src={processedImages[activeMedia]}
-            alt={`${nome} - mídia ${activeMedia + 1}`}
-            fill
-            className="object-cover bg-white"
-            priority
-          />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-gray-400 font-bold bg-gray-200">
-            Sem Mídia
-          </div>
+          <img
+            src={currentImg}
+            alt={nome || 'Foto do Produto'}
+            className="w-full h-full object-contain p-2 bg-white"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = '/banner-pet.jpg';
+            }}
+          />
         )}
       </div>
 
-      {/* MINIATURAS DA GALERIA (VÍDEO + FOTOS) */}
-      {(videoUrl || processedImages.length > 1) && (
+      {/* MINIATURAS */}
+      {(videoUrl || safeImages.length > 1) && (
         <div className="flex gap-3 overflow-x-auto pb-2">
-          {/* Miniatura do Vídeo (Primeira posição se existir vídeo) */}
           {videoUrl && (
             <button
               type="button"
               onClick={() => setActiveMedia('video')}
-              className={`w-20 h-20 bg-gray-900 rounded-xl border-2 flex flex-col items-center justify-center flex-shrink-0 relative overflow-hidden transition ${
+              className={`w-20 h-20 bg-gray-900 rounded-xl border-2 flex flex-col items-center justify-center flex-shrink-0 relative overflow-hidden transition cursor-pointer ${
                 activeMedia === 'video' ? 'border-primary ring-2 ring-primary/30' : 'border-gray-200 hover:border-gray-400'
               }`}
             >
@@ -81,17 +94,23 @@ export default function ProductMediaGallery({ imagens, videoUrl, nome }: Props) 
             </button>
           )}
 
-          {/* Miniaturas das Fotos */}
-          {processedImages.map((img, index) => (
+          {safeImages.map((img, index) => (
             <button
               key={index}
               type="button"
               onClick={() => setActiveMedia(index)}
-              className={`w-20 h-20 bg-gray-100 rounded-xl border-2 flex-shrink-0 relative overflow-hidden transition ${
+              className={`w-20 h-20 bg-white rounded-xl border-2 flex-shrink-0 relative overflow-hidden transition cursor-pointer ${
                 activeMedia === index ? 'border-primary ring-2 ring-primary/30' : 'border-gray-200 hover:border-gray-400'
               }`}
             >
-              <Image src={img} alt={`Thumbnail ${index + 1}`} fill className="object-cover" sizes="80px" />
+              <img
+                src={img}
+                alt={`Thumbnail ${index + 1}`}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = '/banner-pet.jpg';
+                }}
+              />
             </button>
           ))}
         </div>

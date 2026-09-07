@@ -7,7 +7,7 @@ import ProductMediaGallery from '@/components/ProductMediaGallery';
 import ProductAiAssistant from '@/components/ProductAiAssistant';
 import ProductCouponsBanner from '@/components/ProductCouponsBanner';
 import AddToCartButtons from '@/components/AddToCartButtons';
-import { notFound, redirect } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 
 export const dynamic = 'force-dynamic';
@@ -25,7 +25,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
     const rawProduto = produtos && produtos.length > 0 ? produtos[0] : null;
 
-    if (!rawProduto) return { title: 'Produto não encontrado | Banho & Tosa' };
+    if (!rawProduto) return { title: 'Produto não encontrado | Banho & Tosa Pet' };
 
     let produto = rawProduto;
     if (rawProduto.parent_id) {
@@ -39,17 +39,20 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       }
     }
 
-    const title = (produto.seo_title || `${produto.nome} | Banho & Tosa Pet`).slice(0, 70);
-    const rawDesc = produto.seo_description || produto.descricao_curta || `Compre ${produto.nome} no Banho & Tosa Pet!`;
+    const title = String(produto.seo_title || `${produto.nome || 'Produto'} | Banho & Tosa Pet`).slice(0, 70);
+    const rawDesc = String(produto.seo_description || produto.descricao_curta || `Compre ${produto.nome || 'produtos'} no Banho & Tosa Pet!`);
     const description = rawDesc.replace(/<[^>]*>?/gm, '').replace(/[\r\n]+/g, ' ').slice(0, 160).trim();
 
     let imagem = '/banner-pet.jpg';
-    if (produto.imagens && produto.imagens.length > 0) {
-      const rawImg = produto.imagens[0];
-      if (typeof rawImg === 'string' && rawImg.trim()) {
-        imagem = rawImg.split(/[\r\n,]+/)[0].trim();
+    try {
+      let rawImg = produto.imagens;
+      if (typeof rawImg === 'string' && rawImg.trim().startsWith('[')) {
+        try { rawImg = JSON.parse(rawImg); } catch {}
       }
-    }
+      if (Array.isArray(rawImg) && rawImg.length > 0 && typeof rawImg[0] === 'string') {
+        imagem = rawImg[0].split(/[\r\n,]+/)[0].trim();
+      }
+    } catch {}
 
     return {
       title,
@@ -111,8 +114,9 @@ export default async function ProdutoPage({ params }: { params: Promise<{ slug: 
   const promoExpirada = expiraTime !== null && (isNaN(expiraTime) || expiraTime <= agora);
   const semEstoque = produto.estoque !== null && produto.estoque !== undefined && Number(produto.estoque) <= 0;
 
-  const promoValida = produto.preco_promocional && Number(produto.preco_promocional) < preco && !promoExpirada && !semEstoque;
-  const precoPromo = promoValida ? Number(produto.preco_promocional) : null;
+  const precoPromoVal = produto.preco_promocional ? Number(produto.preco_promocional) : null;
+  const promoValida = precoPromoVal !== null && !isNaN(precoPromoVal) && precoPromoVal < preco && !promoExpirada && !semEstoque;
+  const precoPromo = promoValida ? precoPromoVal : null;
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-12">
@@ -124,7 +128,7 @@ export default async function ProdutoPage({ params }: { params: Promise<{ slug: 
         <ProductMediaGallery
           imagens={produto.imagens || []}
           videoUrl={produto.video_url}
-          nome={produto.nome}
+          nome={produto.nome || 'Produto'}
         />
 
         {/* COLUNA DIREITA — Nome, preço, variações, botões, frete */}
@@ -191,7 +195,7 @@ export default async function ProdutoPage({ params }: { params: Promise<{ slug: 
           <ProductAiAssistant produto={produto} />
 
           {/* Estoque */}
-          {produto.estoque > 0 && produto.estoque < 20 && (
+          {Number(produto.estoque) > 0 && Number(produto.estoque) < 20 && (
             <p className="text-orange-600 font-bold text-sm">⚠️ Apenas {produto.estoque} em estoque!</p>
           )}
         </div>
@@ -203,7 +207,7 @@ export default async function ProdutoPage({ params }: { params: Promise<{ slug: 
           <h2 className="text-2xl font-heading font-bold text-secondary mb-6">Descrição do Produto</h2>
           <div
             className="text-gray-700 leading-relaxed prose prose-sm max-w-none"
-            dangerouslySetInnerHTML={{ __html: produto.descricao_curta || produto.descricao }}
+            dangerouslySetInnerHTML={{ __html: String(produto.descricao_curta || produto.descricao || '') }}
           />
         </div>
       )}

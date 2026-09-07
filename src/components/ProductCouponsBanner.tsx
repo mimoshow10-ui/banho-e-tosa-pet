@@ -6,8 +6,8 @@ import { Cupom } from '@/lib/types/coupon';
 
 interface Props {
   produtoId: string;
-  categoriaId?: string;
-  sku?: string;
+  categoriaId?: string | null;
+  sku?: string | null;
 }
 
 export default function ProductCouponsBanner({ produtoId, categoriaId, sku }: Props) {
@@ -16,17 +16,13 @@ export default function ProductCouponsBanner({ produtoId, categoriaId, sku }: Pr
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Carregar cupons coletados do localStorage
     try {
       const raw = localStorage.getItem('cupons_coletados');
       if (raw) {
         setColetados(JSON.parse(raw));
       }
-    } catch {
-      // localStorage indisponível
-    }
+    } catch {}
 
-    // Buscar cupons ativos do backend
     async function carregarCupons() {
       try {
         const res = await fetch('/api/cupons/disponiveis');
@@ -34,7 +30,6 @@ export default function ProductCouponsBanner({ produtoId, categoriaId, sku }: Pr
           const data = await res.json();
           const disponiveis: Cupom[] = data.cupons || [];
 
-          // Filtrar cupons elegíveis para este produto/categoria
           const elegiveis = disponiveis.filter(c => {
             if (!c.ativo) return false;
             if (c.tipo_elegibilidade === 'todos') return true;
@@ -47,7 +42,6 @@ export default function ProductCouponsBanner({ produtoId, categoriaId, sku }: Pr
           setCupons(elegiveis);
         }
       } catch {
-        // Fallback local se a API não responder
         setCupons([
           {
             id: 'cupom-bemvindo',
@@ -76,9 +70,7 @@ export default function ProductCouponsBanner({ produtoId, categoriaId, sku }: Pr
     setColetados(novos);
     try {
       localStorage.setItem('cupons_coletados', JSON.stringify(novos));
-    } catch {
-      // localStorage indisponível
-    }
+    } catch {}
   }
 
   if (loading || cupons.length === 0) return null;
@@ -96,21 +88,23 @@ export default function ProductCouponsBanner({ produtoId, categoriaId, sku }: Pr
       <div className="flex gap-3 overflow-x-auto pb-1 no-scrollbar">
         {cupons.map((c) => {
           const isColetado = coletados.includes(c.codigo);
+          const valorDesc = Number(c.valor_desconto || 0);
+          const minReais = c.compra_minima_reais ? Number(c.compra_minima_reais) : null;
 
           return (
             <div
-              key={c.id}
+              key={c.id || c.codigo}
               className="bg-white border border-orange-200 rounded-xl p-3 flex items-center justify-between gap-4 min-w-[240px] flex-shrink-0 shadow-2xs relative overflow-hidden"
             >
               <div className="flex-1">
                 <div className="font-black text-primary text-sm flex items-center gap-1">
-                  {c.tipo_desconto === 'percentual' && `${c.valor_desconto}% OFF`}
-                  {c.tipo_desconto === 'fixo' && `R$ ${c.valor_desconto.toFixed(2)} OFF`}
+                  {c.tipo_desconto === 'percentual' && `${valorDesc}% OFF`}
+                  {c.tipo_desconto === 'fixo' && `R$ ${valorDesc.toFixed(2).replace('.', ',')} OFF`}
                   {c.tipo_desconto === 'frete_gratis' && `FRETE GRÁTIS`}
                 </div>
-                {c.compra_minima_reais && (
+                {minReais !== null && !isNaN(minReais) && (
                   <p className="text-[10px] text-gray-500 font-medium mt-0.5">
-                    Mínimo: R$ {c.compra_minima_reais.toFixed(2).replace('.', ',')}
+                    Mínimo: R$ {minReais.toFixed(2).replace('.', ',')}
                   </p>
                 )}
                 <span className="text-[10px] font-mono font-bold text-gray-400 block mt-0.5 uppercase">
@@ -121,7 +115,7 @@ export default function ProductCouponsBanner({ produtoId, categoriaId, sku }: Pr
               <button
                 type="button"
                 onClick={() => coletarCupom(c.codigo)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 flex-shrink-0 ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 flex-shrink-0 cursor-pointer ${
                   isColetado
                     ? 'bg-green-100 text-green-800 cursor-default'
                     : 'bg-primary hover:bg-orange-600 text-white shadow-2xs'
