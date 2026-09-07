@@ -8,15 +8,25 @@ import TabelaProdutosComEdicaoEmMassa from '@/components/TabelaProdutosComEdicao
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-export default async function AdminProdutos(props: { searchParams: Promise<{ msg?: string; erro?: string; q?: string }> }) {
+export default async function AdminProdutos(props: { searchParams: Promise<{ msg?: string; erro?: string; q?: string; pagina?: string }> }) {
   const searchParams = await props.searchParams;
   const q = searchParams.q || '';
+  const pagina = Math.max(1, Number(searchParams.pagina) || 1);
+  const limite = 50;
+  const offset = (pagina - 1) * limite;
 
-  let query = supabase.from('produtos').select('*, categorias(id, nome, parent_id)').order('nome');
+  let countQuery = supabase.from('produtos').select('*', { count: 'exact', head: true });
+  let query = supabase.from('produtos').select('*, categorias(id, nome, parent_id)').order('nome').range(offset, offset + limite - 1);
+
   if (q) {
+    countQuery = countQuery.or(`nome.ilike.%${q}%,codigo_barras.ilike.%${q}%`);
     query = query.or(`nome.ilike.%${q}%,codigo_barras.ilike.%${q}%`);
   }
+
+  const { count: totalNoBanco } = await countQuery;
   const { data: produtos, error } = await query;
+  const totalPaginas = Math.ceil((totalNoBanco || 0) / limite) || 1;
+
   const { data: todasCategorias } = await supabase.from('categorias').select('id, nome, parent_id').order('nome');
 
   const catMap = new Map<string, { id: string; nome: string; parent_id: string | null }>();
@@ -72,10 +82,13 @@ export default async function AdminProdutos(props: { searchParams: Promise<{ msg
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <h1 className="text-3xl font-heading font-bold text-secondary">Produtos</h1>
             <span className="bg-orange-100 text-primary border border-orange-200 text-xs font-black px-3 py-1 rounded-full shadow-2xs">
-              📦 Total: {produtos?.length || 0} produto(s)
+              📦 Total no Banco: {totalNoBanco || 0} produto(s)
+            </span>
+            <span className="bg-blue-50 text-secondary border border-blue-200 text-xs font-bold px-3 py-1 rounded-full shadow-2xs">
+              📄 Página {pagina} de {totalPaginas} (50 por página)
             </span>
           </div>
           <p className="text-xs text-gray-500 mt-0.5">Gerencie os anúncios, preços, estoques e edições em massa da loja.</p>
@@ -142,6 +155,29 @@ export default async function AdminProdutos(props: { searchParams: Promise<{ msg
         categorias={categoriasFormatadas || []}
         paiIds={paiIds}
       />
+
+      {/* Navegação de Paginação */}
+      <div className="flex flex-col sm:flex-row items-center justify-between bg-white p-4 rounded-2xl border border-gray-200 shadow-xs text-xs font-bold text-gray-600 gap-3">
+        <span>Exibindo Página {pagina} de {totalPaginas} (Total de {totalNoBanco || 0} produtos no banco)</span>
+        <div className="flex items-center gap-2">
+          {pagina > 1 && (
+            <Link 
+              href={`/admin/produtos?pagina=${pagina - 1}${q ? `&q=${q}` : ''}`} 
+              className="bg-gray-100 hover:bg-gray-200 text-secondary font-bold px-4 py-2 rounded-xl transition border border-gray-300"
+            >
+              &larr; Página Anterior
+            </Link>
+          )}
+          {pagina < totalPaginas && (
+            <Link 
+              href={`/admin/produtos?pagina=${pagina + 1}${q ? `&q=${q}` : ''}`} 
+              className="bg-primary hover:bg-orange-600 text-white font-bold px-4 py-2 rounded-xl transition shadow-2xs"
+            >
+              Próxima Página &rarr;
+            </Link>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
