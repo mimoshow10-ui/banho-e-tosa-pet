@@ -10,7 +10,6 @@ export interface BannerItemData {
 }
 
 export default function BannersForm({ bannersIniciais }: { bannersIniciais: (BannerItemData | string)[] }) {
-  // Converter props iniciais para formato unificado { url, link_url }
   const [items, setItems] = useState<BannerItemData[]>(() => {
     return (bannersIniciais || []).map(b => {
       if (typeof b === 'string') return { url: b, link_url: '' };
@@ -21,7 +20,6 @@ export default function BannersForm({ bannersIniciais }: { bannersIniciais: (Ban
   const [novos, setNovos] = useState<number>(1);
   const [loading, setLoading] = useState(false);
 
-  // Mover banner para cima
   function moverParaCima(index: number) {
     if (index === 0) return;
     const novosItems = [...items];
@@ -31,7 +29,6 @@ export default function BannersForm({ bannersIniciais }: { bannersIniciais: (Ban
     setItems(novosItems);
   }
 
-  // Mover banner para baixo
   function moverParaBaixo(index: number) {
     if (index === items.length - 1) return;
     const novosItems = [...items];
@@ -41,18 +38,30 @@ export default function BannersForm({ bannersIniciais }: { bannersIniciais: (Ban
     setItems(novosItems);
   }
 
-  // Atualizar link de um banner existente
   function atualizarLink(index: number, link: string) {
     const novosItems = [...items];
     novosItems[index].link_url = link;
     setItems(novosItems);
   }
 
-  // Remover banner
   function removerBanner(index: number) {
     const novosItems = [...items];
     novosItems.splice(index, 1);
     setItems(novosItems);
+  }
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const formData = new FormData(e.currentTarget);
+      formData.append('banners_json', JSON.stringify(items));
+      await salvarBanners(formData);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -72,15 +81,7 @@ export default function BannersForm({ bannersIniciais }: { bannersIniciais: (Ban
         </span>
       </div>
       
-      <form
-        action={async (formData) => {
-          setLoading(true);
-          formData.append('banners_json', JSON.stringify(items));
-          await salvarBanners(formData);
-          setLoading(false);
-        }}
-        className="space-y-6"
-      >
+      <form onSubmit={handleSubmit} className="space-y-6">
         {/* LISTA DE BANNERS ATIVOS (ORDENAÇÃO KANBAN / REORDENAR) */}
         {items.length > 0 && (
           <div className="space-y-3">
