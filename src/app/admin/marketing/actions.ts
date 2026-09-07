@@ -21,26 +21,33 @@ export async function salvarTopBar(formData: FormData) {
 }
 
 export async function salvarBanners(formData: FormData) {
-  const urlsFiltradas: string[] = [];
+  const itemsFiltrados: Array<{ url: string; link_url: string }> = [];
 
-  // Mantém as URLs antigas que não foram apagadas
-  const antigasStr = formData.get('urls_antigas') as string;
-  if (antigasStr) {
+  // Mantém os banners existentes com suas novas posições e links
+  const bannersJsonStr = formData.get('banners_json') as string;
+  if (bannersJsonStr) {
     try {
-      const antigas = JSON.parse(antigasStr);
-      urlsFiltradas.push(...antigas);
-    } catch(e) {}
+      const itemsExistentes = JSON.parse(bannersJsonStr);
+      if (Array.isArray(itemsExistentes)) {
+        itemsFiltrados.push(...itemsExistentes.map(item => ({
+          url: typeof item === 'string' ? item : item.url,
+          link_url: typeof item === 'string' ? '' : (item.link_url || '')
+        })));
+      }
+    } catch (e) {}
   }
 
-  // Faz upload dos novos arquivos
+  // Upload dos novos arquivos de imagem com seus respectivos links
   for (let i = 0; i < 10; i++) {
     const file = formData.get(`banner_file_${i}`) as File;
+    const linkUrl = (formData.get(`banner_file_link_${i}`) as string) || '';
+
     if (file && file.size > 0) {
       const buffer = await file.arrayBuffer();
-      const ext = file.name.split('.').pop();
+      const ext = file.name.split('.').pop() || 'jpg';
       const fileName = `banner_${Date.now()}_${i}.${ext}`;
       
-      const { data, error } = await supabase.storage
+      const { data } = await supabase.storage
         .from('produtos-fotos')
         .upload(`banners/${fileName}`, buffer, {
           contentType: file.type,
@@ -49,20 +56,26 @@ export async function salvarBanners(formData: FormData) {
 
       if (data) {
         const { data: pubData } = supabase.storage.from('produtos-fotos').getPublicUrl(`banners/${fileName}`);
-        urlsFiltradas.push(pubData.publicUrl);
+        itemsFiltrados.push({
+          url: pubData.publicUrl,
+          link_url: linkUrl
+        });
       }
     }
   }
 
+  const urlsList = itemsFiltrados.map(b => b.url);
+
   const { error } = await supabase.from('configuracoes').upsert(
-    { chave: 'marketing_banners', valor: { urls: urlsFiltradas } },
+    { chave: 'marketing_banners', valor: { items: itemsFiltrados, urls: urlsList } },
     { onConflict: 'chave' }
   );
 
   if (error) redirect('/admin/marketing?erro=Erro ao salvar Banners');
 
   revalidatePath('/');
-  redirect('/admin/marketing?msg=Banners atualizados com sucesso');
+  revalidatePath('/admin/marketing');
+  redirect('/admin/marketing?msg=Carrossel de banners e ordens salvos com sucesso!');
 }
 
 export async function salvarPopup(formData: FormData) {

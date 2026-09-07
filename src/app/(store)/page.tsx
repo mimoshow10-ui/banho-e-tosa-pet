@@ -12,7 +12,15 @@ export const dynamic = 'force-dynamic';
 
 export default async function Home() {
   const { data: configs } = await supabase.from('configuracoes').select('*');
-  const banners = configs?.find(c => c.chave === 'marketing_banners')?.valor?.urls || ['/banner-pet.jpg'];
+  const bannersConfig = configs?.find(c => c.chave === 'marketing_banners')?.valor;
+  let banners: Array<{ url: string; link_url?: string }> = [];
+  if (bannersConfig?.items && Array.isArray(bannersConfig.items)) {
+    banners = bannersConfig.items;
+  } else if (bannersConfig?.urls && Array.isArray(bannersConfig.urls)) {
+    banners = bannersConfig.urls.map((u: string) => ({ url: u, link_url: '' }));
+  } else {
+    banners = [{ url: '/banner-pet.jpg', link_url: '' }];
+  }
 
   const cuponsConfig = configs?.find(c => c.chave === 'cupons_config')?.valor || { posicao_home: 'topo' };
   const posicaoCupons = cuponsConfig.posicao_home || 'topo';

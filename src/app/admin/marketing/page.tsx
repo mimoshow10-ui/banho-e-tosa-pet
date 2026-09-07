@@ -17,8 +17,15 @@ export default async function AdminMarketing({
 
   const { data: configs } = await supabase.from('configuracoes').select('*');
 
-  const topbar = configs?.find(c => c.chave === 'marketing_topbar')?.valor || { texto: 'Frete grátis acima de R$ 99,00', visibilidade: 'todas', cor: 'bg-primary' };
-  const banners = configs?.find(c => c.chave === 'marketing_banners')?.valor?.urls || ['/banner-pet.jpg'];
+  const bannersConfig = configs?.find(c => c.chave === 'marketing_banners')?.valor;
+  let bannerItems: Array<{ url: string; link_url: string }> = [];
+  if (bannersConfig?.items && Array.isArray(bannersConfig.items)) {
+    bannerItems = bannersConfig.items;
+  } else if (bannersConfig?.urls && Array.isArray(bannersConfig.urls)) {
+    bannerItems = bannersConfig.urls.map((u: string) => ({ url: u, link_url: '' }));
+  } else {
+    bannerItems = [{ url: '/banner-pet.jpg', link_url: '' }];
+  }
   const popup = configs?.find(c => c.chave === 'marketing_popup')?.valor || {
     ativo: false,
     imagem_url: '',
@@ -155,7 +162,7 @@ export default async function AdminMarketing({
         </div>
 
         {/* ── BANNERS DO CARROSSEL ── */}
-        <BannersForm urlsAtuais={banners} />
+        <BannersForm bannersIniciais={bannerItems} />
 
         {/* ── POP-UP PROMOCIONAL MODAL (NOVO) ── */}
         <div className="bg-white rounded-2xl shadow-xs border border-gray-200 p-6 space-y-6">
