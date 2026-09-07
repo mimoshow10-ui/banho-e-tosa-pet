@@ -83,6 +83,27 @@ export default function EmailMarketingConfig({
     }
   }
 
+  async function handleSaveConfig(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    try {
+      const formData = new FormData(e.currentTarget);
+      await salvarConfigAction(formData);
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  async function handleDispararTeste(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    try {
+      const formData = new FormData(e.currentTarget);
+      await dispararTesteAction(formData);
+      setTestModalOpen(false);
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
   return (
     <div className="space-y-8 font-sans">
       {/* ── SEÇÃO 1: CONFIGURAÇÃO DE E-MAIL PÓS-VENDA & CUPOM ── */}
@@ -125,7 +146,7 @@ export default function EmailMarketingConfig({
         </div>
 
         {/* Form de Configuração */}
-        <form action={salvarConfigAction} className="space-y-6">
+        <form onSubmit={handleSaveConfig} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {/* Campo 1: Desconto do Cupom */}
             <div>
@@ -439,13 +460,7 @@ export default function EmailMarketingConfig({
               </button>
             </div>
 
-            <form
-              action={async (formData) => {
-                await dispararTesteAction(formData);
-                setTestModalOpen(false);
-              }}
-              className="space-y-4"
-            >
+            <form onSubmit={handleDispararTeste} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-gray-700 mb-1">Nome do Cliente (Teste) *</label>
                 <input
