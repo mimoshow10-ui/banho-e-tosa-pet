@@ -201,6 +201,9 @@ export async function dispararEmailTeste(formData: FormData) {
   try {
     const cliente_nome = (formData.get('cliente_nome') as string) || 'Cliente Teste';
     const cliente_email = (formData.get('cliente_email') as string) || '';
+    const rawPedido = (formData.get('pedido_numero') as string) || '10842';
+    const numeroPedidoFormatted = rawPedido.startsWith('#') ? rawPedido : `#${rawPedido}`;
+    const numeroPedidoClean = numeroPedidoFormatted.replace('#', '');
 
     const { data: cfg } = await supabase.from('configuracoes').select('valor').eq('chave', 'email_pos_venda_config').single();
     const config = cfg?.valor || { desconto_valor: 10, desconto_tipo: 'percentual', validade_dias: 15 };
@@ -274,12 +277,29 @@ export async function dispararEmailTeste(formData: FormData) {
                   <p style="font-size: 13px; color: #64748b; margin-top: 4px;">Agradecimento Pós-Venda Especial</p>
                 </div>
 
-                <div style="font-size: 14px; color: #334155; line-height: 1.6; margin-bottom: 24px;">
+                <div style="font-size: 14px; color: #334155; line-height: 1.6; margin-bottom: 20px;">
                   <p style="font-weight: 700; font-size: 16px;">Olá, ${cliente_nome}!</p>
                   <p>${config.mensagem || 'Ficamos muito felizes em atender você e seu pet! Como forma de agradecimento, preparamos um presente exclusivo para seu próximo pedido.'}</p>
                 </div>
 
-                <div style="background-color: #fff7ed; border: 2px dashed #f97316; border-radius: 20px; padding: 24px; text-align: center; margin: 28px 0;">
+                <!-- BLOCO DO NÚMERO DO PEDIDO & RASTREAMENTO -->
+                <div style="background-color: #f1f5f9; border-radius: 18px; padding: 20px; text-align: center; margin-bottom: 24px; border: 1px solid #cbd5e1;">
+                  <span style="font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 4px;">
+                    📦 NÚMERO DO SEU PEDIDO
+                  </span>
+                  <span style="font-size: 24px; font-weight: 900; color: #0f172a; font-family: monospace; letter-spacing: 1px;">
+                    ${numeroPedidoFormatted}
+                  </span>
+                  <p style="font-size: 12px; color: #475569; margin: 8px 0 14px 0;">
+                    Você pode acompanhar o andamento da sua compra a qualquer momento em nosso site.
+                  </p>
+                  <a href="https://banhoetosapet.com.br/rastreamento?pedido=${numeroPedidoClean}" style="background-color: #0b2545; color: #ffffff; text-decoration: none; padding: 10px 20px; border-radius: 10px; font-weight: 700; font-size: 12px; display: inline-block;">
+                    🔍 Rastrear / Acompanhar Pedido ${numeroPedidoFormatted}
+                  </a>
+                </div>
+
+                <!-- BLOCO DO CUPOM -->
+                <div style="background-color: #fff7ed; border: 2px dashed #f97316; border-radius: 20px; padding: 24px; text-align: center; margin: 24px 0;">
                   <span style="font-size: 12px; font-weight: 800; color: #c2410c; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 8px;">
                     SEU CUPOM DE DESCONTO EXCLUSIVO (${descontoTexto})
                   </span>
@@ -291,7 +311,7 @@ export async function dispararEmailTeste(formData: FormData) {
                   </span>
                 </div>
 
-                <div style="text-align: center; margin-top: 32px;">
+                <div style="text-align: center; margin-top: 28px;">
                   <a href="https://banhoetosapet.com.br" style="background-color: #f97316; color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 14px; font-weight: 800; font-size: 14px; display: inline-block; box-shadow: 0 4px 12px rgba(249,115,22,0.3);">
                     Aproveitar Cupom Agora &rarr;
                   </a>
@@ -333,7 +353,7 @@ export async function dispararEmailTeste(formData: FormData) {
       id: `log-${Date.now()}`,
       cliente_nome,
       cliente_email,
-      pedido_id: `#TESTE-${Math.floor(1000 + Math.random() * 9000)}`,
+      pedido_id: numeroPedidoFormatted,
       cupom_codigo: codigoCupom,
       desconto_texto: descontoTexto,
       data_envio: dataEnvio.toISOString(),
@@ -346,7 +366,7 @@ export async function dispararEmailTeste(formData: FormData) {
 
     revalidatePath('/admin/marketing');
     revalidatePath('/admin/cupons');
-    return { sucesso: true, mensagem: `E-mail de agradecimento enviado com sucesso para ${cliente_email}! Cupom ${codigoCupom} entregue.` };
+    return { sucesso: true, mensagem: `E-mail de agradecimento enviado com sucesso para ${cliente_email}! Pedido ${numeroPedidoFormatted} e Cupom ${codigoCupom} entregues.` };
   } catch (err: any) {
     return { sucesso: false, erro: err.message || 'Erro ao disparar e-mail de teste.' };
   }

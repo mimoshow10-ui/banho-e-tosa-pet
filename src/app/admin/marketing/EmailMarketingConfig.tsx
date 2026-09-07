@@ -337,6 +337,24 @@ export default function EmailMarketingConfig({
                 <p className="text-xs text-gray-600 leading-relaxed">{mensagem}</p>
               </div>
 
+              {/* Caixa do Número do Pedido & Rastreamento */}
+              <div className="bg-slate-100 p-4 rounded-2xl border border-slate-300 text-center space-y-1.5">
+                <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
+                  📦 NÚMERO DO SEU PEDIDO
+                </span>
+                <span className="font-mono font-black text-xl text-slate-900 tracking-wide block">
+                  #PED-10842
+                </span>
+                <p className="text-[11px] text-slate-600">
+                  Você pode acompanhar o andamento da entrega a qualquer momento em nosso site.
+                </p>
+                <div className="pt-1">
+                  <span className="inline-block bg-slate-900 text-white text-xs font-bold px-4 py-2 rounded-lg shadow-2xs">
+                    🔍 Rastrear / Acompanhar Pedido #PED-10842
+                  </span>
+                </div>
+              </div>
+
               {/* Caixa de Destaque do Cupom */}
               <div className="bg-gradient-to-r from-orange-50 to-amber-50 p-5 rounded-2xl border-2 border-dashed border-orange-400 text-center space-y-2">
                 <span className="bg-red-600 text-white font-black text-xs px-2.5 py-1 rounded-md uppercase tracking-wide">
@@ -480,6 +498,18 @@ export default function EmailMarketingConfig({
                   required
                   placeholder="Ex: cliente@email.com"
                   className="w-full border border-gray-300 rounded-xl p-3 text-sm focus:ring-2 focus:ring-primary focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">Número do Pedido (Simulação) *</label>
+                <input
+                  name="pedido_numero"
+                  type="text"
+                  required
+                  defaultValue="#PED-10842"
+                  placeholder="Ex: #PED-10842 ou 10842"
+                  className="w-full border border-gray-300 rounded-xl p-3 text-sm font-mono font-bold focus:ring-2 focus:ring-primary focus:outline-none"
                 />
               </div>
 
