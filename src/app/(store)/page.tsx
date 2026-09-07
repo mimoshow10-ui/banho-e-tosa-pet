@@ -48,11 +48,17 @@ export default async function Home() {
   const produtos = todosProdutos || [];
   const produtosComFoto = produtos.filter(p => Array.isArray(p.imagens) && p.imagens.length > 0 && typeof p.imagens[0] === 'string' && p.imagens[0].startsWith('http'));
   
+  const idsNovidades: string[] = destaquesConfig.novidades || [];
+  const idsMaisVendidos: string[] = destaquesConfig.mais_vendidos || [];
+  const novidadesSet = new Set(idsNovidades);
+  const maisVendidosSet = new Set(idsMaisVendidos);
+
   // Apenas produtos com PROMOÇÃO EXPLICITAMENTE MARCADA E DENTRO DO PERÍODO
   const agora = Date.now();
   const produtosPromocao = (superPromocoes || []).filter((prod) => {
     if (!Array.isArray(prod.imagens) || prod.imagens.length === 0) return false;
     if (prod.estoque !== null && prod.estoque !== undefined && Number(prod.estoque) <= 0) return false;
+    if (novidadesSet.has(prod.id) || maisVendidosSet.has(prod.id)) return false;
     
     // Checagem do Início da Promoção (se cadastrado)
     if (prod.promocao_inicio_em) {
@@ -74,7 +80,6 @@ export default async function Home() {
   produtos.forEach(p => prodMap.set(p.id, p));
 
   // Novidades: exibe EXATAMENTE os produtos escolhidos pelo usuário no Admin
-  const idsNovidades: string[] = destaquesConfig.novidades || [];
   let produtosNovidades = idsNovidades
     .map(id => prodMap.get(id))
     .filter(Boolean);
@@ -84,7 +89,6 @@ export default async function Home() {
   }
 
   // Mais Vendidos: exibe EXATAMENTE os produtos escolhidos pelo usuário no Admin
-  const idsMaisVendidos: string[] = destaquesConfig.mais_vendidos || [];
   let produtosMaisVendidos = idsMaisVendidos
     .map(id => prodMap.get(id))
     .filter(Boolean);
