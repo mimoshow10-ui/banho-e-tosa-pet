@@ -30,6 +30,7 @@ export default async function CategoriaPage({
     if (data) produtos = data;
   } else if (catAtual) {
     const isGrupo = !catAtual.parent_id;
+    let idsRelacionados: string[] = [catAtual.id];
 
     if (isGrupo) {
       // 1. É um Grupo Principal — buscar seus Subgrupos
@@ -40,18 +41,7 @@ export default async function CategoriaPage({
         .order('nome');
 
       subgrupos = subs || [];
-
-      // Buscar produtos que pertencem diretamente ao grupo OU a um dos seus subgrupos (Apenas PAIS)
-      const idsRelacionados = [catAtual.id, ...subgrupos.map(s => s.id)];
-      const { data } = await supabase
-        .from('produtos')
-        .select('*')
-        .in('categoria_id', idsRelacionados)
-        .eq('ativo', true)
-        .is('parent_id', null)
-        .order('criado_em', { ascending: false });
-
-      if (data) produtos = data;
+      idsRelacionados = [catAtual.id, ...subgrupos.map(s => s.id)];
     } else {
       // 2. É um Subgrupo — buscar o Grupo Pai
       const { data: pai } = await supabase
@@ -61,18 +51,35 @@ export default async function CategoriaPage({
         .single();
 
       grupoPai = pai;
-
-      // Buscar produtos pertencentes estritamente a este Subgrupo (Apenas PAIS)
-      const { data } = await supabase
-        .from('produtos')
-        .select('*')
-        .eq('categoria_id', catAtual.id)
-        .eq('ativo', true)
-        .is('parent_id', null)
-        .order('criado_em', { ascending: false });
-
-      if (data) produtos = data;
     }
+
+    // Buscar produtos com categorias adicionais vinculadas em configuracoes
+    let prodIdsAdicionais: string[] = [];
+    try {
+      const { data: configAdicionais } = await supabase
+        .from('configuracoes')
+        .select('valor')
+        .eq('chave', 'produtos_categorias_adicionais')
+        .single();
+      
+      const mapAdicionais: Record<string, string[]> = configAdicionais?.valor || {};
+      for (const [pId, catIds] of Object.entries(mapAdicionais)) {
+        if (Array.isArray(catIds) && catIds.some((cId: string) => idsRelacionados.includes(cId))) {
+          prodIdsAdicionais.push(pId);
+        }
+      }
+    } catch {}
+
+    let query = supabase.from('produtos').select('*').eq('ativo', true).is('parent_id', null);
+
+    if (prodIdsAdicionais.length > 0) {
+      query = query.or(`categoria_id.in.(${idsRelacionados.join(',')}),id.in.(${prodIdsAdicionais.join(',')})`);
+    } else {
+      query = query.in('categoria_id', idsRelacionados);
+    }
+
+    const { data } = await query.order('criado_em', { ascending: false });
+    if (data) produtos = data;
   }
 
   const tituloExibido = slug === 'todas' ? 'Todos os Produtos' : catAtual?.nome || slug;

@@ -79,6 +79,23 @@ async function atualizarProduto(formData: FormData) {
     redirect(`/admin/produtos/${id}?erro=Erro ao salvar: ${error.message}`);
   }
 
+  // Salvar Categorias Adicionais em configuracoes
+  try {
+    const categorias_adicionais_str = formData.get('categorias_adicionais') as string;
+    const adicionaisArr: string[] = categorias_adicionais_str ? JSON.parse(categorias_adicionais_str) : [];
+    
+    const { data: currentCatMap } = await supabase.from('configuracoes').select('valor').eq('chave', 'produtos_categorias_adicionais').single();
+    let mapAtual = currentCatMap?.valor || {};
+    mapAtual[id] = adicionaisArr;
+
+    await supabase.from('configuracoes').upsert({
+      chave: 'produtos_categorias_adicionais',
+      valor: mapAtual
+    }, { onConflict: 'chave' });
+  } catch (err) {
+    console.error("Erro ao salvar categorias adicionais:", err);
+  }
+
   // Atualizar listas de destaques da Home em configuracoes
   try {
     const { data: configCurrent } = await supabase.from('configuracoes').select('valor').eq('chave', 'vitrine_destaques').single();
@@ -125,6 +142,9 @@ export default async function EditarProduto(props: { params: Promise<{ id: strin
   const { data: categorias } = await supabase.from('categorias').select('*');
   const { data: configDestaques } = await supabase.from('configuracoes').select('valor').eq('chave', 'vitrine_destaques').single();
   const valorDestaques = configDestaques?.valor || { mais_vendidos: [], novidades: [] };
+
+  const { data: configAdicionais } = await supabase.from('configuracoes').select('valor').eq('chave', 'produtos_categorias_adicionais').single();
+  const adicionaisIniciais: string[] = configAdicionais?.valor?.[id] || [];
 
   let destaqueInicial = 'nenhum';
   if (produto?.destaque_super_promocao) {
@@ -254,7 +274,11 @@ export default async function EditarProduto(props: { params: Promise<{ id: strin
         </div>
 
         <div className="mt-6">
-          <CategorySelector categorias={categorias || []} defaultCategoriaId={produto.categoria_id} />
+          <CategorySelector
+            categorias={categorias || []}
+            defaultCategoriaId={produto.categoria_id}
+            defaultCategoriasAdicionais={adicionaisIniciais}
+          />
         </div>
 
         <div className="bg-gray-50 p-4 md:p-6 rounded-xl border border-border">
