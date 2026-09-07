@@ -476,7 +476,7 @@ export default function TabelaProdutosComEdicaoEmMassa({ produtos, categorias, p
                       )}
                     </button>
                   </th>
-                  <th className="p-4 w-28">Foto do Produto</th>
+                  <th className="p-4 w-36">Foto do Produto</th>
                   <th className="p-4 w-32">SKU</th>
                   <th className="p-4">Nome do Produto</th>
                   <th className="p-4">Categoria</th>
@@ -513,22 +513,22 @@ export default function TabelaProdutosComEdicaoEmMassa({ produtos, categorias, p
                           </button>
                         </td>
 
-                        {/* Foto - Ampliada e com Clique para Expandir */}
-                        <td className="p-4">
+                        {/* Foto - Ampliada ao Limite Máximo */}
+                        <td className="p-3">
                           {fotoValida ? (
                             <button
                               type="button"
                               onClick={() => setFotoModal({ url: fotoValida, nome: item.nome })}
-                              className="relative group cursor-zoom-in block"
+                              className="relative group cursor-zoom-in block w-28 h-28 md:w-32 md:h-32 bg-white rounded-2xl border-2 border-gray-200 shadow-xs group-hover:border-primary group-hover:scale-105 transition-all overflow-hidden flex items-center justify-center"
                               title="Clique para ampliar a foto em alta resolução"
                             >
                               <img
                                 src={fotoValida}
                                 alt={item.nome}
-                                className="w-20 h-20 md:w-24 md:h-24 object-contain bg-white rounded-2xl border-2 border-gray-200 shadow-xs group-hover:border-primary group-hover:scale-105 transition-all p-1"
+                                className="w-full h-full object-cover bg-white"
                               />
                               {(item.codigo_barras || (item as any).sku) && (
-                                <span className="absolute top-1 left-1 bg-gray-900/80 backdrop-blur-xs text-white text-[8px] font-mono font-bold px-1 py-0.5 rounded shadow-2xs z-10 pointer-events-none uppercase">
+                                <span className="absolute top-1 left-1 bg-gray-900/80 backdrop-blur-xs text-white text-[9px] font-mono font-bold px-1.5 py-0.5 rounded shadow-2xs z-10 pointer-events-none uppercase">
                                   {item.codigo_barras || (item as any).sku}
                                 </span>
                               )}
@@ -537,7 +537,7 @@ export default function TabelaProdutosComEdicaoEmMassa({ produtos, categorias, p
                               </span>
                             </button>
                           ) : (
-                            <div className="w-20 h-20 md:w-24 md:h-24 bg-amber-50 rounded-2xl border-2 border-amber-300 flex flex-col items-center justify-center text-[10px] font-black text-amber-700 text-center leading-tight shadow-2xs p-1" title="Produto Sem Foto (Não Publicado)">
+                            <div className="w-28 h-28 md:w-32 md:h-32 bg-amber-50 rounded-2xl border-2 border-amber-300 flex flex-col items-center justify-center text-[10px] font-black text-amber-700 text-center leading-tight shadow-2xs p-1" title="Produto Sem Foto (Não Publicado)">
                               <span className="text-sm">🟡</span>
                               <span>Sem Foto</span>
                             </div>
