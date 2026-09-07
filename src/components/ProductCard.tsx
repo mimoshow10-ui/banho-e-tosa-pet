@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import Image from 'next/image';
 import CountdownTimer from './CountdownTimer';
 
 interface ProdutoCardProps {
@@ -12,22 +11,29 @@ interface ProdutoCardProps {
     preco: number;
     preco_promocional?: number | null;
     promocao_expira_em?: string | null;
-    imagens?: string[] | string | null;
+    imagens?: any;
   };
 }
 
 export default function ProductCard({ produto }: ProdutoCardProps) {
-  const foto = produto.imagens?.[0]
-    ? typeof produto.imagens[0] === 'string'
-      ? produto.imagens[0].split(/[\r\n,]+/)[0]
-      : produto.imagens[0]
-    : null;
+  let foto: string | null = null;
+  try {
+    let raw = produto.imagens;
+    if (typeof raw === 'string' && raw.trim().startsWith('[')) {
+      try { raw = JSON.parse(raw); } catch {}
+    }
+    if (Array.isArray(raw) && raw.length > 0 && typeof raw[0] === 'string') {
+      foto = raw[0].split(/[\r\n,]+/)[0].trim();
+    } else if (typeof raw === 'string' && raw.trim()) {
+      foto = raw.split(/[\r\n,]+/)[0].trim();
+    }
+  } catch {}
 
   const precoNormal = Number(produto.preco || 0);
   const temPromo =
     produto.preco_promocional && Number(produto.preco_promocional) < precoNormal;
   const precoPromo = temPromo ? Number(produto.preco_promocional) : null;
-  const pctDesconto = temPromo
+  const pctDesconto = temPromo && precoNormal > 0
     ? Math.round(((precoNormal - precoPromo!) / precoNormal) * 100)
     : 0;
 
@@ -39,21 +45,17 @@ export default function ProductCard({ produto }: ProdutoCardProps) {
     <div className="flex flex-col bg-white rounded-2xl shadow-2xs hover:shadow-md transition-all border border-gray-200 overflow-hidden group">
       {/* Imagem do Produto com Badge de Desconto */}
       <Link href={`/produto/${produto.slug}`}>
-        <div className="aspect-square bg-gray-100 relative overflow-hidden">
-          {foto ? (
-            <Image
-              src={foto}
-              alt={produto.nome}
-              fill
-              className="object-cover group-hover:scale-105 transition duration-300"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs font-bold">
-              Sem Foto
-            </div>
-          )}
+        <div className="aspect-square bg-white relative overflow-hidden flex items-center justify-center p-1">
+          <img
+            src={foto || '/banner-pet.jpg'}
+            alt={produto.nome || 'Produto'}
+            className="w-full h-full object-contain group-hover:scale-105 transition duration-300 bg-white"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = '/banner-pet.jpg';
+            }}
+          />
 
-          {temPromo && (
+          {temPromo && pctDesconto > 0 && (
             <span className="absolute top-2.5 right-2.5 bg-red-600 text-white font-black text-[11px] px-2.5 py-0.5 rounded-full shadow-md z-10 animate-pulse">
               -{pctDesconto}% OFF
             </span>
@@ -73,14 +75,14 @@ export default function ProductCard({ produto }: ProdutoCardProps) {
 
         <div className="mt-auto space-y-2">
           {/* Preço Cheio x Preço com Desconto */}
-          {temPromo ? (
+          {temPromo && precoPromo !== null ? (
             <div>
               <span className="text-xs text-gray-400 line-through font-medium block">
                 R$ {precoNormal.toFixed(2).replace('.', ',')}
               </span>
               <div className="flex items-baseline gap-1.5">
                 <span className="text-xl md:text-2xl font-heading font-black text-primary">
-                  R$ {precoPromo!.toFixed(2).replace('.', ',')}
+                  R$ {precoPromo.toFixed(2).replace('.', ',')}
                 </span>
               </div>
             </div>
