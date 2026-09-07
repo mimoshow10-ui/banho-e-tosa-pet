@@ -3,7 +3,7 @@ import { supabase } from '@/lib/supabase';
 import CountdownTimer from '@/components/CountdownTimer';
 import VariationSelector from '@/components/VariationSelector';
 import FreteCalculator from '@/components/FreteCalculator';
-import ProductMediaGallery from '@/components/ProductMediaGallery';
+import ProductMediaGallery, { extractImageUrls } from '@/components/ProductMediaGallery';
 import ProductAiAssistant from '@/components/ProductAiAssistant';
 import ProductCouponsBanner from '@/components/ProductCouponsBanner';
 import AddToCartButtons from '@/components/AddToCartButtons';
@@ -29,14 +29,16 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
     let produto = rawProduto;
     if (rawProduto.parent_id) {
-      const { data: parentProduct } = await supabase
-        .from('produtos')
-        .select('nome, descricao_curta, seo_title, seo_description, imagens')
-        .eq('id', rawProduto.parent_id)
-        .maybeSingle();
-      if (parentProduct) {
-        produto = parentProduct;
-      }
+      try {
+        const { data: parentProduct } = await supabase
+          .from('produtos')
+          .select('nome, descricao_curta, seo_title, seo_description, imagens')
+          .eq('id', rawProduto.parent_id)
+          .maybeSingle();
+        if (parentProduct) {
+          produto = parentProduct;
+        }
+      } catch {}
     }
 
     const title = String(produto.seo_title || `${produto.nome || 'Produto'} | Banho & Tosa Pet`).slice(0, 70);
@@ -45,13 +47,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
     let imagem = '/banner-pet.jpg';
     try {
-      let rawImg = produto.imagens;
-      if (typeof rawImg === 'string' && rawImg.trim().startsWith('[')) {
-        try { rawImg = JSON.parse(rawImg); } catch {}
-      }
-      if (Array.isArray(rawImg) && rawImg.length > 0 && typeof rawImg[0] === 'string') {
-        imagem = rawImg[0].split(/[\r\n,]+/)[0].trim();
-      }
+      const fotos = extractImageUrls(produto.imagens);
+      if (fotos.length > 0) imagem = fotos[0];
     } catch {}
 
     return {
@@ -68,11 +65,15 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 export default async function ProdutoPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   
-  const { data: produtos } = await supabase
-    .from('produtos')
-    .select('*')
-    .eq('slug', slug)
-    .limit(1);
+  let produtos: any[] = [];
+  try {
+    const { data } = await supabase
+      .from('produtos')
+      .select('*')
+      .eq('slug', slug)
+      .limit(1);
+    if (data) produtos = data;
+  } catch {}
 
   const rawProduto = produtos && produtos.length > 0 ? produtos[0] : null;
 
@@ -81,15 +82,17 @@ export default async function ProdutoPage({ params }: { params: Promise<{ slug: 
   // Se o produto acessado for um FILHO, carregar o produto PAI como anúncio principal
   let produto = rawProduto;
   if (rawProduto.parent_id) {
-    const { data: parentProduct } = await supabase
-      .from('produtos')
-      .select('*')
-      .eq('id', rawProduto.parent_id)
-      .maybeSingle();
+    try {
+      const { data: parentProduct } = await supabase
+        .from('produtos')
+        .select('*')
+        .eq('id', rawProduto.parent_id)
+        .maybeSingle();
 
-    if (parentProduct) {
-      produto = parentProduct;
-    }
+      if (parentProduct) {
+        produto = parentProduct;
+      }
+    } catch {}
   }
 
   // Buscar família de variações com segurança
@@ -136,7 +139,7 @@ export default async function ProdutoPage({ params }: { params: Promise<{ slug: 
 
           {/* Nome */}
           <h1 className="text-2xl md:text-3xl font-heading font-bold text-secondary leading-tight">
-            {produto.nome}
+            {produto.nome || 'Produto'}
           </h1>
 
           {/* Preço */}
