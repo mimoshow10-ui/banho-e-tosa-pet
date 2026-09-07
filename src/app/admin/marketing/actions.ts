@@ -120,3 +120,111 @@ export async function salvarPopup(formData: FormData) {
   revalidatePath('/', 'layout');
   redirect('/admin/marketing?msg=Pop-up Promocional salvo com sucesso!');
 }
+
+export async function salvarEmailMarketingConfig(formData: FormData) {
+  const ativo = formData.get('ativo') === 'on';
+  const desconto_valor = parseFloat(formData.get('desconto_valor') as string || '10');
+  const desconto_tipo = (formData.get('desconto_tipo') as string) || 'percentual';
+  const validade_dias = parseInt(formData.get('validade_dias') as string || '15');
+  const assunto = (formData.get('assunto') as string) || '';
+  const mensagem = (formData.get('mensagem') as string) || '';
+  let banner_url = (formData.get('banner_url_atual') as string) || '';
+
+  const bannerFile = formData.get('banner_file') as File;
+  if (bannerFile && bannerFile.size > 0) {
+    const buffer = await bannerFile.arrayBuffer();
+    const ext = bannerFile.name.split('.').pop();
+    const fileName = `email_banner_${Date.now()}.${ext}`;
+
+    const { data } = await supabase.storage
+      .from('produtos-fotos')
+      .upload(`email-marketing/${fileName}`, buffer, {
+        contentType: bannerFile.type,
+        upsert: true
+      });
+
+    if (data) {
+      const { data: pubData } = supabase.storage.from('produtos-fotos').getPublicUrl(`email-marketing/${fileName}`);
+      banner_url = pubData.publicUrl;
+    }
+  }
+
+  const payload = {
+    ativo,
+    desconto_valor,
+    desconto_tipo,
+    validade_dias,
+    banner_url,
+    assunto,
+    mensagem
+  };
+
+  await supabase.from('configuracoes').upsert({
+    chave: 'email_pos_venda_config',
+    valor: payload
+  }, { onConflict: 'chave' });
+
+  revalidatePath('/admin/marketing');
+  redirect('/admin/marketing?msg=Configurações de E-mail & Cupom salvas com sucesso!');
+}
+
+export async function dispararEmailTeste(formData: FormData) {
+  const cliente_nome = (formData.get('cliente_nome') as string) || 'Cliente Teste';
+  const cliente_email = (formData.get('cliente_email') as string) || '';
+
+  const { data: cfg } = await supabase.from('configuracoes').select('valor').eq('chave', 'email_pos_venda_config').single();
+  const config = cfg?.valor || { desconto_valor: 10, desconto_tipo: 'percentual', validade_dias: 15 };
+
+  const diasValidade = Number(config.validade_dias || 15);
+  const dataEnvio = new Date();
+  const dataValidade = new Date(Date.now() + diasValidade * 86400 * 1000);
+
+  const codigoCupom = `OBRIGADO-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
+  const descontoTexto = config.desconto_tipo === 'percentual' ? `${config.desconto_valor}% OFF` : `R$ ${config.desconto_valor} OFF`;
+
+  // 1. Cadastrar Cupom em cupons_db
+  const { data: cuponsCfg } = await supabase.from('configuracoes').select('valor').eq('chave', 'cupons_db').single();
+  let listaCupons = cuponsCfg?.valor || [];
+
+  const novoCupom = {
+    id: `cupom-${Date.now()}`,
+    nome_interno: `Cupom Pós-Venda (${cliente_nome})`,
+    codigo: codigoCupom,
+    tipo_desconto: config.desconto_tipo,
+    valor_desconto: config.desconto_valor,
+    data_inicio: dataEnvio.toISOString(),
+    data_fim: dataValidade.toISOString(),
+    ativo: true,
+    usos_realizados: 0,
+    limite_usos_total: 1,
+    permitir_produtos_promocionais: true,
+    tipo_elegibilidade: 'todos',
+    criado_em: dataEnvio.toISOString()
+  };
+
+  listaCupons.unshift(novoCupom);
+  await supabase.from('configuracoes').upsert({ chave: 'cupons_db', valor: listaCupons }, { onConflict: 'chave' });
+
+  // 2. Registrar Log de Envio
+  const { data: logCfg } = await supabase.from('configuracoes').select('valor').eq('chave', 'emails_enviados_log').single();
+  let logLista = logCfg?.valor || [];
+
+  const novoLog = {
+    id: `log-${Date.now()}`,
+    cliente_nome,
+    cliente_email,
+    pedido_id: `#TESTE-${Math.floor(1000 + Math.random() * 9000)}`,
+    cupom_codigo: codigoCupom,
+    desconto_texto: descontoTexto,
+    data_envio: dataEnvio.toISOString(),
+    validade_ate: dataValidade.toISOString(),
+    status: 'ENVIADO'
+  };
+
+  logLista.unshift(novoLog);
+  await supabase.from('configuracoes').upsert({ chave: 'emails_enviados_log', valor: logLista }, { onConflict: 'chave' });
+
+  revalidatePath('/admin/marketing');
+  revalidatePath('/admin/cupons');
+  redirect(`/admin/marketing?msg=E-mail de teste disparado com sucesso! Cupom ${codigoCupom} emitido.`);
+}

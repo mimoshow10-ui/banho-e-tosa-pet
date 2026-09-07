@@ -1,7 +1,8 @@
 import { supabase } from '@/lib/supabase';
-import { salvarTopBar, salvarPopup } from './actions';
+import { salvarTopBar, salvarPopup, salvarEmailMarketingConfig, dispararEmailTeste } from './actions';
 import BannersForm from './BannersForm';
 import PopupImageFieldWithAI from '@/components/PopupImageFieldWithAI';
+import EmailMarketingConfig from './EmailMarketingConfig';
 import { Megaphone, Layout, Sparkles, Sliders, Image as ImageIcon, Info, Upload, CheckCircle2, Clock } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
@@ -29,6 +30,18 @@ export default async function AdminMarketing({
     onde_exibir: 'home',
     frequencia: 'uma_vez_por_sessao'
   };
+
+  const emailConfig = configs?.find(c => c.chave === 'email_pos_venda_config')?.valor || {
+    ativo: true,
+    desconto_valor: 10,
+    desconto_tipo: 'percentual',
+    validade_dias: 15,
+    banner_url: '',
+    assunto: 'Obrigado por sua compra na Mimo Show Pet! Ganhe 10% OFF na próxima compra 🐾',
+    mensagem: 'Ficamos muito felizes em atender você e seu pet! Como forma de agradecimento, preparamos um presente exclusivo para seu próximo pedido.'
+  };
+
+  const emailLogs = configs?.find(c => c.chave === 'emails_enviados_log')?.valor || [];
 
   return (
     <div className="max-w-5xl space-y-8 font-sans">
@@ -265,6 +278,14 @@ export default async function AdminMarketing({
             </button>
           </form>
         </div>
+
+        {/* ── E-MAIL MARKETING DE PÓS-VENDA & HISTÓRICO DE E-MAILS ── */}
+        <EmailMarketingConfig
+          config={emailConfig}
+          logs={emailLogs}
+          salvarConfigAction={salvarEmailMarketingConfig}
+          dispararTesteAction={dispararEmailTeste}
+        />
 
       </div>
     </div>
