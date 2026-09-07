@@ -63,15 +63,21 @@ export default async function Home() {
 
   // Mais Vendidos
   const idsMaisVendidos = destaquesConfig.mais_vendidos || [];
-  const produtosMaisVendidos = idsMaisVendidos.length > 0
+  let produtosMaisVendidos = idsMaisVendidos.length > 0
     ? produtos.filter(p => idsMaisVendidos.includes(p.id))
-    : produtos.slice(0, 6);
+    : [];
+  if (produtosMaisVendidos.length === 0) {
+    produtosMaisVendidos = produtos.slice(0, 6);
+  }
 
   // Novidades
   const idsNovidades = destaquesConfig.novidades || [];
-  const produtosNovidades = idsNovidades.length > 0
+  let produtosNovidades = idsNovidades.length > 0
     ? produtos.filter(p => idsNovidades.includes(p.id))
-    : produtos.slice(0, 8);
+    : [];
+  if (produtosNovidades.length === 0) {
+    produtosNovidades = produtos.slice(0, 8);
+  }
 
   return (
     <div className="flex flex-col min-h-screen">
