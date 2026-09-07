@@ -4,35 +4,88 @@ import { Plus } from 'lucide-react';
 import ImportBlingForm from '@/components/ImportBlingForm';
 import ImportadorLoteModal from '@/components/ImportadorLoteModal';
 import TabelaProdutosComEdicaoEmMassa from '@/components/TabelaProdutosComEdicaoEmMassa';
+import AdminFiltrosAvancados from '@/components/AdminFiltrosAvancados';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-export default async function AdminProdutos(props: { searchParams: Promise<{ msg?: string; erro?: string; q?: string; pagina?: string }> }) {
+export default async function AdminProdutos(props: {
+  searchParams: Promise<{
+    msg?: string;
+    erro?: string;
+    q?: string;
+    pagina?: string;
+    grupo_id?: string;
+    subgrupo_id?: string;
+    com_foto?: string;
+    promocao?: string;
+    status?: string;
+  }>;
+}) {
   const searchParams = await props.searchParams;
   const q = searchParams.q || '';
+  const grupo_id = searchParams.grupo_id || '';
+  const subgrupo_id = searchParams.subgrupo_id || '';
+  const com_foto = searchParams.com_foto || '';
+  const promocao = searchParams.promocao || '';
+  const status = searchParams.status || '';
   const pagina = Math.max(1, Number(searchParams.pagina) || 1);
   const limite = 50;
   const offset = (pagina - 1) * limite;
 
-  let countQuery = supabase.from('produtos').select('*', { count: 'exact', head: true });
-  let query = supabase.from('produtos').select('*, categorias(id, nome, parent_id)').order('nome').range(offset, offset + limite - 1);
+  const { data: todasCategorias } = await supabase.from('categorias').select('id, nome, parent_id').order('nome');
 
+  let countQuery = supabase.from('produtos').select('*', { count: 'exact', head: true });
+  let query = supabase.from('produtos').select('*, categorias(id, nome, parent_id)').order('nome');
+
+  // Search by name, SKU or barcode
   if (q) {
     countQuery = countQuery.or(`nome.ilike.%${q}%,codigo_barras.ilike.%${q}%`);
     query = query.or(`nome.ilike.%${q}%,codigo_barras.ilike.%${q}%`);
   }
 
-  const { count: totalNoBanco } = await countQuery;
-  const { data: produtos, error } = await query;
-  const totalPaginas = Math.ceil((totalNoBanco || 0) / limite) || 1;
+  // Filter by Subgrupo or Grupo
+  if (subgrupo_id) {
+    countQuery = countQuery.eq('categoria_id', subgrupo_id);
+    query = query.eq('categoria_id', subgrupo_id);
+  } else if (grupo_id) {
+    const subcats = (todasCategorias || []).filter(c => c.parent_id === grupo_id).map(c => c.id);
+    const categoryIds = [grupo_id, ...subcats];
+    countQuery = countQuery.in('categoria_id', categoryIds);
+    query = query.in('categoria_id', categoryIds);
+  }
 
-  const { data: todasCategorias } = await supabase.from('categorias').select('id, nome, parent_id').order('nome');
+  // Filter by Com Foto vs Sem Foto
+  if (com_foto === 'sim') {
+    countQuery = countQuery.not('imagens', 'is', null);
+    query = query.not('imagens', 'is', null);
+  } else if (com_foto === 'nao') {
+    countQuery = countQuery.or('imagens.is.null,imagens.eq.{}');
+    query = query.or('imagens.is.null,imagens.eq.{}');
+  }
+
+  // Filter by Promotion
+  if (promocao === 'sim') {
+    countQuery = countQuery.not('preco_promocional', 'is', null).gt('preco_promocional', 0);
+    query = query.not('preco_promocional', 'is', null).gt('preco_promocional', 0);
+  }
+
+  // Filter by Status (Ativo vs Inativo)
+  if (status === 'ativo') {
+    countQuery = countQuery.eq('ativo', true);
+    query = query.eq('ativo', true);
+  } else if (status === 'inativo') {
+    countQuery = countQuery.eq('ativo', false);
+    query = query.eq('ativo', false);
+  }
+
+  const { count: totalNoBanco } = await countQuery;
+  const { data: produtos, error } = await query.range(offset, offset + limite - 1);
+  const totalPaginas = Math.ceil((totalNoBanco || 0) / limite) || 1;
 
   const catMap = new Map<string, { id: string; nome: string; parent_id: string | null }>();
   (todasCategorias || []).forEach(c => catMap.set(c.id, c));
 
-  // Formatar a lista completa de Grupos e Subgrupos / Subcategorias
   const categoriasFormatadas = (todasCategorias || []).map(cat => {
     if (cat.parent_id && catMap.has(cat.parent_id)) {
       const pai = catMap.get(cat.parent_id);
@@ -51,7 +104,6 @@ export default async function AdminProdutos(props: { searchParams: Promise<{ msg
     };
   });
 
-  // Mapear também a categoria formatada em cada produto
   const produtosFormatados = (produtos || []).map(p => {
     let catNome = 'Sem Categoria';
     if (p.categoria_id && catMap.has(p.categoria_id)) {
@@ -68,9 +120,20 @@ export default async function AdminProdutos(props: { searchParams: Promise<{ msg
     return { ...p, categoria_nome_exibicao: catNome };
   });
 
-  // Descobrir quais produtos são PAI (têm filhos)
   const { data: filhos } = await supabase.from('produtos').select('parent_id').not('parent_id', 'is', null);
   const paiIds = new Set((filhos || []).map((f: any) => f.parent_id));
+
+  function createPaginationUrl(targetPage: number) {
+    const params = new URLSearchParams();
+    if (q) params.set('q', q);
+    if (grupo_id) params.set('grupo_id', grupo_id);
+    if (subgrupo_id) params.set('subgrupo_id', subgrupo_id);
+    if (com_foto) params.set('com_foto', com_foto);
+    if (promocao) params.set('promocao', promocao);
+    if (status) params.set('status', status);
+    params.set('pagina', String(targetPage));
+    return `/admin/produtos?${params.toString()}`;
+  }
 
   return (
     <div className="flex flex-col gap-6 font-sans">
@@ -85,7 +148,7 @@ export default async function AdminProdutos(props: { searchParams: Promise<{ msg
           <div className="flex items-center gap-3 flex-wrap">
             <h1 className="text-3xl font-heading font-bold text-secondary">Produtos</h1>
             <span className="bg-orange-100 text-primary border border-orange-200 text-xs font-black px-3 py-1 rounded-full shadow-2xs">
-              📦 Total no Banco: {totalNoBanco || 0} produto(s)
+              📦 Total Encontrado: {totalNoBanco || 0} produto(s)
             </span>
             <span className="bg-blue-50 text-secondary border border-blue-200 text-xs font-bold px-3 py-1 rounded-full shadow-2xs">
               📄 Página {pagina} de {totalPaginas} (50 por página)
@@ -117,7 +180,7 @@ export default async function AdminProdutos(props: { searchParams: Promise<{ msg
         </div>
       )}
 
-      {/* Bloco de Importação do Bling Individual */}
+      {/* Importação do Bling Individual */}
       <div className="bg-white p-6 rounded-2xl shadow-xs border border-gray-200">
         <div className="flex flex-col md:flex-row gap-4 items-end">
           <div className="flex-1">
@@ -128,26 +191,8 @@ export default async function AdminProdutos(props: { searchParams: Promise<{ msg
         </div>
       </div>
 
-      {/* Bloco de Busca / Filtro */}
-      <div className="bg-white p-4 rounded-2xl border border-gray-200 shadow-xs">
-        <form action="/admin/produtos" method="GET" className="flex w-full gap-2">
-          <input 
-            type="text" 
-            name="q" 
-            defaultValue={q} 
-            placeholder="Pesquisar por Nome ou SKU..." 
-            className="flex-1 border border-gray-300 rounded-xl p-2.5 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-primary" 
-          />
-          <button type="submit" className="bg-gray-100 text-gray-700 font-bold py-2.5 px-6 rounded-xl hover:bg-gray-200 transition shadow-2xs text-xs border border-gray-300 cursor-pointer">
-            Filtrar
-          </button>
-          {q && (
-            <Link href="/admin/produtos" className="bg-red-100 text-red-600 font-bold py-2.5 px-4 rounded-xl hover:bg-red-200 transition shadow-2xs text-xs border border-red-200">
-              Limpar
-            </Link>
-          )}
-        </form>
-      </div>
+      {/* Componente de Filtros Avançados Ticáveis (Grupo, Subgrupo, Foto, Promoção, Status, SKU) */}
+      <AdminFiltrosAvancados categorias={todasCategorias || []} />
 
       {/* Tabela Interativa de Produtos com Seleção e Edição em Massa */}
       <TabelaProdutosComEdicaoEmMassa
@@ -158,11 +203,11 @@ export default async function AdminProdutos(props: { searchParams: Promise<{ msg
 
       {/* Navegação de Paginação */}
       <div className="flex flex-col sm:flex-row items-center justify-between bg-white p-4 rounded-2xl border border-gray-200 shadow-xs text-xs font-bold text-gray-600 gap-3">
-        <span>Exibindo Página {pagina} de {totalPaginas} (Total de {totalNoBanco || 0} produtos no banco)</span>
+        <span>Exibindo Página {pagina} de {totalPaginas} (Total de {totalNoBanco || 0} produtos para este filtro)</span>
         <div className="flex items-center gap-2">
           {pagina > 1 && (
             <Link 
-              href={`/admin/produtos?pagina=${pagina - 1}${q ? `&q=${q}` : ''}`} 
+              href={createPaginationUrl(pagina - 1)} 
               className="bg-gray-100 hover:bg-gray-200 text-secondary font-bold px-4 py-2 rounded-xl transition border border-gray-300"
             >
               &larr; Página Anterior
@@ -170,7 +215,7 @@ export default async function AdminProdutos(props: { searchParams: Promise<{ msg
           )}
           {pagina < totalPaginas && (
             <Link 
-              href={`/admin/produtos?pagina=${pagina + 1}${q ? `&q=${q}` : ''}`} 
+              href={createPaginationUrl(pagina + 1)} 
               className="bg-primary hover:bg-orange-600 text-white font-bold px-4 py-2 rounded-xl transition shadow-2xs"
             >
               Próxima Página &rarr;

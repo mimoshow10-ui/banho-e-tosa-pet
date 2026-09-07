@@ -79,7 +79,7 @@ export default function CategorySelector({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label className="block text-xs font-bold text-gray-700 mb-1">
-            Grupo Principal *
+            Grupo Principal <span className="text-gray-400 font-normal">(Opcional)</span>
           </label>
           <select
             className="w-full border border-gray-300 rounded-xl p-3 bg-white text-sm font-bold text-secondary focus:outline-none focus:ring-2 focus:ring-primary"
@@ -88,9 +88,8 @@ export default function CategorySelector({
               setGrupoId(e.target.value);
               setSubgrupoId('');
             }}
-            required
           >
-            <option value="">Selecione o Grupo principal...</option>
+            <option value="">⚠️ Sem Grupo (Definir Depois)</option>
             {grupos.map((g) => (
               <option key={g.id} value={g.id}>
                 {g.nome}
@@ -101,7 +100,7 @@ export default function CategorySelector({
 
         <div>
           <label className="block text-xs font-bold text-gray-700 mb-1">
-            Subgrupo Principal (Opcional)
+            Subgrupo Principal <span className="text-gray-400 font-normal">(Opcional)</span>
           </label>
           <select
             className="w-full border border-gray-300 rounded-xl p-3 bg-white text-sm font-medium text-secondary focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:bg-gray-100"
@@ -111,7 +110,7 @@ export default function CategorySelector({
           >
             <option value="">
               {!grupoId
-                ? '← Escolha o Grupo primeiro'
+                ? '← Escolha um Grupo primeiro (Opcional)'
                 : subgruposFiltrados.length === 0
                 ? 'Nenhum Subgrupo neste Grupo'
                 : 'Nenhum Subgrupo (Vincular apenas ao Grupo)'}
@@ -124,6 +123,12 @@ export default function CategorySelector({
           </select>
         </div>
       </div>
+
+      {!grupoId && (
+        <div className="bg-amber-50 border border-amber-200 text-amber-800 px-3.5 py-2 rounded-xl text-xs font-medium flex items-center gap-2">
+          <span>⚠️ <strong>Aviso:</strong> Este produto será salvo sem categoria/grupo vinculado. Você pode categorizá-lo a qualquer momento.</span>
+        </div>
+      )}
 
       {/* SELEÇÃO MULTI-CATEGORIAS / VINCULAÇÃO ADICIONAL */}
       <div className="pt-2 border-t border-gray-200">

@@ -12,7 +12,7 @@ export default async function NovoProduto() {
     const nome = formData.get('nome') as string;
     const preco = parseFloat(formData.get('preco') as string);
     const estoque = parseInt(formData.get('estoque') as string);
-    const categoria_id = formData.get('categoria_id') as string;
+    const categoria_id = (formData.get('categoria_id') as string) || null;
     const slug = nome.toLowerCase().replace(/ /g, '-').normalize("NFD").replace(/[\u0300-\u036f]/g, "") + '-' + Date.now();
     
     const imagensTxt = formData.get('imagens') as string;

@@ -277,7 +277,8 @@ export default function TabelaProdutosComEdicaoEmMassa({ produtos, categorias, p
                 {produtos && produtos.length > 0 ? (
                   produtos.map((item) => {
                     const isChecked = selecionados.includes(item.id);
-                    const fotoUrl = extrairFoto(item.imagens);
+                    const rawFotoUrl = extrairFoto(item.imagens);
+                    const fotoValida = rawFotoUrl && !rawFotoUrl.includes('amazonaws.com') ? rawFotoUrl : null;
 
                     return (
                       <tr
@@ -302,9 +303,9 @@ export default function TabelaProdutosComEdicaoEmMassa({ produtos, categorias, p
                         {/* Foto */}
                         <td className="p-4">
                           <Link href={`/produto/${item.slug}`} target="_blank" title="Abrir página de vendas">
-                            {fotoUrl ? (
+                            {fotoValida ? (
                               <img
-                                src={fotoUrl}
+                                src={fotoValida}
                                 alt={item.nome}
                                 className="w-12 h-12 object-cover rounded-xl border border-gray-200 hover:opacity-80 transition cursor-pointer shadow-2xs"
                               />
@@ -338,7 +339,7 @@ export default function TabelaProdutosComEdicaoEmMassa({ produtos, categorias, p
                               <span>{item.nome}</span>
                               <ExternalLink size={12} className="text-gray-400" />
                             </Link>
-                            {!fotoUrl && (
+                            {!fotoValida && (
                               <span className="bg-amber-100 text-amber-800 border border-amber-300 text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-1 shadow-2xs">
                                 🟡 Sem Foto (Não Publicado)
                               </span>
