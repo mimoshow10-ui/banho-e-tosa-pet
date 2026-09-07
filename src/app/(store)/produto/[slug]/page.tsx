@@ -96,6 +96,10 @@ export default async function ProdutoPage({ params }: { params: Promise<{ slug: 
     } catch {}
   }
 
+  // Produtos sem foto não devem ser publicados no site
+  const temFoto = Array.isArray(produto.imagens) ? (produto.imagens.length > 0 && typeof produto.imagens[0] === 'string' && produto.imagens[0].length > 0) : typeof produto.imagens === 'string' && produto.imagens.length > 0;
+  if (!temFoto) notFound();
+
   // Buscar família de variações com segurança
   let family: any[] = [];
   try {
@@ -116,10 +120,9 @@ export default async function ProdutoPage({ params }: { params: Promise<{ slug: 
   const agora = Date.now();
   const expiraTime = produto.promocao_expira_em ? new Date(produto.promocao_expira_em).getTime() : null;
   const promoExpirada = expiraTime !== null && (isNaN(expiraTime) || expiraTime <= agora);
-  const semEstoque = produto.estoque !== null && produto.estoque !== undefined && Number(produto.estoque) <= 0;
 
   const precoPromoVal = produto.preco_promocional ? Number(produto.preco_promocional) : null;
-  const promoValida = precoPromoVal !== null && !isNaN(precoPromoVal) && precoPromoVal < preco && !promoExpirada && !semEstoque;
+  const promoValida = precoPromoVal !== null && !isNaN(precoPromoVal) && precoPromoVal < preco && !promoExpirada;
   const precoPromo = promoValida ? precoPromoVal : null;
 
   return (

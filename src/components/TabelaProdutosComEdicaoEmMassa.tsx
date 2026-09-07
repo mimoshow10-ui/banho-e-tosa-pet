@@ -309,8 +309,9 @@ export default function TabelaProdutosComEdicaoEmMassa({ produtos, categorias, p
                                 className="w-12 h-12 object-cover rounded-xl border border-gray-200 hover:opacity-80 transition cursor-pointer shadow-2xs"
                               />
                             ) : (
-                              <div className="w-12 h-12 bg-gray-100 rounded-xl border border-gray-200 flex items-center justify-center text-[9px] font-bold text-gray-400 text-center leading-tight">
-                                Sem<br />Foto
+                              <div className="w-12 h-12 bg-amber-50 rounded-xl border-2 border-amber-300 flex flex-col items-center justify-center text-[10px] font-black text-amber-700 text-center leading-tight shadow-2xs" title="Produto Sem Foto (Não Publicado)">
+                                <span className="text-xs">🟡</span>
+                                <span>Sem Foto</span>
                               </div>
                             )}
                           </Link>
@@ -323,7 +324,7 @@ export default function TabelaProdutosComEdicaoEmMassa({ produtos, categorias, p
 
                         {/* Nome */}
                         <td className="p-4 font-bold text-gray-800">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             {paiIds.has(item.id) && (
                               <span title="Produto Pai (tem variações)" className="text-amber-500 text-base leading-none">
                                 ★
@@ -337,6 +338,11 @@ export default function TabelaProdutosComEdicaoEmMassa({ produtos, categorias, p
                               <span>{item.nome}</span>
                               <ExternalLink size={12} className="text-gray-400" />
                             </Link>
+                            {!fotoUrl && (
+                              <span className="bg-amber-100 text-amber-800 border border-amber-300 text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-1 shadow-2xs">
+                                🟡 Sem Foto (Não Publicado)
+                              </span>
+                            )}
                           </div>
                         </td>
 
