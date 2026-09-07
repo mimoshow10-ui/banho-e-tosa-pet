@@ -615,20 +615,28 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
-              {/* Aviso da Próxima Etapa (Pagamento) */}
-              <div className="bg-blue-50 border border-blue-200 p-4 rounded-xl text-xs md:text-sm text-blue-900 font-medium flex items-center gap-3">
-                <Store size={24} className="text-blue-600 flex-shrink-0" />
+              {/* Aviso e Botão de Redirecionamento Mercado Pago */}
+              <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-xl text-xs md:text-sm text-emerald-900 font-medium flex items-center gap-3">
+                <Store size={24} className="text-emerald-600 flex-shrink-0" />
                 <div>
-                  <strong>Etapa de Pagamento:</strong> O resumo do seu pedido foi gerado com sucesso! A etapa final de pagamento será conectada na próxima atualização.
+                  <strong>Pagamento Seguro Mercado Pago:</strong> Você será redirecionado para o ambiente seguro do Mercado Pago para escolher PIX, Cartão de Crédito ou Boleto.
                 </div>
               </div>
 
               <button
-                onClick={() => alert('Pedido registrado no resumo com sucesso! Pronto para integração do Gateway de Pagamento.')}
-                className="w-full bg-green-600 hover:bg-green-700 text-white font-black py-4 rounded-xl text-lg transition shadow-md flex items-center justify-center gap-2"
+                type="button"
+                onClick={handleFinalizarEPagar}
+                disabled={processandoPagamento}
+                className="w-full bg-green-600 hover:bg-green-700 text-white font-black py-4 rounded-xl text-lg transition shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
               >
-                <span>Confirmar Dados e Ir para Pagamento</span>
-                <ChevronRight size={22} />
+                {processandoPagamento ? (
+                  <span>Conectando ao Mercado Pago...</span>
+                ) : (
+                  <>
+                    <span>Pagar Agora no Mercado Pago (PIX / Cartão / Boleto)</span>
+                    <ChevronRight size={22} />
+                  </>
+                )}
               </button>
             </div>
           )}
