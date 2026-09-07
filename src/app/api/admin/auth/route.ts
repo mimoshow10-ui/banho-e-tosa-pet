@@ -20,6 +20,16 @@ export async function POST(req: Request) {
     if (acao === 'esqueci_senha') {
       const emailDestino = emailSanitizado || 'mimosrtes10@hotmail.com';
 
+      // Buscar API Key do Resend no banco de dados ou env
+      const { data: resendDb } = await supabase.from('configuracoes').select('valor').eq('chave', 'resend_config').maybeSingle();
+      const resendApiKey = resendDb?.valor?.api_key || process.env.RESEND_API_KEY;
+
+      if (!resendApiKey) {
+        return NextResponse.json({
+          erro: 'Chave API do Resend não cadastrada! Acesse o Painel Admin -> Configurações para salvar sua API Key do Resend.'
+        }, { status: 400 });
+      }
+
       // Gerar PIN de 6 dígitos aleatório
       const pinCode = Math.floor(100000 + Math.random() * 900000).toString();
       const expiraEm = Date.now() + 15 * 60 * 1000; // 15 minutos
@@ -34,60 +44,65 @@ export async function POST(req: Request) {
         }
       }, { onConflict: 'chave' });
 
-      // Tentar enviar e-mail via Resend se a API Key estiver configurada
-      const { data: resendDb } = await supabase.from('configuracoes').select('valor').eq('chave', 'resend_config').maybeSingle();
-      const resendApiKey = resendDb?.valor?.api_key || process.env.RESEND_API_KEY;
-
+      let erroResend = '';
       let emailEnviado = false;
-      if (resendApiKey) {
-        try {
-          const emailRes = await fetch('https://api.resend.com/emails', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${resendApiKey}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              from: 'Segurança Mimo Show Pet <onboarding@resend.dev>',
-              to: ['mimosrtes10@hotmail.com'],
-              cc: ['mimoshow10@hotmail.com'],
-              subject: '🔒 Código de Segurança - Recuperação de Acesso Painel Admin',
-              html: `
-                <div style="font-family: sans-serif; padding: 24px; background-color: #0B2545; color: #ffffff;">
-                  <div style="max-width: 500px; margin: 0 auto; background: #ffffff; border-radius: 20px; padding: 32px; color: #1e293b; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
-                    <div style="text-align: center; margin-bottom: 20px;">
-                      <h1 style="font-size: 22px; font-weight: 900; color: #0B2545; margin: 0;">Mimo Show Pet</h1>
-                      <p style="font-size: 13px; color: #64748b; margin-top: 4px;">Recuperação de Senha de Acesso</p>
-                    </div>
-                    <div style="background-color: #f8fafc; border: 2px dashed #cbd5e1; border-radius: 16px; padding: 20px; text-align: center; margin: 24px 0;">
-                      <span style="font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 8px;">Seu Código de Segurança</span>
-                      <span style="font-size: 36px; font-weight: 900; letter-spacing: 8px; color: #2563eb;">${pinCode}</span>
-                    </div>
-                    <p style="font-size: 13px; color: #475569; line-height: 1.6;">
-                      Insira este código na tela de login para validar sua identidade e redefinir sua senha secreta de acesso.
-                    </p>
-                    <p style="font-size: 11px; color: #94a3b8; text-align: center; margin-top: 24px;">
-                      E-mail enviado para <strong>mimosrtes10@hotmail.com</strong> com cópia para <strong>mimoshow10@hotmail.com</strong>.<br/>
-                      Válido por 15 minutos.
-                    </p>
+
+      try {
+        const emailRes = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${resendApiKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            from: 'Segurança Mimo Show Pet <onboarding@resend.dev>',
+            to: [emailDestino],
+            subject: '🔒 Código de Segurança - Recuperação de Acesso Painel Admin',
+            html: `
+              <div style="font-family: sans-serif; padding: 24px; background-color: #0B2545; color: #ffffff;">
+                <div style="max-width: 500px; margin: 0 auto; background: #ffffff; border-radius: 20px; padding: 32px; color: #1e293b; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
+                  <div style="text-align: center; margin-bottom: 20px;">
+                    <h1 style="font-size: 22px; font-weight: 900; color: #0B2545; margin: 0;">Mimo Show Pet</h1>
+                    <p style="font-size: 13px; color: #64748b; margin-top: 4px;">Recuperação de Senha de Acesso</p>
                   </div>
+                  <div style="background-color: #f8fafc; border: 2px dashed #cbd5e1; border-radius: 16px; padding: 20px; text-align: center; margin: 24px 0;">
+                    <span style="font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 8px;">Seu Código de Segurança</span>
+                    <span style="font-size: 36px; font-weight: 900; letter-spacing: 8px; color: #2563eb;">${pinCode}</span>
+                  </div>
+                  <p style="font-size: 13px; color: #475569; line-height: 1.6;">
+                    Insira este código na tela de login para validar sua identidade e redefinir sua senha secreta de acesso.
+                  </p>
+                  <p style="font-size: 11px; color: #94a3b8; text-align: center; margin-top: 24px;">
+                    E-mail de segurança enviado para <strong>${emailDestino}</strong>.<br/>
+                    Válido por 15 minutos.
+                  </p>
                 </div>
-              `
-            })
-          });
-          if (emailRes.ok) emailEnviado = true;
-        } catch (e) {
-          console.error('[RECUPERAÇÃO SENHA] Erro ao enviar e-mail via Resend:', e);
+              </div>
+            `
+          })
+        });
+
+        const resData = await emailRes.json();
+        if (emailRes.ok) {
+          emailEnviado = true;
+        } else {
+          erroResend = resData?.message || resData?.name || JSON.stringify(resData);
         }
+      } catch (e: any) {
+        erroResend = e.message || 'Falha ao conectar ao servidor do Resend.';
+      }
+
+      if (!emailEnviado) {
+        return NextResponse.json({
+          erro: `Erro ao enviar e-mail via Resend: ${erroResend}`
+        }, { status: 400 });
       }
 
       console.log(`[SEGURANÇA ADMIN] Código de segurança gerado: ${pinCode} para ${emailDestino}`);
 
       return NextResponse.json({
         sucesso: true,
-        mensagem: emailEnviado
-          ? 'Código de segurança enviado para mimosrtes10@hotmail.com (cópia para mimoshow10@hotmail.com)!'
-          : `Código de segurança gerado com sucesso! Digite o PIN enviado para validação.`
+        mensagem: `Código de segurança enviado com sucesso para ${emailDestino}! Verifique sua caixa de entrada.`
       });
     }
 

@@ -23,10 +23,16 @@ export default async function AdminConfiguracoes({ searchParams }: { searchParam
     mpCreds = data?.valor;
   } catch {}
 
-  let adminSenhaAtual = 'mimoshow2026';
+  let temSenhaConfigurada = false;
   try {
     const { data: cfgAdmin } = await supabase.from('configuracoes').select('*').eq('chave', 'admin_config').maybeSingle();
-    if (cfgAdmin?.valor?.senha) adminSenhaAtual = cfgAdmin.valor.senha;
+    if (cfgAdmin?.valor?.senha) temSenhaConfigurada = true;
+  } catch {}
+
+  let resendConfig = null;
+  try {
+    const { data: cfgResend } = await supabase.from('configuracoes').select('*').eq('chave', 'resend_config').maybeSingle();
+    resendConfig = cfgResend?.valor || null;
   } catch {}
 
   let freteConfig = null;
@@ -60,7 +66,8 @@ export default async function AdminConfiguracoes({ searchParams }: { searchParam
       )}
 
       <ConfiguracoesForms
-        adminSenhaAtual={adminSenhaAtual}
+        temSenhaConfigurada={temSenhaConfigurada}
+        resendConfig={resendConfig}
         creds={creds}
         mpCreds={mpCreds}
         freteConfig={freteConfig}
@@ -68,3 +75,4 @@ export default async function AdminConfiguracoes({ searchParams }: { searchParam
     </div>
   );
 }
+

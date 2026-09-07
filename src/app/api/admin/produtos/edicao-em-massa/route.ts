@@ -5,13 +5,72 @@ import { revalidatePath } from 'next/cache';
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { ids, acao, valor, preco_promocional, promocao_expira_em } = body;
+    const { ids, acao, valor, modo, categoria_id, promocao_expira_em } = body;
 
     if (!Array.isArray(ids) || ids.length === 0) {
       return NextResponse.json({ erro: 'Nenhum produto selecionado.' }, { status: 400 });
     }
 
-    if (acao === 'destaque') {
+    if (!acao) {
+      return NextResponse.json({ erro: 'Selecione uma ação em massa válida.' }, { status: 400 });
+    }
+
+    // ── 1. ALTERAÇÃO DE GRUPO & SUBGRUPO ──
+    if (acao === 'categoria') {
+      const catTarget = categoria_id || null;
+      const { error } = await supabase.from('produtos').update({ categoria_id: catTarget }).in('id', ids);
+      if (error) throw new Error(`Erro ao atualizar categorias: ${error.message}`);
+
+    // ── 2. REAJUSTE DE PREÇO NORMAL (R$ / %) ──
+    } else if (acao === 'preco') {
+      const rawVal = parseFloat(String(valor || '0').replace(',', '.'));
+      if (isNaN(rawVal) || rawVal < 0) {
+        return NextResponse.json({ erro: 'Informe um valor numérico válido para o preço.' }, { status: 400 });
+      }
+
+      if (modo === 'fixo') {
+        await supabase.from('produtos').update({ preco: rawVal }).in('id', ids);
+      } else {
+        const { data: prods } = await supabase.from('produtos').select('id, preco').in('id', ids);
+        if (prods) {
+          for (const p of prods) {
+            const precoAtual = Number(p.preco || 0);
+            let novoPreco = precoAtual;
+            if (modo === 'aumentar_pct') {
+              novoPreco = Number((precoAtual * (1 + rawVal / 100)).toFixed(2));
+            } else if (modo === 'diminuir_pct') {
+              novoPreco = Number((precoAtual * (1 - rawVal / 100)).toFixed(2));
+            }
+            await supabase.from('produtos').update({ preco: Math.max(0, novoPreco) }).eq('id', p.id);
+          }
+        }
+      }
+
+    // ── 3. PREÇO PROMOCIONAL (R$ / % / REMOVER) ──
+    } else if (acao === 'preco_promocional') {
+      if (modo === 'remover') {
+        await supabase.from('produtos').update({ preco_promocional: null, destaque_super_promocao: false }).in('id', ids);
+      } else if (modo === 'fixo') {
+        const rawVal = parseFloat(String(valor || '0').replace(',', '.'));
+        const pVal = isNaN(rawVal) ? null : rawVal;
+        await supabase.from('produtos').update({ preco_promocional: pVal }).in('id', ids);
+      } else if (modo === 'desconto_pct') {
+        const rawVal = parseFloat(String(valor || '0').replace(',', '.'));
+        if (isNaN(rawVal) || rawVal <= 0 || rawVal >= 100) {
+          return NextResponse.json({ erro: 'Informe uma porcentagem de desconto válida (entre 1% e 99%).' }, { status: 400 });
+        }
+        const { data: prods } = await supabase.from('produtos').select('id, preco').in('id', ids);
+        if (prods) {
+          for (const p of prods) {
+            const precoAtual = Number(p.preco || 0);
+            const promoPreco = Number((precoAtual * (1 - rawVal / 100)).toFixed(2));
+            await supabase.from('produtos').update({ preco_promocional: Math.max(0, promoPreco) }).eq('id', p.id);
+          }
+        }
+      }
+
+    // ── 4. VITRINES E DESTAQUES ──
+    } else if (acao === 'destaque') {
       const isSuperPromo = valor === 'super_promocao';
       const updateData: any = { destaque_super_promocao: isSuperPromo };
 
@@ -24,25 +83,7 @@ export async function POST(req: Request) {
         }
       }
 
-      if (preco_promocional !== undefined && preco_promocional !== null && preco_promocional !== '') {
-        const pVal = parseFloat(String(preco_promocional).replace(',', '.'));
-        updateData.preco_promocional = isNaN(pVal) ? null : pVal;
-      }
-
       await supabase.from('produtos').update(updateData).in('id', ids);
-
-      // Se for super promoção e os produtos não tiverem preço promocional, gerar 10% OFF automático
-      if (isSuperPromo && (!preco_promocional || parseFloat(String(preco_promocional)) <= 0)) {
-        const { data: prods } = await supabase.from('produtos').select('id, preco, preco_promocional').in('id', ids);
-        if (prods) {
-          for (const p of prods) {
-            if (!p.preco_promocional || Number(p.preco_promocional) >= Number(p.preco)) {
-              const autoPromo = Number((Number(p.preco || 0) * 0.9).toFixed(2));
-              await supabase.from('produtos').update({ preco_promocional: autoPromo }).eq('id', p.id);
-            }
-          }
-        }
-      }
 
       const { data: currentConfig } = await supabase
         .from('configuracoes')
@@ -68,17 +109,12 @@ export async function POST(req: Request) {
         },
       }, { onConflict: 'chave' });
 
-    } else if (acao === 'categoria') {
-      await supabase.from('produtos').update({ categoria_id: valor || null }).in('id', ids);
-
-    } else if (acao === 'preco_promocional') {
-      const pVal = parseFloat(String(valor).replace(',', '.'));
-      await supabase.from('produtos').update({ preco_promocional: isNaN(pVal) ? null : pVal }).in('id', ids);
-
+    // ── 5. STATUS ATIVO / INATIVO ──
     } else if (acao === 'status') {
       const ativo = valor === true || valor === 'true';
       await supabase.from('produtos').update({ ativo }).in('id', ids);
 
+    // ── 6. EXCLUSÃO EM MASSA ──
     } else if (acao === 'excluir') {
       await supabase.from('produtos').delete().in('id', ids);
     } else {
@@ -88,8 +124,9 @@ export async function POST(req: Request) {
     revalidatePath('/admin/produtos');
     revalidatePath('/', 'layout');
 
-    return NextResponse.json({ sucesso: true, mensagem: `Edição em massa concluída para ${ids.length} produto(s)!` });
+    return NextResponse.json({ sucesso: true, mensagem: `Edição em massa concluída com sucesso para ${ids.length} produto(s)!` });
   } catch (err: any) {
     return NextResponse.json({ erro: err.message || 'Erro ao processar edição em massa.' }, { status: 500 });
   }
 }
+

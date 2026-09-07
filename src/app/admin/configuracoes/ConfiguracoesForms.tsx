@@ -1,11 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { salvarSenhaAdmin, salvarCredenciais, salvarMercadoPago, salvarFreteConfig } from './actions';
-import { CheckCircle2, AlertCircle, RefreshCw, Eye, EyeOff } from 'lucide-react';
+import { salvarSenhaAdmin, salvarResendConfig, salvarCredenciais, salvarMercadoPago, salvarFreteConfig } from './actions';
+import { CheckCircle2, AlertCircle, RefreshCw, Eye, EyeOff, KeyRound, Mail, ShieldCheck } from 'lucide-react';
 
 interface Props {
-  adminSenhaAtual: string;
+  temSenhaConfigurada: boolean;
+  resendConfig: { api_key?: string } | null;
   creds: { client_id?: string; client_secret?: string } | null;
   mpCreds: { access_token?: string; public_key?: string } | null;
   freteConfig: {
@@ -17,14 +18,19 @@ interface Props {
   } | null;
 }
 
-export default function ConfiguracoesForms({ adminSenhaAtual, creds, mpCreds, freteConfig }: Props) {
-  const [mostrarSenhaConfig, setMostrarSenhaConfig] = useState(false);
+export default function ConfiguracoesForms({ temSenhaConfigurada, resendConfig, creds, mpCreds, freteConfig }: Props) {
+  const [mostrarNovaSenha, setMostrarNovaSenha] = useState(false);
+  const [mostrarConfirmarSenha, setMostrarConfirmarSenha] = useState(false);
+  const [mostrarResendKey, setMostrarResendKey] = useState(false);
+
   const [msgSenha, setMsgSenha] = useState<{ tipo: 'sucesso' | 'erro'; texto: string } | null>(null);
+  const [msgResend, setMsgResend] = useState<{ tipo: 'sucesso' | 'erro'; texto: string } | null>(null);
   const [msgCreds, setMsgCreds] = useState<{ tipo: 'sucesso' | 'erro'; texto: string } | null>(null);
   const [msgMp, setMsgMp] = useState<{ tipo: 'sucesso' | 'erro'; texto: string } | null>(null);
   const [msgFrete, setMsgFrete] = useState<{ tipo: 'sucesso' | 'erro'; texto: string } | null>(null);
 
   const [loadingSenha, setLoadingSenha] = useState(false);
+  const [loadingResend, setLoadingResend] = useState(false);
   const [loadingCreds, setLoadingCreds] = useState(false);
   const [loadingMp, setLoadingMp] = useState(false);
   const [loadingFrete, setLoadingFrete] = useState(false);
@@ -38,6 +44,7 @@ export default function ConfiguracoesForms({ adminSenhaAtual, creds, mpCreds, fr
       const res = await salvarSenhaAdmin(formData);
       if (res?.sucesso) {
         setMsgSenha({ tipo: 'sucesso', texto: res.mensagem || 'Senha salva!' });
+        (e.currentTarget as HTMLFormElement).reset();
       } else {
         setMsgSenha({ tipo: 'erro', texto: res?.erro || 'Erro ao salvar senha.' });
       }
@@ -45,6 +52,25 @@ export default function ConfiguracoesForms({ adminSenhaAtual, creds, mpCreds, fr
       setMsgSenha({ tipo: 'erro', texto: err.message || 'Erro de comunicação.' });
     } finally {
       setLoadingSenha(false);
+    }
+  }
+
+  async function handleSalvarResend(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setLoadingResend(true);
+    setMsgResend(null);
+    try {
+      const formData = new FormData(e.currentTarget);
+      const res = await salvarResendConfig(formData);
+      if (res?.sucesso) {
+        setMsgResend({ tipo: 'sucesso', texto: res.mensagem || 'Chave API do Resend salva!' });
+      } else {
+        setMsgResend({ tipo: 'erro', texto: res?.erro || 'Erro ao salvar chave.' });
+      }
+    } catch (err: any) {
+      setMsgResend({ tipo: 'erro', texto: err.message || 'Erro de comunicação.' });
+    } finally {
+      setLoadingResend(false);
     }
   }
 
@@ -107,15 +133,25 @@ export default function ConfiguracoesForms({ adminSenhaAtual, creds, mpCreds, fr
 
   return (
     <div className="space-y-6 font-sans">
-      {/* SEGURANÇA E SENHA SECRETA DE ACESSO AO SISTEMA */}
+      {/* 🔒 SEGURANÇA DO SISTEMA E ALTERAÇÃO DE SENHA SECRETA */}
       <div className="bg-white rounded-xl shadow-sm border border-emerald-300 p-8 relative overflow-hidden">
         <div className="absolute top-0 left-0 w-2 h-full bg-emerald-600"></div>
         <h2 className="text-xl font-bold mb-2 text-secondary flex items-center gap-2">
-          🔒 Segurança do Sistema e Senha Secreta de Acesso
+          <ShieldCheck className="text-emerald-600" size={24} />
+          Segurança do Sistema e Alteração de Senha Secreta
         </h2>
-        <p className="text-sm text-gray-600 mb-6">
-          Defina a senha secreta para login no Painel Administrativo. Em caso de esquecimento, o código de recuperação será enviado para <strong>mimosrtes10@hotmail.com</strong> com cópia para <strong>mimoshow10@hotmail.com</strong>.
+        <p className="text-sm text-gray-600 mb-4">
+          Sua senha secreta de acesso ao Painel Administrativo fica protegida por criptografia de segurança. Por motivos de proteção contra vazamentos, <strong>a senha atual jamais é exibida em texto visível</strong> na tela.
         </p>
+
+        <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 mb-6 text-xs text-emerald-900 font-bold flex items-center gap-2">
+          <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
+          <span>
+            {temSenhaConfigurada
+              ? 'Status da Conta: Senha Secreta ativa e cadastrada no banco de dados com sucesso.'
+              : 'Status da Conta: Senha Padrão Ativa (Recomendamos cadastrar uma nova senha abaixo).'}
+          </span>
+        </div>
 
         {msgSenha && (
           <div className={`p-3 rounded-xl font-bold text-xs flex items-center gap-2 mb-4 ${
@@ -126,38 +162,129 @@ export default function ConfiguracoesForms({ adminSenhaAtual, creds, mpCreds, fr
           </div>
         )}
 
-        <form onSubmit={handleSalvarSenha} className="flex flex-col md:flex-row gap-4 items-end">
+        <form onSubmit={handleSalvarSenha} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1">
+                Nova Senha Secreta * (mínimo 6 caracteres)
+              </label>
+              <div className="relative">
+                <input
+                  name="nova_senha_admin"
+                  type={mostrarNovaSenha ? 'text' : 'password'}
+                  required
+                  placeholder="Digite sua nova senha secreta"
+                  className="w-full border border-gray-300 rounded-lg p-3 pr-10 text-sm font-bold bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => setMostrarNovaSenha(!mostrarNovaSenha)}
+                  className="absolute right-3 top-3 text-gray-400 hover:text-gray-700 cursor-pointer"
+                  title={mostrarNovaSenha ? "Ocultar Senha" : "Mostrar o que está digitando"}
+                >
+                  {mostrarNovaSenha ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1">
+                Confirmar Nova Senha Secreta *
+              </label>
+              <div className="relative">
+                <input
+                  name="confirmar_senha_admin"
+                  type={mostrarConfirmarSenha ? 'text' : 'password'}
+                  required
+                  placeholder="Repita a nova senha secreta"
+                  className="w-full border border-gray-300 rounded-lg p-3 pr-10 text-sm font-bold bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => setMostrarConfirmarSenha(!mostrarConfirmarSenha)}
+                  className="absolute right-3 top-3 text-gray-400 hover:text-gray-700 cursor-pointer"
+                  title={mostrarConfirmarSenha ? "Ocultar Senha" : "Mostrar o que está digitando"}
+                >
+                  {mostrarConfirmarSenha ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-2 flex justify-end">
+            <button
+              type="submit"
+              disabled={loadingSenha}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-lg font-bold text-xs shadow-sm cursor-pointer whitespace-nowrap transition disabled:opacity-50 flex items-center gap-2"
+            >
+              {loadingSenha ? <RefreshCw size={14} className="animate-spin" /> : null}
+              <span>{loadingSenha ? 'Salvando Nova Senha...' : '💾 Atualizar Senha Secreta'}</span>
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {/* ✉️ SERVIDOR DE E-MAILS & NOTIFICAÇÕES (RESEND API KEY) */}
+      <div className="bg-white rounded-xl shadow-sm border border-purple-300 p-8 relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-2 h-full bg-purple-600"></div>
+        <h2 className="text-xl font-bold mb-2 text-secondary flex items-center gap-2">
+          <Mail className="text-purple-600" size={24} />
+          Servidor de E-mails e Notificações (Resend API Key)
+        </h2>
+        <p className="text-sm text-gray-600 mb-4">
+          Insira sua chave API do <strong>Resend</strong> (começa com <code>re_...</code>) para que o sistema possa entregar os e-mails de <strong>recuperação de senha</strong>, <strong>confirmação de pedidos</strong> e <strong>cupons de pós-venda</strong>.
+        </p>
+
+        <div className="bg-purple-50 border border-purple-200 rounded-xl p-3.5 mb-6 text-xs text-purple-900 leading-relaxed space-y-1">
+          <p className="font-bold flex items-center gap-1.5 text-purple-950">
+            <KeyRound size={15} /> Como obter sua chave gratuita do Resend:
+          </p>
+          <p>1. Crie uma conta gratuita em <a href="https://resend.com" target="_blank" rel="noopener noreferrer" className="font-bold underline hover:text-purple-700">resend.com</a>.</p>
+          <p>2. Vá na seção <strong>API Keys</strong> e crie uma chave (começará com <code>re_...</code>).</p>
+          <p>3. 💡 <em>Nota sobre o envio:</em> No plano gratuito com remetente padrão (<code>onboarding@resend.dev</code>), os e-mails são entregues exclusivamente para a conta de e-mail cadastrada no Resend. Para disparar para qualquer e-mail de cliente, adicione seu domínio (ex: <code>banhoetosapet.com.br</code>) no menu <strong>Domains</strong> do Resend.</p>
+        </div>
+
+        {msgResend && (
+          <div className={`p-3 rounded-xl font-bold text-xs flex items-center gap-2 mb-4 ${
+            msgResend.tipo === 'sucesso' ? 'bg-green-100 text-green-800 border border-green-300' : 'bg-red-100 text-red-800 border border-red-300'
+          }`}>
+            {msgResend.tipo === 'sucesso' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
+            <span>{msgResend.texto}</span>
+          </div>
+        )}
+
+        <form onSubmit={handleSalvarResend} className="flex flex-col md:flex-row gap-4 items-end">
           <div className="flex-1 w-full">
             <label className="block text-xs font-bold text-gray-700 mb-1">
-              Nova Senha Secreta de Acesso *
+              Chave API do Resend (API Key) *
             </label>
             <div className="relative">
               <input
-                name="nova_senha_admin"
-                type={mostrarSenhaConfig ? 'text' : 'password'}
+                name="resend_api_key"
+                type={mostrarResendKey ? 'text' : 'password'}
                 required
-                defaultValue={adminSenhaAtual}
-                placeholder="Digite a nova senha secreta"
-                className="w-full border border-gray-300 rounded-lg p-3 pr-10 text-sm font-bold bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                defaultValue={resendConfig?.api_key || ''}
+                placeholder="re_123456789_abcdefghijklmnopqrstuvwxyz"
+                className="w-full border border-gray-300 rounded-lg p-3 pr-10 text-xs font-mono font-bold bg-white focus:ring-2 focus:ring-purple-500 focus:outline-none"
               />
               <button
                 type="button"
-                onClick={() => setMostrarSenhaConfig(!mostrarSenhaConfig)}
+                onClick={() => setMostrarResendKey(!mostrarResendKey)}
                 className="absolute right-3 top-3 text-gray-400 hover:text-gray-700 cursor-pointer"
-                title={mostrarSenhaConfig ? "Ocultar Senha" : "Mostrar Senha"}
+                title={mostrarResendKey ? "Ocultar Chave" : "Mostrar Chave"}
               >
-                {mostrarSenhaConfig ? <EyeOff size={18} /> : <Eye size={18} />}
+                {mostrarResendKey ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
           </div>
 
           <button
             type="submit"
-            disabled={loadingSenha}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-lg font-bold text-xs shadow-sm cursor-pointer whitespace-nowrap transition disabled:opacity-50 flex items-center gap-2"
+            disabled={loadingResend}
+            className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-bold text-xs shadow-sm cursor-pointer whitespace-nowrap transition disabled:opacity-50 flex items-center gap-2"
           >
-            {loadingSenha ? <RefreshCw size={14} className="animate-spin" /> : null}
-            <span>{loadingSenha ? 'Salvando...' : '💾 Atualizar Senha Secreta'}</span>
+            {loadingResend ? <RefreshCw size={14} className="animate-spin" /> : null}
+            <span>{loadingResend ? 'Salvando Chave...' : '💾 Salvar Chave do Resend'}</span>
           </button>
         </form>
       </div>

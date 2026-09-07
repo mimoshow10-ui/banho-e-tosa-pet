@@ -6,8 +6,18 @@ import { revalidatePath } from 'next/cache';
 export async function salvarSenhaAdmin(formData: FormData) {
   try {
     const novaSenha = (formData.get('nova_senha_admin') as string || '').trim();
+    const confirmarSenha = (formData.get('confirmar_senha_admin') as string || '').trim();
+
     if (!novaSenha) {
       return { sucesso: false, erro: 'Nova senha não pode ser vazia.' };
+    }
+
+    if (novaSenha.length < 6) {
+      return { sucesso: false, erro: 'A senha secreta deve ter no mínimo 6 caracteres.' };
+    }
+
+    if (novaSenha !== confirmarSenha) {
+      return { sucesso: false, erro: 'A nova senha e a confirmação de senha não coincidem.' };
     }
 
     const { error } = await supabase.from('configuracoes').upsert({
@@ -23,9 +33,40 @@ export async function salvarSenhaAdmin(formData: FormData) {
     }
 
     revalidatePath('/admin/configuracoes');
-    return { sucesso: true, mensagem: 'Senha Secreta do Sistema atualizada com sucesso!' };
+    return { sucesso: true, mensagem: 'Senha Secreta do Sistema atualizada com sucesso! A nova senha já está em vigor.' };
   } catch (err: any) {
     return { sucesso: false, erro: err.message || 'Erro ao salvar nova senha.' };
+  }
+}
+
+export async function salvarResendConfig(formData: FormData) {
+  try {
+    const apiKey = (formData.get('resend_api_key') as string || '').trim();
+
+    if (!apiKey) {
+      return { sucesso: false, erro: 'A chave API do Resend é obrigatória (ex: re_123456789).' };
+    }
+
+    if (!apiKey.startsWith('re_')) {
+      return { sucesso: false, erro: 'A chave do Resend deve começar com "re_". Verifique no painel do resend.com.' };
+    }
+
+    const { error } = await supabase.from('configuracoes').upsert({
+      chave: 'resend_config',
+      valor: {
+        api_key: apiKey,
+        atualizado_em: new Date().toISOString()
+      }
+    }, { onConflict: 'chave' });
+
+    if (error) {
+      return { sucesso: false, erro: `Erro ao salvar chave do Resend: ${error.message}` };
+    }
+
+    revalidatePath('/admin/configuracoes');
+    return { sucesso: true, mensagem: 'Chave API do Resend salva com sucesso! Os disparos de e-mail agora estão ativos.' };
+  } catch (err: any) {
+    return { sucesso: false, erro: err.message || 'Erro ao salvar chave do Resend.' };
   }
 }
 
@@ -112,3 +153,4 @@ export async function salvarFreteConfig(formData: FormData) {
     return { sucesso: false, erro: err.message || 'Erro ao salvar frete.' };
   }
 }
+
