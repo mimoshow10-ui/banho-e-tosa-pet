@@ -13,6 +13,8 @@ export interface Cupom {
   usos_realizados: number;
   permitir_produtos_promocionais: boolean; // SIM / NÃO
   permitir_acumulo?: boolean; // SIM / NÃO (Permite ser acumulado com outros cupons)
+  exclusivo_email?: boolean; // Se true, o cupom é exclusivo de quem recebeu por e-mail e não aparece na barra pública
+  origem?: string; // 'manual' | 'email_marketing'
   tipo_elegibilidade: 'todos' | 'grupos' | 'subgrupos' | 'produtos' | 'skus';
   elegiveis_ids?: string[]; // IDs autorizados
   exclusoes_ids?: string[]; // IDs bloqueados

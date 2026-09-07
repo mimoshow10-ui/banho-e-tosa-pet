@@ -25,6 +25,7 @@ async function salvarCupom(formData: FormData) {
   const limite_usos_total = formData.get('limite_usos_total') ? parseInt(formData.get('limite_usos_total') as string) : null;
   const permitir_produtos_promocionais = formData.get('permitir_produtos_promocionais') === 'on';
   const permitir_acumulo = formData.get('permitir_acumulo') === 'on';
+  const exclusivo_email = formData.get('exclusivo_email') === 'on';
   const tipo_elegibilidade = (formData.get('tipo_elegibilidade') as Cupom['tipo_elegibilidade']) || 'todos';
 
   const { data: config } = await supabase
@@ -51,6 +52,7 @@ async function salvarCupom(formData: FormData) {
     usos_realizados: index >= 0 ? (lista[index].usos_realizados || 0) : 0,
     permitir_produtos_promocionais,
     permitir_acumulo,
+    exclusivo_email,
     tipo_elegibilidade,
     criado_em: index >= 0 ? lista[index].criado_em : new Date().toISOString(),
   };

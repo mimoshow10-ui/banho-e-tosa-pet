@@ -78,6 +78,7 @@ export default function CuponsClient({
   const [tipoElegibilidade, setTipoElegibilidade] = useState<Cupom['tipo_elegibilidade']>('todos');
   const [permitirPromocionais, setPermitirPromocionais] = useState(true);
   const [permitirAcumulo, setPermitirAcumulo] = useState(false);
+  const [exclusivoEmail, setExclusivoEmail] = useState(false);
   const [ativo, setAtivo] = useState(true);
 
   function iniciarEdicao(c: Cupom) {
@@ -94,6 +95,7 @@ export default function CuponsClient({
     setTipoElegibilidade(c.tipo_elegibilidade || 'todos');
     setPermitirPromocionais(c.permitir_produtos_promocionais ?? true);
     setPermitirAcumulo(c.permitir_acumulo ?? false);
+    setExclusivoEmail(c.exclusivo_email ?? false);
     setAtivo(c.ativo ?? true);
 
     formRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -113,6 +115,7 @@ export default function CuponsClient({
     setTipoElegibilidade('todos');
     setPermitirPromocionais(true);
     setPermitirAcumulo(false);
+    setExclusivoEmail(false);
     setAtivo(true);
   }
 

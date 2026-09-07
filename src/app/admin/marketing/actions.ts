@@ -227,6 +227,8 @@ export async function dispararEmailTeste(formData: FormData) {
       usos_realizados: 0,
       limite_usos_total: 1,
       permitir_produtos_promocionais: true,
+      exclusivo_email: true,
+      origem: 'email_marketing',
       tipo_elegibilidade: 'todos',
       criado_em: dataEnvio.toISOString()
     };
