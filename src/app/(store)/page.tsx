@@ -38,6 +38,7 @@ export default async function Home() {
     .order('criado_em', { ascending: false });
 
   const produtos = todosProdutos || [];
+  const produtosComFoto = produtos.filter(p => Array.isArray(p.imagens) && p.imagens.length > 0);
   
   // Apenas produtos com PROMOÇÃO ATIVA DENTRO DO PERÍODO
   const agora = Date.now();
@@ -67,7 +68,7 @@ export default async function Home() {
     ? produtos.filter(p => idsMaisVendidos.includes(p.id))
     : [];
   if (produtosMaisVendidos.length === 0) {
-    produtosMaisVendidos = produtos.slice(0, 6);
+    produtosMaisVendidos = produtosComFoto.slice(0, 6);
   }
 
   // Novidades
@@ -76,7 +77,7 @@ export default async function Home() {
     ? produtos.filter(p => idsNovidades.includes(p.id))
     : [];
   if (produtosNovidades.length === 0) {
-    produtosNovidades = produtos.slice(0, 8);
+    produtosNovidades = produtosComFoto.slice(0, 8);
   }
 
   return (
