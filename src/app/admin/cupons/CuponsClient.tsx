@@ -7,52 +7,53 @@ import {
   Plus,
   Edit3,
   X,
-  LayoutList,
-  GripVertical,
   ArrowUp,
   ArrowDown,
-  Columns,
-  Table as TableIcon,
   Tag,
   CheckCircle2,
   Sparkles,
   LayoutGrid,
-  Eye,
-  EyeOff,
-  MoveRight,
-  ChevronRight,
-  RotateCcw,
   Check,
   Zap,
-  ArrowRight,
-  ArrowLeft,
+  Eye,
+  EyeOff,
+  Sliders,
+  Store
 } from 'lucide-react';
 import { Cupom } from '@/lib/types/coupon';
 
 interface Props {
   cupons: Cupom[];
   posicaoHomeAtual: string;
+  cuponsHomeIdsInicial: string[];
   salvarCupomAction: (formData: FormData) => Promise<void>;
   excluirCupomAction: (formData: FormData) => Promise<void>;
-  salvarPosicaoAction: (formDataOrPosicao: FormData | string) => Promise<void>;
+  salvarConfigHomeAction: (payload: { posicao_home: string; cupons_home_ids: string[] }) => Promise<void>;
   salvarListaAction: (cuponsNovos: Cupom[]) => Promise<void>;
 }
 
 export default function CuponsClient({
   cupons: initialCupons,
   posicaoHomeAtual: initialPosicaoHome,
+  cuponsHomeIdsInicial,
   salvarCupomAction,
   excluirCupomAction,
-  salvarPosicaoAction,
+  salvarConfigHomeAction,
   salvarListaAction,
 }: Props) {
   const [cupons, setCupons] = useState<Cupom[]>(initialCupons);
   const [posicaoHome, setPosicaoHome] = useState<string>(initialPosicaoHome || 'topo');
-  const [viewMode, setViewMode] = useState<'kanban' | 'table'>('kanban');
+  
+  // IDs dos cupons selecionados para a tela de vendas na ordem escolhida pelo usuário
+  const [cuponsHomeIds, setCuponsHomeIds] = useState<string[]>(
+    cuponsHomeIdsInicial && cuponsHomeIdsInicial.length > 0
+      ? cuponsHomeIdsInicial
+      : initialCupons.filter(c => c.ativo).map(c => c.id)
+  );
+
   const [cupomEditando, setCupomEditando] = useState<Cupom | null>(null);
   const [savedMessage, setSavedMessage] = useState<string | null>(null);
-  const [draggedCupomId, setDraggedCupomId] = useState<string | null>(null);
-  const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
+  const [salvandoConfig, setSalvandoConfig] = useState(false);
 
   const formRef = useRef<HTMLDivElement>(null);
 
@@ -120,90 +121,51 @@ export default function CuponsClient({
     setTimeout(() => setSavedMessage(null), 3000);
   }
 
-  // Altera a posição da faixa na Home via Kanban de Layout
-  async function handleMudarPosicao(novaPosicao: string) {
-    setPosicaoHome(novaPosicao);
-    notify(`Posição da Faixa atualizada na Home!`);
-    await salvarPosicaoAction(novaPosicao);
-  }
-
-  // Alterna o status do cupom via Kanban
-  async function alternarStatusCupom(id: string, novoAtivo: boolean) {
-    const novos = cupons.map(c => c.id === id ? { ...c, ativo: novoAtivo } : c);
-    setCupons(novos);
-    notify(novoAtivo ? 'Cupom ativado com sucesso!' : 'Cupom pausado/desativado!');
-    await salvarListaAction(novos);
-  }
-
-  // Reordena o cupom subindo ou descendo na lista
-  async function moverOrdem(indexIndex: number, direcao: 'up' | 'down') {
-    const targetIndex = direcao === 'up' ? indexIndex - 1 : indexIndex + 1;
-    if (targetIndex < 0 || targetIndex >= cupons.length) return;
-
-    const novos = [...cupons];
-    const [removido] = novos.splice(indexIndex, 1);
-    novos.splice(targetIndex, 0, removido);
-
-    setCupons(novos);
-    notify('Ordem de prioridade dos cupons atualizada!');
-    await salvarListaAction(novos);
-  }
-
-  // Manipuladores de Drag & Drop HTML5 para Cupons
-  function handleDragStart(e: React.DragEvent, id: string) {
-    setDraggedCupomId(id);
-    e.dataTransfer.setData('text/plain', id);
-  }
-
-  function handleDragOver(e: React.DragEvent, colKey: string) {
-    e.preventDefault();
-    setDragOverColumn(colKey);
-  }
-
-  function handleDragLeave() {
-    setDragOverColumn(null);
-  }
-
-  async function handleDropOnColumn(e: React.DragEvent, targetCol: 'home' | 'checkout' | 'inativo') {
-    e.preventDefault();
-    setDragOverColumn(null);
-    const cupomId = e.dataTransfer.getData('text/plain') || draggedCupomId;
-    if (!cupomId) return;
-
-    const novos = [...cupons];
-    const targetIdx = novos.findIndex(c => c.id === cupomId);
-    if (targetIdx < 0) return;
-
-    const c = novos[targetIdx];
-    if (targetCol === 'home') {
-      c.ativo = true;
-      // Move para o topo da lista para destacar na home
-      novos.splice(targetIdx, 1);
-      novos.unshift(c);
-    } else if (targetCol === 'checkout') {
-      c.ativo = true;
-    } else if (targetCol === 'inativo') {
-      c.ativo = false;
+  // Alterna se o cupom está selecionado para a Tela de Vendas (Home)
+  function toggleSelecaoHome(id: string) {
+    if (cuponsHomeIds.includes(id)) {
+      setCuponsHomeIds(cuponsHomeIds.filter(item => item !== id));
+    } else {
+      setCuponsHomeIds([...cuponsHomeIds, id]);
     }
-
-    setCupons(novos);
-    setDraggedCupomId(null);
-    notify(`Cupom "${c.codigo}" movido no Kanban!`);
-    await salvarListaAction(novos);
   }
 
-  // Lista de seções para o Kanban de layout da Home
-  const posicoesKanbanHome = [
-    { key: 'topo', label: '📌 No Topo', subtitle: 'Acima do Banner Principal', icon: '1' },
-    { key: 'abaixo_banner', label: '🖼️ Logo Abaixo Banner', subtitle: 'Entre o Banner e Benefícios', icon: '2' },
-    { key: 'abaixo_beneficios', label: '🚚 Abaixo Benefícios', subtitle: 'Após a barra de frete', icon: '3' },
-    { key: 'acima_ofertas', label: '🔥 Acima das Ofertas', subtitle: 'Antes da vitrine principal', icon: '4' },
-    { key: 'oculto', label: '👁️‍🗨️ Ocultar Banner', subtitle: 'Não exibir na Home', icon: '5' },
-  ];
+  // Altera a ordem do cupom dentro da lista da Tela de Vendas
+  function moverOrdemHome(index: number, direcao: 'up' | 'down') {
+    const targetIdx = direcao === 'up' ? index - 1 : index + 1;
+    if (targetIdx < 0 || targetIdx >= cuponsHomeIds.length) return;
 
-  // Grupos do Kanban de Cupons
-  const cuponsHome = cupons.filter(c => c.ativo);
-  const cuponsInativos = cupons.filter(c => !c.ativo);
+    const novos = [...cuponsHomeIds];
+    const [removido] = novos.splice(index, 1);
+    novos.splice(targetIdx, 0, removido);
+
+    setCuponsHomeIds(novos);
+  }
+
+  // Salva as configurações da Tela de Vendas (quais cupons + ordem + posição)
+  async function handleSalvarTelaVendas() {
+    setSalvandoConfig(true);
+    try {
+      await salvarConfigHomeAction({
+        posicao_home: posicaoHome,
+        cupons_home_ids: cuponsHomeIds
+      });
+      notify('Configurações dos cupons na Tela de Vendas salvas com sucesso!');
+    } catch {
+      notify('Erro ao salvar configurações.');
+    } finally {
+      setSalvandoConfig(false);
+    }
+  }
+
+  // Mapeador de objetos de cupons por ID
+  const cupomMap = new Map<string, Cupom>();
+  cupons.forEach(c => cupomMap.set(c.id, c));
+
+  // Cupons selecionados ordenados para a preview da Tela de Vendas
+  const cuponsExibidosVendas = cuponsHomeIds
+    .map(id => cupomMap.get(id))
+    .filter((c): c is Cupom => !!c && c.ativo);
 
   return (
     <div className="space-y-8 font-sans">
@@ -215,494 +177,263 @@ export default function CuponsClient({
         </div>
       )}
 
-      {/* 📊 QUADRO KANBAN DE POSIÇÃO DA FAIXA DE CUPONS NA HOME */}
-      <div className="bg-gradient-to-br from-slate-900 via-secondary to-slate-800 text-white p-6 rounded-3xl shadow-lg border border-slate-700 relative overflow-hidden">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
+      {/* 🎯 SELEÇÃO E ORDEM DOS CUPONS NA TELA DE VENDAS (HOME) */}
+      <div className="bg-gradient-to-br from-amber-500 via-orange-600 to-orange-700 text-white p-6 rounded-3xl shadow-lg space-y-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/20 pb-4">
           <div>
-            <div className="flex items-center gap-2">
-              <span className="bg-primary text-white text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md">
-                Layout Kanban
-              </span>
-              <h2 className="text-xl font-bold font-heading flex items-center gap-2 text-white">
-                <Columns size={22} className="text-primary" />
-                Posição da Faixa de Cupons na Home
-              </h2>
-            </div>
-            <p className="text-xs text-gray-300 mt-1">
-              Arraste ou clique sobre as colunas para definir em qual posição da página inicial a faixa promocional será exibida.
+            <span className="bg-white/20 text-white text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md">
+              Vitrine de Vendas
+            </span>
+            <h2 className="text-2xl font-bold font-heading flex items-center gap-2 mt-1">
+              <Store size={26} />
+              Cupons Exibidos na Tela de Vendas
+            </h2>
+            <p className="text-xs text-orange-100 mt-1">
+              Marque quais cupons devem aparecer na Página Inicial da loja e use as setas ⬆️ ⬇️ para definir a ordem exata de exibição.
             </p>
           </div>
 
-          <div className="flex items-center gap-2 bg-slate-800/80 p-1.5 rounded-2xl border border-slate-700">
-            <span className="text-xs text-gray-300 font-bold px-2">Posição Ativa:</span>
-            <span className="bg-emerald-500 text-white text-xs font-black px-3 py-1 rounded-xl shadow-xs uppercase">
-              {posicaoHome.replace('_', ' ')}
-            </span>
+          <button
+            type="button"
+            onClick={handleSalvarTelaVendas}
+            disabled={salvandoConfig}
+            className="bg-white text-orange-950 hover:bg-orange-100 font-black px-6 py-3 rounded-2xl text-xs shadow-md transition flex items-center gap-2 cursor-pointer disabled:opacity-50 self-start md:self-auto"
+          >
+            <CheckCircle2 size={18} className="text-emerald-600" />
+            <span>{salvandoConfig ? 'Salvando...' : 'Salvar Seleção & Ordem'}</span>
+          </button>
+        </div>
+
+        {/* Seleção de Posição da Faixa na Tela de Vendas */}
+        <div className="bg-white/10 backdrop-blur-xs p-4 rounded-2xl border border-white/20 flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Sliders size={18} className="text-amber-200" />
+            <div>
+              <span className="text-xs font-bold block">Posição da Faixa de Cupons na Tela de Vendas:</span>
+              <span className="text-[11px] text-orange-100">Escolha onde a barra de cupons deve ficar posicionada.</span>
+            </div>
+          </div>
+
+          <select
+            value={posicaoHome}
+            onChange={(e) => setPosicaoHome(e.target.value)}
+            className="bg-white text-gray-900 font-bold text-xs px-3 py-2 rounded-xl focus:outline-none cursor-pointer"
+          >
+            <option value="topo">📌 No Topo da Página (Acima do Banner)</option>
+            <option value="abaixo_banner">🖼️ Logo Abaixo do Banner Principal</option>
+            <option value="abaixo_beneficios">🚚 Abaixo da Barra de Benefícios</option>
+            <option value="acima_ofertas">🔥 Acima da Seção de Ofertas</option>
+            <option value="oculto">👁️‍🗨️ Ocultar Faixa de Cupons na Home</option>
+          </select>
+        </div>
+
+        {/* Lista de Cupons para Selecionar e Ordenar */}
+        <div className="space-y-3">
+          <h3 className="text-xs font-black uppercase tracking-wider text-orange-100">
+            Selecione e Ordene os Cupons para Exibição:
+          </h3>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {cupons.map((c) => {
+              const selectedIdx = cuponsHomeIds.indexOf(c.id);
+              const isSelected = selectedIdx >= 0;
+
+              const badgeTexto =
+                c.tipo_desconto === 'percentual'
+                  ? `${c.valor_desconto}% OFF`
+                  : c.tipo_desconto === 'fixo'
+                  ? `R$ ${c.valor_desconto} OFF`
+                  : 'FRETE GRÁTIS';
+
+              return (
+                <div
+                  key={c.id}
+                  className={`p-3.5 rounded-2xl border transition-all duration-200 flex items-center justify-between gap-3 ${
+                    isSelected
+                      ? 'bg-white text-gray-900 border-white shadow-md'
+                      : 'bg-white/10 text-white border-white/20 hover:bg-white/20'
+                  }`}
+                >
+                  <div className="flex items-center gap-3 overflow-hidden">
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => toggleSelecaoHome(c.id)}
+                      className="w-5 h-5 accent-orange-600 rounded cursor-pointer flex-shrink-0"
+                    />
+
+                    <div className="space-y-0.5 overflow-hidden">
+                      <div className="flex items-center gap-1.5">
+                        <span className={`font-black text-[11px] px-2 py-0.5 rounded uppercase ${
+                          isSelected ? 'bg-red-600 text-white' : 'bg-white/20 text-white'
+                        }`}>
+                          {badgeTexto}
+                        </span>
+                        <span className={`font-mono font-bold text-xs px-2 py-0.5 rounded border ${
+                          isSelected ? 'bg-gray-100 text-gray-800 border-gray-300' : 'bg-white/10 text-white border-white/20'
+                        }`}>
+                          {c.codigo}
+                        </span>
+                      </div>
+                      <p className={`text-xs font-bold line-clamp-1 ${isSelected ? 'text-gray-900' : 'text-orange-100'}`}>
+                        {c.nome_interno}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Controles de Ordenação (se selecionado) */}
+                  {isSelected && (
+                    <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-xl flex-shrink-0">
+                      <span className="text-[10px] font-black text-gray-600 px-1.5">
+                        #{selectedIdx + 1}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => moverOrdemHome(selectedIdx, 'up')}
+                        disabled={selectedIdx === 0}
+                        className="p-1 text-gray-700 hover:text-orange-600 disabled:opacity-30 cursor-pointer rounded hover:bg-white"
+                        title="Subir na Tela de Vendas"
+                      >
+                        <ArrowUp size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => moverOrdemHome(selectedIdx, 'down')}
+                        disabled={selectedIdx === cuponsHomeIds.length - 1}
+                        className="p-1 text-gray-700 hover:text-orange-600 disabled:opacity-30 cursor-pointer rounded hover:bg-white"
+                        title="Descer na Tela de Vendas"
+                      >
+                        <ArrowDown size={14} />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
 
-        {/* Grade Visual de Colunas Kanban para a Home */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-          {posicoesKanbanHome.map((col) => {
-            const isSelected = posicaoHome === col.key;
-
-            return (
-              <div
-                key={col.key}
-                onClick={() => handleMudarPosicao(col.key)}
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={() => handleMudarPosicao(col.key)}
-                className={`rounded-2xl p-4 transition-all duration-200 border cursor-pointer relative flex flex-col justify-between min-h-[140px] ${
-                  isSelected
-                    ? 'bg-gradient-to-b from-orange-600/90 to-primary text-white border-white/60 shadow-xl ring-2 ring-orange-400 scale-[1.02]'
-                    : 'bg-slate-800/60 hover:bg-slate-800 text-gray-300 border-slate-700/80 hover:border-slate-500'
-                }`}
-              >
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span
-                      className={`w-6 h-6 rounded-full text-xs font-black flex items-center justify-center ${
-                        isSelected ? 'bg-white text-primary' : 'bg-slate-700 text-gray-300'
-                      }`}
-                    >
-                      {col.icon}
-                    </span>
-
-                    {isSelected && (
-                      <span className="bg-emerald-400 text-slate-950 font-black text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1 shadow-xs">
-                        <Check size={10} /> ATIVO
-                      </span>
-                    )}
-                  </div>
-
-                  <h3 className="font-bold text-sm text-white line-clamp-1">{col.label}</h3>
-                  <p className={`text-[11px] mt-1 line-clamp-2 ${isSelected ? 'text-orange-100' : 'text-gray-400'}`}>
-                    {col.subtitle}
-                  </p>
+        {/* Pré-visualização ao Vivo da Faixa de Vendas */}
+        {cuponsExibidosVendas.length > 0 && (
+          <div className="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/20 space-y-2">
+            <span className="text-[10px] font-black uppercase tracking-wider text-amber-200 flex items-center gap-1">
+              <Sparkles size={12} /> Pré-visualização ao vivo na Tela de Vendas:
+            </span>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              {cuponsExibidosVendas.map((c) => (
+                <div key={c.id} className="bg-white text-gray-900 p-2.5 rounded-xl text-xs font-bold flex items-center justify-between shadow-2xs">
+                  <span className="bg-red-600 text-white px-1.5 py-0.5 rounded text-[10px] uppercase font-black">
+                    {c.tipo_desconto === 'percentual' ? `${c.valor_desconto}% OFF` : `R$ ${c.valor_desconto} OFF`}
+                  </span>
+                  <span className="font-mono">{c.codigo}</span>
                 </div>
-
-                {/* Card de Previsualização da Faixa dentro da Coluna Selecionada */}
-                {isSelected && (
-                  <div className="mt-3 bg-white/10 backdrop-blur-xs rounded-xl p-2 border border-white/20 animate-fade-in flex items-center justify-between gap-1">
-                    <div className="flex items-center gap-1.5 overflow-hidden">
-                      <Sparkles size={12} className="text-yellow-300 flex-shrink-0 animate-pulse" />
-                      <span className="text-[10px] font-black text-white truncate">Faixa de Cupons em Destaque</span>
-                    </div>
-                    <GripVertical size={14} className="text-white/70" />
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* 🏷️ QUADRO KANBAN DE GESTÃO DE CUPONS DE DESCONTO */}
+      {/* 📋 LISTA GERAL DE CUPONS E GERENCIAMENTO */}
       <div className="bg-white p-6 rounded-3xl shadow-xs border border-gray-200 space-y-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-gray-100">
+        <div className="flex items-center justify-between border-b border-gray-100 pb-4">
           <div>
             <h2 className="text-xl font-bold text-secondary flex items-center gap-2">
               <LayoutGrid size={22} className="text-primary" />
-              Gestão de Cupons Promocionais
+              Todos os Cupons Cadastrados
             </h2>
             <p className="text-xs text-gray-500 mt-0.5">
-              Organize, ative, pause e reordene seus cupons diretamente no Quadro Kanban ou Tabela.
+              Visualize, edite, ative ou remova os cupons do sistema.
             </p>
-          </div>
-
-          {/* Seletor de Modo: Kanban vs Tabela */}
-          <div className="flex items-center bg-gray-100 p-1 rounded-2xl border border-gray-200">
-            <button
-              type="button"
-              onClick={() => setViewMode('kanban')}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
-                viewMode === 'kanban'
-                  ? 'bg-primary text-white shadow-xs'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200/60'
-              }`}
-            >
-              <Columns size={15} />
-              <span>Quadro Kanban</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setViewMode('table')}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
-                viewMode === 'table'
-                  ? 'bg-primary text-white shadow-xs'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200/60'
-              }`}
-            >
-              <TableIcon size={15} />
-              <span>Visão Tabela</span>
-            </button>
           </div>
         </div>
 
-        {/* 📊 VISÃO QUADRO KANBAN */}
-        {viewMode === 'kanban' ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {/* 📍 COLUNA 1: ATIVOS NA HOME (BANNER) */}
-            <div
-              onDragOver={(e) => handleDragOver(e, 'home')}
-              onDragLeave={handleDragLeave}
-              onDrop={(e) => handleDropOnColumn(e, 'home')}
-              className={`rounded-2xl p-4 border transition-all duration-200 space-y-3 min-h-[380px] flex flex-col ${
-                dragOverColumn === 'home'
-                  ? 'bg-orange-100/70 border-primary ring-2 ring-primary ring-dashed'
-                  : 'bg-orange-50/40 border-orange-200/80'
-              }`}
-            >
-              <div className="flex items-center justify-between pb-2 border-b border-orange-200/60">
-                <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-full bg-orange-500 animate-pulse" />
-                  <h3 className="font-bold text-sm text-gray-900 flex items-center gap-1.5">
-                    📌 Em Destaque na Home
-                  </h3>
-                </div>
-                <span className="bg-orange-200 text-orange-900 text-xs font-black px-2 py-0.5 rounded-full">
-                  {cuponsHome.length}
-                </span>
-              </div>
+        <div className="overflow-x-auto rounded-2xl border border-gray-200">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-gray-50 text-gray-600 uppercase text-[11px] tracking-wider border-b border-gray-200 font-bold">
+                <th className="p-3.5">Código</th>
+                <th className="p-3.5">Nome Interno</th>
+                <th className="p-3.5">Tipo & Desconto</th>
+                <th className="p-3.5">Regras</th>
+                <th className="p-3.5">Tela de Vendas</th>
+                <th className="p-3.5">Status</th>
+                <th className="p-3.5 text-right">Ações</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100 text-xs text-gray-700">
+              {cupons.map((c) => {
+                const isNaHome = cuponsHomeIds.includes(c.id);
+                const badgeTexto =
+                  c.tipo_desconto === 'percentual'
+                    ? `${c.valor_desconto}% OFF`
+                    : c.tipo_desconto === 'fixo'
+                    ? `R$ ${c.valor_desconto} OFF`
+                    : 'FRETE GRÁTIS';
 
-              <p className="text-[11px] text-gray-500">
-                Cupons ativos que aparecem no carrossel/faixa de destaque na loja.
-              </p>
-
-              <div className="space-y-3 flex-1 overflow-y-auto">
-                {cuponsHome.length === 0 ? (
-                  <div className="text-center py-10 border-2 border-dashed border-orange-200 rounded-xl p-4 text-xs text-gray-400">
-                    Nenhum cupom ativo na Home. Arraste cupons para cá!
-                  </div>
-                ) : (
-                  cuponsHome.map((c, idx) => {
-                    const globalIdx = cupons.findIndex((item) => item.id === c.id);
-                    const badgeTexto =
-                      c.tipo_desconto === 'percentual'
-                        ? `${c.valor_desconto}% OFF`
-                        : c.tipo_desconto === 'fixo'
-                        ? `R$ ${c.valor_desconto} OFF`
-                        : 'FRETE GRÁTIS';
-
-                    return (
-                      <div
-                        key={c.id}
-                        draggable
-                        onDragStart={(e) => handleDragStart(e, c.id)}
-                        className="bg-white rounded-2xl p-4 shadow-sm hover:shadow-md border border-orange-200 transition-all group relative space-y-2 cursor-grab active:cursor-grabbing"
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="bg-red-600 text-white font-black text-xs px-2 py-0.5 rounded-md uppercase">
-                              {badgeTexto}
-                            </span>
-                            <span className="font-mono font-black text-xs bg-gray-100 text-gray-800 px-2 py-0.5 rounded-md border border-gray-200">
-                              {c.codigo}
-                            </span>
-                          </div>
-
-                          <div className="flex items-center gap-1">
-                            {/* Botões para Reordenar */}
-                            <button
-                              type="button"
-                              onClick={() => moverOrdem(globalIdx, 'up')}
-                              disabled={globalIdx === 0}
-                              className="p-1 text-gray-400 hover:text-primary disabled:opacity-30 rounded hover:bg-gray-100 cursor-pointer"
-                              title="Subir prioridade"
-                            >
-                              <ArrowUp size={14} />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => moverOrdem(globalIdx, 'down')}
-                              disabled={globalIdx === cupons.length - 1}
-                              className="p-1 text-gray-400 hover:text-primary disabled:opacity-30 rounded hover:bg-gray-100 cursor-pointer"
-                              title="Descer prioridade"
-                            >
-                              <ArrowDown size={14} />
-                            </button>
-                          </div>
-                        </div>
-
-                        <div>
-                          <p className="font-bold text-xs text-gray-900 line-clamp-1">{c.nome_interno}</p>
-                          <div className="text-[11px] text-gray-500 mt-1 flex flex-wrap gap-x-2">
-                            {c.compra_minima_reais && <span>Min: R$ {c.compra_minima_reais.toFixed(2)}</span>}
-                            {c.desconto_maximo_reais && <span>Teto: R$ {c.desconto_maximo_reais.toFixed(2)}</span>}
-                            <span>Usos: {c.usos_realizados || 0}/{c.limite_usos_total || '∞'}</span>
-                          </div>
-                        </div>
-
-                        {/* Ações do Card */}
-                        <div className="pt-2 border-t border-gray-100 flex items-center justify-between gap-2">
-                          <button
-                            type="button"
-                            onClick={() => alternarStatusCupom(c.id, false)}
-                            className="text-[11px] font-bold text-gray-600 hover:text-red-600 bg-gray-100 hover:bg-red-50 px-2.5 py-1 rounded-lg transition flex items-center gap-1 cursor-pointer"
-                          >
-                            <EyeOff size={12} /> Pausar
-                          </button>
-
-                          <div className="flex items-center gap-1">
-                            <button
-                              type="button"
-                              onClick={() => iniciarEdicao(c)}
-                              className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition cursor-pointer"
-                              title="Editar"
-                            >
-                              <Pencil size={15} />
-                            </button>
-                            <form action={excluirCupomAction}>
-                              <input type="hidden" name="id" value={c.id} />
-                              <button
-                                type="submit"
-                                onClick={(e) => {
-                                  if (!confirm(`Deseja excluir o cupom "${c.codigo}"?`)) e.preventDefault();
-                                }}
-                                className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition cursor-pointer"
-                                title="Excluir"
-                              >
-                                <Trash2 size={15} />
-                              </button>
-                            </form>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            </div>
-
-            {/* 🟢 COLUNA 2: ATIVOS APENAS NO CHECKOUT */}
-            <div
-              onDragOver={(e) => handleDragOver(e, 'checkout')}
-              onDragLeave={handleDragLeave}
-              onDrop={(e) => handleDropOnColumn(e, 'checkout')}
-              className={`rounded-2xl p-4 border transition-all duration-200 space-y-3 min-h-[380px] flex flex-col ${
-                dragOverColumn === 'checkout'
-                  ? 'bg-emerald-100/70 border-emerald-500 ring-2 ring-emerald-500 ring-dashed'
-                  : 'bg-emerald-50/40 border-emerald-200/80'
-              }`}
-            >
-              <div className="flex items-center justify-between pb-2 border-b border-emerald-200/60">
-                <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-full bg-emerald-500" />
-                  <h3 className="font-bold text-sm text-gray-900 flex items-center gap-1.5">
-                    🟢 Ativos no Checkout
-                  </h3>
-                </div>
-                <span className="bg-emerald-200 text-emerald-900 text-xs font-black px-2 py-0.5 rounded-full">
-                  {cuponsHome.length}
-                </span>
-              </div>
-
-              <p className="text-[11px] text-gray-500">
-                Cupons ativos e válidos para digitação durante a compra.
-              </p>
-
-              <div className="space-y-3 flex-1 overflow-y-auto">
-                {cuponsHome.map((c) => {
-                  const badgeTexto =
-                    c.tipo_desconto === 'percentual'
-                      ? `${c.valor_desconto}% OFF`
-                      : c.tipo_desconto === 'fixo'
-                      ? `R$ ${c.valor_desconto} OFF`
-                      : 'FRETE GRÁTIS';
-
-                  return (
-                    <div
-                      key={c.id}
-                      draggable
-                      onDragStart={(e) => handleDragStart(e, c.id)}
-                      className="bg-white rounded-2xl p-3.5 shadow-xs hover:shadow-sm border border-emerald-200 transition space-y-2 cursor-grab"
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="font-mono font-black text-xs bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-md">
-                          {c.codigo}
+                return (
+                  <tr key={c.id} className="hover:bg-orange-50/30 transition">
+                    <td className="p-3.5">
+                      <span className="bg-orange-100 text-orange-900 font-mono font-bold px-2 py-1 rounded-lg border border-orange-200">
+                        {c.codigo}
+                      </span>
+                    </td>
+                    <td className="p-3.5 font-bold text-gray-900">{c.nome_interno}</td>
+                    <td className="p-3.5 font-bold text-primary">{badgeTexto}</td>
+                    <td className="p-3.5 text-[11px] text-gray-500">
+                      {c.compra_minima_reais && <div>Min: R$ {c.compra_minima_reais.toFixed(2)}</div>}
+                      {c.desconto_maximo_reais && <div>Teto: R$ {c.desconto_maximo_reais.toFixed(2)}</div>}
+                    </td>
+                    <td className="p-3.5">
+                      {isNaHome ? (
+                        <span className="bg-amber-100 text-amber-900 font-bold text-[10px] px-2.5 py-1 rounded-full border border-amber-200">
+                          ⭐ Na Home (#{cuponsHomeIds.indexOf(c.id) + 1})
                         </span>
-                        <span className="text-xs font-bold text-gray-700">{badgeTexto}</span>
-                      </div>
-
-                      <p className="text-xs font-bold text-gray-800 line-clamp-1">{c.nome_interno}</p>
-
-                      <div className="pt-2 border-t border-gray-100 flex items-center justify-between gap-2">
-                        <button
-                          type="button"
-                          onClick={() => alternarStatusCupom(c.id, false)}
-                          className="text-[11px] font-bold text-gray-500 hover:text-red-600 bg-gray-100 hover:bg-red-50 px-2 py-1 rounded-lg transition cursor-pointer"
-                        >
-                          Pausar
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => iniciarEdicao(c)}
-                          className="text-[11px] font-bold text-blue-600 hover:underline cursor-pointer"
-                        >
-                          Editar
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* 🔴 COLUNA 3: INATIVOS / PAUSADOS */}
-            <div
-              onDragOver={(e) => handleDragOver(e, 'inativo')}
-              onDragLeave={handleDragLeave}
-              onDrop={(e) => handleDropOnColumn(e, 'inativo')}
-              className={`rounded-2xl p-4 border transition-all duration-200 space-y-3 min-h-[380px] flex flex-col ${
-                dragOverColumn === 'inativo'
-                  ? 'bg-gray-200 border-gray-400 ring-2 ring-gray-400 ring-dashed'
-                  : 'bg-gray-50 border-gray-200'
-              }`}
-            >
-              <div className="flex items-center justify-between pb-2 border-b border-gray-200">
-                <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-full bg-gray-400" />
-                  <h3 className="font-bold text-sm text-gray-700 flex items-center gap-1.5">
-                    🔴 Pausados / Inativos
-                  </h3>
-                </div>
-                <span className="bg-gray-200 text-gray-700 text-xs font-black px-2 py-0.5 rounded-full">
-                  {cuponsInativos.length}
-                </span>
-              </div>
-
-              <p className="text-[11px] text-gray-500">
-                Cupons desativados que não podem ser aplicados pelos clientes.
-              </p>
-
-              <div className="space-y-3 flex-1 overflow-y-auto">
-                {cuponsInativos.length === 0 ? (
-                  <div className="text-center py-10 border-2 border-dashed border-gray-200 rounded-xl p-4 text-xs text-gray-400">
-                    Nenhum cupom pausado.
-                  </div>
-                ) : (
-                  cuponsInativos.map((c) => (
-                    <div
-                      key={c.id}
-                      draggable
-                      onDragStart={(e) => handleDragStart(e, c.id)}
-                      className="bg-white rounded-2xl p-3.5 shadow-xs border border-gray-200 opacity-75 hover:opacity-100 transition space-y-2 cursor-grab"
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="font-mono font-bold text-xs bg-gray-100 text-gray-500 line-through px-2 py-0.5 rounded-md">
-                          {c.codigo}
+                      ) : (
+                        <span className="text-gray-400 text-[11px]">Não exibido</span>
+                      )}
+                    </td>
+                    <td className="p-3.5">
+                      {c.ativo ? (
+                        <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2.5 py-1 rounded-full">
+                          ATIVO
                         </span>
-                        <span className="text-[10px] bg-red-100 text-red-700 font-bold px-2 py-0.5 rounded-full">
+                      ) : (
+                        <span className="bg-gray-100 text-gray-600 text-[10px] font-bold px-2.5 py-1 rounded-full">
                           INATIVO
                         </span>
-                      </div>
-
-                      <p className="text-xs font-medium text-gray-600 line-clamp-1">{c.nome_interno}</p>
-
-                      <div className="pt-2 border-t border-gray-100 flex items-center justify-between gap-2">
-                        <button
-                          type="button"
-                          onClick={() => alternarStatusCupom(c.id, true)}
-                          className="text-[11px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2 py-1 rounded-lg transition flex items-center gap-1 cursor-pointer"
-                        >
-                          <Eye size={12} /> Ativar Cupom
-                        </button>
+                      )}
+                    </td>
+                    <td className="p-3.5 text-right">
+                      <div className="flex items-center justify-end gap-1">
                         <button
                           type="button"
                           onClick={() => iniciarEdicao(c)}
-                          className="text-[11px] font-bold text-blue-600 hover:underline cursor-pointer"
+                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition cursor-pointer"
+                          title="Editar"
                         >
-                          Editar
+                          <Pencil size={16} />
                         </button>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          </div>
-        ) : (
-          /* 📋 VISÃO EM TABELA TRADICIONAL */
-          <div className="overflow-x-auto rounded-2xl border border-gray-200">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-gray-50 text-gray-600 uppercase text-[11px] tracking-wider border-b border-gray-200 font-bold">
-                  <th className="p-3.5">Código</th>
-                  <th className="p-3.5">Nome Interno</th>
-                  <th className="p-3.5">Tipo & Desconto</th>
-                  <th className="p-3.5">Regras</th>
-                  <th className="p-3.5">Usos</th>
-                  <th className="p-3.5">Status</th>
-                  <th className="p-3.5 text-right">Ações</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100 text-xs text-gray-700">
-                {cupons.map((c) => {
-                  const badgeTexto =
-                    c.tipo_desconto === 'percentual'
-                      ? `${c.valor_desconto}% OFF`
-                      : c.tipo_desconto === 'fixo'
-                      ? `R$ ${c.valor_desconto} OFF`
-                      : 'FRETE GRÁTIS';
-
-                  return (
-                    <tr key={c.id} className="hover:bg-orange-50/30 transition">
-                      <td className="p-3.5">
-                        <span className="bg-orange-100 text-orange-900 font-mono font-bold px-2 py-1 rounded-lg border border-orange-200">
-                          {c.codigo}
-                        </span>
-                      </td>
-                      <td className="p-3.5 font-bold text-gray-900">{c.nome_interno}</td>
-                      <td className="p-3.5 font-bold text-primary">{badgeTexto}</td>
-                      <td className="p-3.5 text-[11px] text-gray-500">
-                        {c.compra_minima_reais && <div>Min: R$ {c.compra_minima_reais.toFixed(2)}</div>}
-                        {c.desconto_maximo_reais && <div>Teto: R$ {c.desconto_maximo_reais.toFixed(2)}</div>}
-                      </td>
-                      <td className="p-3.5 font-bold">
-                        {c.usos_realizados || 0} / {c.limite_usos_total || '∞'}
-                      </td>
-                      <td className="p-3.5">
-                        {c.ativo ? (
-                          <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2.5 py-1 rounded-full">
-                            ATIVO
-                          </span>
-                        ) : (
-                          <span className="bg-gray-100 text-gray-600 text-[10px] font-bold px-2.5 py-1 rounded-full">
-                            INATIVO
-                          </span>
-                        )}
-                      </td>
-                      <td className="p-3.5 text-right">
-                        <div className="flex items-center justify-end gap-1">
+                        <form action={excluirCupomAction}>
+                          <input type="hidden" name="id" value={c.id} />
                           <button
-                            type="button"
-                            onClick={() => iniciarEdicao(c)}
-                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition cursor-pointer"
+                            type="submit"
+                            onClick={(e) => {
+                              if (!confirm(`Excluir cupom "${c.codigo}"?`)) e.preventDefault();
+                            }}
+                            className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition cursor-pointer"
+                            title="Excluir"
                           >
-                            <Pencil size={16} />
+                            <Trash2 size={16} />
                           </button>
-                          <form action={excluirCupomAction}>
-                            <input type="hidden" name="id" value={c.id} />
-                            <button
-                              type="submit"
-                              onClick={(e) => {
-                                if (!confirm(`Excluir cupom "${c.codigo}"?`)) e.preventDefault();
-                              }}
-                              className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition cursor-pointer"
-                            >
-                              <Trash2 size={16} />
-                            </button>
-                          </form>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
+                        </form>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* 📝 FORMULÁRIO DE CADASTRO / EDIÇÃO DE CUPOM */}
@@ -769,7 +500,7 @@ export default function CuponsClient({
               name="tipo_desconto"
               value={tipoDesconto}
               onChange={(e) => setTipoDesconto(e.target.value as any)}
-              className="w-full border border-gray-300 rounded-xl p-3 text-sm bg-white font-bold focus:ring-2 focus:ring-primary focus:outline-none"
+              className="w-full border border-gray-300 rounded-xl p-3 text-sm bg-white font-bold focus:ring-2 focus:ring-primary focus:outline-none cursor-pointer"
             >
               <option value="percentual">Desconto Percentual (%)</option>
               <option value="fixo">Desconto em Valor Fixo (R$)</option>
@@ -805,7 +536,7 @@ export default function CuponsClient({
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-gray-700 mb-1">Compra Mínima no Pedido (R$) (Opcional)</label>
+            <label className="block text-xs font-bold text-gray-700 mb-1">Valor Mínimo da Compra (R$) (Opcional)</label>
             <input
               name="compra_minima_reais"
               type="number"
@@ -817,85 +548,7 @@ export default function CuponsClient({
             />
           </div>
 
-          <div>
-            <label className="block text-xs font-bold text-gray-700 mb-1">Data / Hora de Início (Opcional)</label>
-            <input
-              name="data_inicio"
-              type="datetime-local"
-              value={dataInicio}
-              onChange={(e) => setDataInicio(e.target.value)}
-              className="w-full border border-gray-300 rounded-xl p-3 text-sm focus:ring-2 focus:ring-primary focus:outline-none"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold text-gray-700 mb-1">Data / Hora de Validade / Fim (Opcional)</label>
-            <input
-              name="data_fim"
-              type="datetime-local"
-              value={dataFim}
-              onChange={(e) => setDataFim(e.target.value)}
-              className="w-full border border-gray-300 rounded-xl p-3 text-sm focus:ring-2 focus:ring-primary focus:outline-none"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold text-gray-700 mb-1">Limite Total de Usos (Opcional)</label>
-            <input
-              name="limite_usos_total"
-              type="number"
-              value={limiteUsos}
-              onChange={(e) => setLimiteUsos(e.target.value)}
-              placeholder="Ex: 100"
-              className="w-full border border-gray-300 rounded-xl p-3 text-sm focus:ring-2 focus:ring-primary focus:outline-none"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold text-gray-700 mb-1">Aplica-se em: *</label>
-            <select
-              name="tipo_elegibilidade"
-              value={tipoElegibilidade}
-              onChange={(e) => setTipoElegibilidade(e.target.value as any)}
-              className="w-full border border-gray-300 rounded-xl p-3 text-sm bg-white focus:ring-2 focus:ring-primary focus:outline-none"
-            >
-              <option value="todos">Todos os Produtos da Loja</option>
-              <option value="grupos">Grupos Específicos</option>
-              <option value="subgrupos">Subgrupos Específicos</option>
-              <option value="produtos">Produtos Específicos</option>
-              <option value="skus">SKUs / Variações Específicas</option>
-            </select>
-          </div>
-
-          <div className="flex items-center gap-2 md:col-span-2 pt-2">
-            <input
-              id="permitir_produtos_promocionais"
-              name="permitir_produtos_promocionais"
-              type="checkbox"
-              checked={permitirPromocionais}
-              onChange={(e) => setPermitirPromocionais(e.target.checked)}
-              className="w-4 h-4 accent-primary cursor-pointer"
-            />
-            <label htmlFor="permitir_produtos_promocionais" className="text-xs font-bold text-gray-700 cursor-pointer">
-              Permitir aplicação do cupom sobre produtos que JÁ estão em promoção
-            </label>
-          </div>
-
-          <div className="flex items-center gap-2 md:col-span-2">
-            <input
-              id="permitir_acumulo"
-              name="permitir_acumulo"
-              type="checkbox"
-              checked={permitirAcumulo}
-              onChange={(e) => setPermitirAcumulo(e.target.checked)}
-              className="w-4 h-4 accent-primary cursor-pointer"
-            />
-            <label htmlFor="permitir_acumulo" className="text-xs font-bold text-gray-700 cursor-pointer">
-              Permitir somar/acumular este cupom com outros cupons no mesmo pedido
-            </label>
-          </div>
-
-          <div className="flex items-center gap-2 md:col-span-2">
+          <div className="flex items-center gap-2 md:col-span-2 bg-gray-50 p-3.5 rounded-xl border border-gray-200">
             <input
               id="ativo"
               name="ativo"
@@ -904,31 +557,18 @@ export default function CuponsClient({
               onChange={(e) => setAtivo(e.target.checked)}
               className="w-4 h-4 accent-primary cursor-pointer"
             />
-            <label htmlFor="ativo" className="text-sm font-bold text-secondary cursor-pointer">
-              Cupom Ativo para Utilização
+            <label htmlFor="ativo" className="text-xs font-bold text-gray-800 cursor-pointer">
+              Cupom Ativo no Sistema (Pronto para Uso)
             </label>
           </div>
 
-          <div className="md:col-span-2 flex gap-3 pt-2">
-            <button
-              type="submit"
-              className={`flex-1 font-bold py-3.5 rounded-2xl transition shadow-sm cursor-pointer text-white ${
-                cupomEditando ? 'bg-blue-600 hover:bg-blue-700' : 'bg-primary hover:bg-orange-600'
-              }`}
-            >
-              {cupomEditando ? `Atualizar Cupom "${cupomEditando.codigo}"` : 'Salvar Novo Cupom de Desconto'}
-            </button>
-
-            {cupomEditando && (
-              <button
-                type="button"
-                onClick={cancelarEdicao}
-                className="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold px-6 py-3.5 rounded-2xl transition cursor-pointer"
-              >
-                Cancelar
-              </button>
-            )}
-          </div>
+          <button
+            type="submit"
+            className="bg-primary hover:bg-orange-600 text-white font-bold py-3.5 px-6 rounded-xl transition md:col-span-2 shadow-sm text-sm flex items-center justify-center gap-2 cursor-pointer w-fit"
+          >
+            <CheckCircle2 size={18} />
+            <span>{cupomEditando ? 'Atualizar Cupom' : 'Salvar Novo Cupom'}</span>
+          </button>
         </form>
       </div>
     </div>

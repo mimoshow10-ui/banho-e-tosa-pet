@@ -107,25 +107,21 @@ async function salvarListaCupons(cuponsNovos: Cupom[]) {
   revalidatePath('/');
 }
 
-async function salvarPosicaoCupons(formDataOrPosicao: FormData | string) {
+async function salvarConfigCuponsHome(payload: { posicao_home: string; cupons_home_ids: string[] }) {
   'use server';
-  let posicao_home = 'topo';
-  if (typeof formDataOrPosicao === 'string') {
-    posicao_home = formDataOrPosicao;
-  } else if (formDataOrPosicao && typeof formDataOrPosicao.get === 'function') {
-    posicao_home = (formDataOrPosicao.get('posicao_home') as string) || 'topo';
-  }
+  const posicao_home = payload.posicao_home || 'topo';
+  const cupons_home_ids = payload.cupons_home_ids || [];
 
   await supabase.from('configuracoes').upsert({
     chave: 'cupons_config',
-    valor: { posicao_home }
+    valor: {
+      posicao_home,
+      cupons_home_ids
+    }
   }, { onConflict: 'chave' });
 
   revalidatePath('/admin/cupons');
   revalidatePath('/');
-  if (typeof formDataOrPosicao !== 'string') {
-    redirect('/admin/cupons?msg=Posição dos cupons na Home atualizada com sucesso!');
-  }
 }
 
 export default async function AdminCuponsPage({
@@ -149,6 +145,7 @@ export default async function AdminCuponsPage({
 
   let cupons: Cupom[] = config?.valor || [];
   const posicaoHomeAtual = configPosicao?.valor?.posicao_home || 'topo';
+  const cuponsHomeIdsAtual: string[] = configPosicao?.valor?.cupons_home_ids || cupons.map(c => c.id);
 
   if (cupons.length === 0) {
     cupons = [
@@ -177,10 +174,10 @@ export default async function AdminCuponsPage({
         <div>
           <h1 className="text-3xl font-heading font-bold text-secondary flex items-center gap-3">
             <Ticket size={32} className="text-primary" />
-            Cupons de Desconto
+            Cupons de Desconto & Tela de Vendas
           </h1>
           <p className="text-sm text-gray-500 mt-1">
-            Cadastre e edite cupons de desconto (percentual, valor fixo ou frete grátis) e defina sua posição na tela principal.
+            Selecione quais cupons e a ordem exata em que aparecerão na tela de vendas (Página Inicial).
           </p>
         </div>
       </div>
@@ -202,9 +199,10 @@ export default async function AdminCuponsPage({
       <CuponsClient
         cupons={cupons}
         posicaoHomeAtual={posicaoHomeAtual}
+        cuponsHomeIdsInicial={cuponsHomeIdsAtual}
         salvarCupomAction={salvarCupom}
         excluirCupomAction={excluirCupom}
-        salvarPosicaoAction={salvarPosicaoCupons}
+        salvarConfigHomeAction={salvarConfigCuponsHome}
         salvarListaAction={salvarListaCupons}
       />
     </div>

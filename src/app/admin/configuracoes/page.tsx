@@ -49,30 +49,30 @@ export default async function AdminConfiguracoes({ searchParams }: { searchParam
     }
   }
 
-  // Buscar credenciais do Resend salvas
-  let resendCreds = null;
+  // Buscar configurações de frete salvas
+  let freteConfig = null;
   try {
-    const { data } = await supabase.from('configuracoes').select('*').eq('chave', 'resend_config').maybeSingle();
-    resendCreds = data?.valor;
+    const { data: cfgFrete } = await supabase.from('configuracoes').select('*').eq('chave', 'frete_config').maybeSingle();
+    freteConfig = cfgFrete?.valor;
   } catch {}
 
-  // Buscar senha secreta do admin salvação
-  let adminSenhaAtual = 'mimoshow2026';
-  try {
-    const { data: cfgAdmin } = await supabase.from('configuracoes').select('*').eq('chave', 'admin_config').maybeSingle();
-    if (cfgAdmin?.valor?.senha) adminSenhaAtual = cfgAdmin.valor.senha;
-  } catch {}
-
-  async function salvarSenhaAdmin(formData: FormData) {
+  async function salvarFreteConfig(formData: FormData) {
     'use server'
-    const novaSenha = (formData.get('nova_senha_admin') as string || '').trim();
-    if (!novaSenha) return;
+    const cep_origem = (formData.get('cep_origem') as string || '').trim();
+    const token_frete = (formData.get('token_frete') as string || '').trim();
+    const usar_correios = formData.get('usar_correios') === 'on';
+    const usar_transportadoras = formData.get('usar_transportadoras') === 'on';
+    const usar_retirada = formData.get('usar_retirada') === 'on';
 
     try {
       const { error } = await supabase.from('configuracoes').upsert({
-        chave: 'admin_config',
+        chave: 'frete_config',
         valor: {
-          senha: novaSenha,
+          cep_origem,
+          token_frete,
+          usar_correios,
+          usar_transportadoras,
+          usar_retirada,
           atualizado_em: new Date().toISOString()
         }
       }, { onConflict: 'chave' });
@@ -80,119 +80,12 @@ export default async function AdminConfiguracoes({ searchParams }: { searchParam
       revalidatePath('/admin/configuracoes');
 
       if (error) {
-        redirect(`/admin/configuracoes?erro=Erro ao salvar nova senha: ${error.message}`);
+        redirect(`/admin/configuracoes?erro=Erro ao salvar frete: ${error.message}`);
       } else {
-        redirect('/admin/configuracoes?msg=Senha Secreta do Sistema atualizada com sucesso!');
+        redirect('/admin/configuracoes?msg=Configurações de Logística e Frete salvas com sucesso!');
       }
     } catch (err) {
-      redirect(`/admin/configuracoes?erro=Erro ao salvar nova senha: ${String(err)}`);
-    }
-  }
-
-  async function salvarMercadoPago(formData: FormData) {
-    'use server'
-    const accessToken = (formData.get('mp_access_token') as string || '').trim();
-    const publicKey = (formData.get('mp_public_key') as string || '').trim();
-    
-    if (!accessToken) return;
-
-    try {
-      const { error } = await supabase.from('configuracoes').upsert({
-        chave: 'mercadopago_config',
-        valor: {
-          access_token: accessToken,
-          public_key: publicKey,
-          atualizado_em: new Date().toISOString()
-        }
-      }, { onConflict: 'chave' });
-
-      revalidatePath('/admin/configuracoes');
-
-      if (error) {
-        redirect(`/admin/configuracoes?erro=Erro ao salvar Mercado Pago: ${error.message}`);
-      } else {
-        redirect('/admin/configuracoes?msg=Credenciais do Mercado Pago salvas com sucesso! As vendas já estão prontas para receber.');
-      }
-    } catch (err) {
-      redirect(`/admin/configuracoes?erro=Erro ao salvar Mercado Pago: ${String(err)}`);
-    }
-  }
-
-  async function salvarResend(formData: FormData) {
-    'use server'
-    const apiKey = (formData.get('resend_api_key') as string || '').trim();
-    if (!apiKey) return;
-
-    try {
-      const { error } = await supabase.from('configuracoes').upsert({
-        chave: 'resend_config',
-        valor: {
-          api_key: apiKey,
-          atualizado_em: new Date().toISOString()
-        }
-      }, { onConflict: 'chave' });
-
-      revalidatePath('/admin/configuracoes');
-
-      if (error) {
-        redirect(`/admin/configuracoes?erro=Erro ao salvar Resend: ${error.message}`);
-      } else {
-        redirect('/admin/configuracoes?msg=Chave de E-mail Resend salva com sucesso! Os códigos de acesso agora serão entregues no e-mail.');
-      }
-    } catch (err) {
-      redirect(`/admin/configuracoes?erro=Erro ao salvar Resend: ${String(err)}`);
-    }
-  }
-
-  async function importarProdutoEspecifico(formData: FormData) {
-    'use server'
-    const sku = formData.get('sku') as string;
-    if (!sku) return;
-
-    let redirectTo = '';
-
-    try {
-      const { data: cfg } = await supabase.from('configuracoes').select('*').eq('chave', 'bling_tokens').single();
-      const token = cfg?.valor?.access_token;
-      
-      if (!token) {
-        redirectTo = `/admin/configuracoes?erro=Token do Bling não encontrado. Faça a autorização primeiro.`;
-      } else {
-        const response = await fetch(`https://www.bling.com.br/Api/v3/produtos?codigo=${sku}`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        
-        const data = await response.json();
-
-        if (!data.data || data.data.length === 0) {
-          redirectTo = `/admin/configuracoes?erro=Produto SKU ${sku} não encontrado no Bling.`;
-        } else {
-          const prod = data.data[0];
-          const produtoParaInserir = {
-            bling_id: String(prod.id),
-            codigo_barras: prod.codigo,
-            nome: prod.nome,
-            preco: prod.preco,
-            slug: prod.nome.toLowerCase().replace(/ /g, '-').normalize("NFD").replace(/[\u0300-\u036f]/g, "") + '-' + Date.now(),
-            ativo: prod.situacao === 'A'
-          };
-
-          const { error } = await supabase.from('produtos').upsert(produtoParaInserir, { onConflict: 'bling_id' });
-          
-          if (error) {
-            redirectTo = `/admin/configuracoes?erro=A Vercel não conseguiu salvar no Banco de Dados.`;
-          } else {
-            redirectTo = `/admin/configuracoes?msg=Sucesso! O produto ${prod.nome} foi importado!`;
-          }
-        }
-      }
-    } catch (error) {
-      redirectTo = `/admin/configuracoes?erro=Erro fatal.`;
-    }
-
-    if (redirectTo) {
-      revalidatePath('/admin/produtos');
-      redirect(redirectTo);
+      redirect(`/admin/configuracoes?erro=Erro ao salvar frete: ${String(err)}`);
     }
   }
 
@@ -352,10 +245,15 @@ export default async function AdminConfiguracoes({ searchParams }: { searchParam
         <h2 className="text-xl font-bold mb-2 text-secondary">Logística e Frete (Correios & Transportadoras)</h2>
         <p className="text-sm text-gray-600 mb-6">Ative e configure os meios de entrega disponíveis para os clientes no checkout.</p>
         
-        <form className="flex flex-col gap-6">
+        <form action={salvarFreteConfig} autoComplete="off" className="flex flex-col gap-6">
           <div className="flex flex-col gap-4">
             <label className="flex items-center gap-3 p-4 border border-border rounded-lg bg-gray-50 cursor-pointer hover:bg-gray-100 transition">
-              <input type="checkbox" defaultChecked className="w-5 h-5 text-primary rounded focus:ring-primary" />
+              <input
+                type="checkbox"
+                name="usar_correios"
+                defaultChecked={freteConfig ? freteConfig.usar_correios : true}
+                className="w-5 h-5 text-primary rounded focus:ring-primary cursor-pointer"
+              />
               <div>
                 <p className="font-bold text-gray-800">Correios (PAC e Sedex)</p>
                 <p className="text-sm text-gray-500">Cálculo automático pelo CEP de origem.</p>
@@ -363,7 +261,12 @@ export default async function AdminConfiguracoes({ searchParams }: { searchParam
             </label>
 
             <label className="flex items-center gap-3 p-4 border border-border rounded-lg bg-gray-50 cursor-pointer hover:bg-gray-100 transition">
-              <input type="checkbox" defaultChecked className="w-5 h-5 text-primary rounded focus:ring-primary" />
+              <input
+                type="checkbox"
+                name="usar_transportadoras"
+                defaultChecked={freteConfig ? freteConfig.usar_transportadoras : true}
+                className="w-5 h-5 text-primary rounded focus:ring-primary cursor-pointer"
+              />
               <div>
                 <p className="font-bold text-gray-800">Transportadoras Privadas (ex: Jadlog, Total Express)</p>
                 <p className="text-sm text-gray-500">Requer integração com Melhor Envio ou Kangu.</p>
@@ -371,7 +274,12 @@ export default async function AdminConfiguracoes({ searchParams }: { searchParam
             </label>
 
             <label className="flex items-center gap-3 p-4 border border-border rounded-lg bg-gray-50 cursor-pointer hover:bg-gray-100 transition">
-              <input type="checkbox" defaultChecked className="w-5 h-5 text-primary rounded focus:ring-primary" />
+              <input
+                type="checkbox"
+                name="usar_retirada"
+                defaultChecked={freteConfig ? freteConfig.usar_retirada : true}
+                className="w-5 h-5 text-primary rounded focus:ring-primary cursor-pointer"
+              />
               <div>
                 <p className="font-bold text-gray-800">Retirada no Local</p>
                 <p className="text-sm text-gray-500">Cliente retira os produtos direto no pet shop.</p>
@@ -382,16 +290,30 @@ export default async function AdminConfiguracoes({ searchParams }: { searchParam
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
             <div>
               <label className="block text-sm font-medium mb-1">CEP de Origem (Remetente)</label>
-              <input type="text" placeholder="Ex: 01000-000" className="w-full border border-border rounded-lg p-2" />
+              <input
+                type="text"
+                name="cep_origem"
+                autoComplete="off"
+                defaultValue={freteConfig?.cep_origem || ''}
+                placeholder="Ex: 01000-000"
+                className="w-full border border-border rounded-lg p-3 text-sm font-mono font-bold bg-white focus:ring-2 focus:ring-yellow-500 focus:outline-none"
+              />
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Token de API (Melhor Envio / Correios)</label>
-              <input type="password" placeholder="Insira o Token" className="w-full border border-border rounded-lg p-2" />
+              <input
+                type="text"
+                name="token_frete"
+                autoComplete="off"
+                defaultValue={freteConfig?.token_frete || ''}
+                placeholder="Insira o Token de Frete (Opcional)"
+                className="w-full border border-border rounded-lg p-3 text-sm font-mono font-bold bg-white focus:ring-2 focus:ring-yellow-500 focus:outline-none"
+              />
             </div>
           </div>
 
-          <button type="button" className="bg-primary text-secondary px-6 py-3 rounded-lg font-bold hover:bg-yellow-400 transition w-fit mt-2">
-            Salvar Configurações de Frete
+          <button type="submit" className="bg-primary text-secondary px-6 py-3 rounded-lg font-bold hover:bg-yellow-400 transition w-fit mt-2 cursor-pointer shadow-sm">
+            💾 Salvar Configurações de Frete
           </button>
         </form>
       </div>
