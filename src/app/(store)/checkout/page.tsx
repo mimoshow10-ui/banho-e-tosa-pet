@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { MapPin, Truck, CheckCircle2, ChevronRight, ArrowLeft, ShoppingBag, ShieldCheck, Store } from 'lucide-react';
+import { MapPin, Truck, CheckCircle2, ChevronRight, ArrowLeft, ShoppingBag, ShieldCheck, Store, Ticket, X } from 'lucide-react';
 import { OpcaoFrete, ItemCarrinho, Cliente, Endereco } from '@/lib/types/checkout';
 
 export default function CheckoutPage() {
@@ -35,6 +35,10 @@ export default function CheckoutPage() {
 
   // Cupom de Desconto e Processamento
   const [cupomAplicado, setCupomAplicado] = useState<{ codigo: string; desconto: number; nome: string } | null>(null);
+  const [cupomInput, setCupomInput] = useState('');
+  const [erroCupom, setErroCupom] = useState('');
+  const [validandoCupom, setValidandoCupom] = useState(false);
+  const [cuponsDisponiveis, setCuponsDisponiveis] = useState<any[]>([]);
   const [processandoPagamento, setProcessandoPagamento] = useState(false);
 
   // Carregar itens do carrinho do localStorage (com fallback)
@@ -60,8 +64,61 @@ export default function CheckoutPage() {
     } catch {
       setItens(getExemploCarrinho());
     }
+
+    // Carregar cupons disponíveis no checkout
+    async function carregarCupons() {
+      try {
+        const res = await fetch('/api/cupons/disponiveis');
+        if (res.ok) {
+          const data = await res.json();
+          setCuponsDisponiveis(data.cupons || []);
+        }
+      } catch {}
+    }
+    carregarCupons();
+
     setLoading(false);
   }, []);
+
+  async function aplicarCupomCodigo(codigoParam?: string) {
+    const targetCodigo = (codigoParam || cupomInput).trim();
+    if (!targetCodigo) return;
+
+    setValidandoCupom(true);
+    setErroCupom('');
+
+    try {
+      const res = await fetch('/api/cupons/validar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ codigo: targetCodigo, itens, valorFrete: freteSelecionado?.valor || 0 })
+      });
+
+      const data = await res.json();
+
+      if (data.valido) {
+        const payload = { codigo: data.cupom.codigo, desconto: data.descontoAplicado, nome: data.cupom.nome_interno };
+        setCupomAplicado(payload);
+        setCupomInput('');
+        try {
+          localStorage.setItem('cupom_aplicado', JSON.stringify(payload));
+        } catch {}
+      } else {
+        setErroCupom(data.erro || 'Cupom inválido.');
+      }
+    } catch {
+      setErroCupom('Erro ao validar cupom.');
+    }
+    setValidandoCupom(false);
+  }
+
+  function removerCupom() {
+    setCupomAplicado(null);
+    setErroCupom('');
+    try {
+      localStorage.removeItem('cupom_aplicado');
+    } catch {}
+  }
 
   // Busca Automática de CEP (ViaCEP)
   async function buscarCep(val: string) {
@@ -674,6 +731,83 @@ export default function CheckoutPage() {
                   <span className="text-gray-400 text-xs">A calcular</span>
                 )}
               </div>
+            </div>
+
+            {/* Bloco de Cupom de Desconto */}
+            <div className="pt-3 border-t border-gray-100 space-y-2">
+              <label className="text-xs font-bold text-gray-700 flex items-center gap-1.5">
+                <Ticket size={14} className="text-primary" />
+                Cupom de Desconto
+              </label>
+
+              {cupomAplicado ? (
+                <div className="bg-emerald-50 border border-emerald-200 p-2.5 rounded-xl flex items-center justify-between">
+                  <div className="text-xs">
+                    <span className="font-bold text-emerald-800 uppercase block">{cupomAplicado.codigo}</span>
+                    <span className="text-emerald-600 text-[11px]">Economia de R$ {cupomAplicado.desconto.toFixed(2).replace('.', ',')}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={removerCupom}
+                    className="p-1 text-gray-400 hover:text-red-600 transition cursor-pointer"
+                    title="Remover cupom"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="Código do cupom"
+                      value={cupomInput}
+                      onChange={(e) => setCupomInput(e.target.value.toUpperCase())}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          aplicarCupomCodigo();
+                        }
+                      }}
+                      className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs text-gray-800 uppercase focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => aplicarCupomCodigo()}
+                      disabled={validandoCupom || !cupomInput.trim()}
+                      className="bg-primary hover:bg-primary/90 text-white font-bold px-3 py-2 rounded-xl text-xs transition disabled:opacity-50 cursor-pointer"
+                    >
+                      {validandoCupom ? '...' : 'Aplicar'}
+                    </button>
+                  </div>
+
+                  {erroCupom && (
+                    <p className="text-[11px] font-medium text-red-500 mt-1">{erroCupom}</p>
+                  )}
+
+                  {cuponsDisponiveis && cuponsDisponiveis.length > 0 && (
+                    <div className="pt-1">
+                      <p className="text-[11px] text-gray-500 mb-1.5 font-medium">Cupons disponíveis:</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {cuponsDisponiveis.map((c: any) => (
+                          <button
+                            key={c.id || c.codigo}
+                            type="button"
+                            onClick={() => {
+                              setCupomInput(c.codigo);
+                              aplicarCupomCodigo(c.codigo);
+                            }}
+                            className="bg-primary/10 hover:bg-primary/20 border border-primary/20 text-primary text-[11px] font-bold px-2.5 py-1 rounded-lg transition flex items-center gap-1 cursor-pointer"
+                          >
+                            <Ticket size={11} />
+                            {c.codigo}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="pt-3 border-t border-gray-200 flex justify-between items-end">
