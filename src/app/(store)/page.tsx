@@ -27,6 +27,28 @@ export default async function Home() {
 
   // Destaques da vitrine
   const destaquesConfig = configs?.find(c => c.chave === 'vitrine_destaques')?.valor || { mais_vendidos: [], novidades: [] };
+  const idsNovidades: string[] = destaquesConfig.novidades || [];
+  const idsMaisVendidos: string[] = destaquesConfig.mais_vendidos || [];
+  const novidadesSet = new Set(idsNovidades);
+  const maisVendidosSet = new Set(idsMaisVendidos);
+
+  const explicitIds = Array.from(new Set([...idsNovidades, ...idsMaisVendidos]));
+
+  // Buscar produtos explicitamente selecionados por ID ou SKU para garantir exibição imediata
+  let produtosEspecificos: any[] = [];
+  if (explicitIds.length > 0) {
+    const { data: specById } = await supabase
+      .from('produtos')
+      .select('*')
+      .in('id', explicitIds)
+      .eq('ativo', true);
+    const { data: specBySku } = await supabase
+      .from('produtos')
+      .select('*')
+      .in('sku', explicitIds)
+      .eq('ativo', true);
+    produtosEspecificos = [...(specById || []), ...(specBySku || [])];
+  }
 
   // Puxar apenas produtos PAI (parent_id IS NULL) na vitrine
   const { data: todosProdutos } = await supabase
@@ -47,18 +69,13 @@ export default async function Home() {
 
   const produtos = todosProdutos || [];
   const produtosComFoto = produtos.filter(p => Array.isArray(p.imagens) && p.imagens.length > 0 && typeof p.imagens[0] === 'string' && p.imagens[0].startsWith('http'));
-  
-  const idsNovidades: string[] = destaquesConfig.novidades || [];
-  const idsMaisVendidos: string[] = destaquesConfig.mais_vendidos || [];
-  const novidadesSet = new Set(idsNovidades);
-  const maisVendidosSet = new Set(idsMaisVendidos);
 
   // Apenas produtos com PROMOÇÃO EXPLICITAMENTE MARCADA E DENTRO DO PERÍODO
   const agora = Date.now();
   const produtosPromocao = (superPromocoes || []).filter((prod) => {
     if (!Array.isArray(prod.imagens) || prod.imagens.length === 0) return false;
     if (prod.estoque !== null && prod.estoque !== undefined && Number(prod.estoque) <= 0) return false;
-    if (novidadesSet.has(prod.id) || maisVendidosSet.has(prod.id)) return false;
+    if (novidadesSet.has(prod.id) || maisVendidosSet.has(prod.id) || (prod.sku && (novidadesSet.has(prod.sku) || maisVendidosSet.has(prod.sku)))) return false;
     
     // Checagem do Início da Promoção (se cadastrado)
     if (prod.promocao_inicio_em) {
@@ -75,9 +92,16 @@ export default async function Home() {
     return true;
   });
 
-  // Mapeador de produtos por ID para manter a ordem exata escolhida pelo usuário no Admin
+  // Mapeador de produtos por ID e SKU para manter a ordem exata escolhida pelo usuário no Admin
   const prodMap = new Map<string, any>();
-  produtos.forEach(p => prodMap.set(p.id, p));
+  produtos.forEach(p => {
+    prodMap.set(p.id, p);
+    if (p.sku) prodMap.set(p.sku, p);
+  });
+  produtosEspecificos.forEach(p => {
+    prodMap.set(p.id, p);
+    if (p.sku) prodMap.set(p.sku, p);
+  });
 
   // Novidades: exibe EXATAMENTE os produtos escolhidos pelo usuário no Admin
   let produtosNovidades = idsNovidades
