@@ -19,11 +19,11 @@ async function buscarProdutoMultiEstagio(slugOrQuery: string) {
   if (!raw) return null;
 
   try {
-    // 1. Busca exata por Slug, ID, Código de Barras ou SKU
+    // 1. Busca exata por Slug, ID ou Código de Barras (SKU)
     const { data: d1 } = await supabase
       .from('produtos')
       .select('*')
-      .or(`slug.eq.${raw},id.eq.${raw},codigo_barras.ilike.${raw},sku.ilike.${raw}`)
+      .or(`slug.eq.${raw},id.eq.${raw},codigo_barras.ilike.${raw}`)
       .limit(1);
 
     if (d1 && d1.length > 0) return d1[0];
@@ -34,7 +34,7 @@ async function buscarProdutoMultiEstagio(slugOrQuery: string) {
       const { data: d2 } = await supabase
         .from('produtos')
         .select('*')
-        .or(`slug.ilike.%${clean}%,id.ilike.%${clean}%,codigo_barras.ilike.%${clean}%,sku.ilike.%${clean}%`)
+        .or(`slug.ilike.%${clean}%,id.ilike.%${clean}%,codigo_barras.ilike.%${clean}%`)
         .limit(1);
       if (d2 && d2.length > 0) return d2[0];
     }
