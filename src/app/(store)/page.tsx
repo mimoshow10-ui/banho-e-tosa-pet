@@ -38,46 +38,61 @@ export default async function Home() {
     .order('criado_em', { ascending: false });
 
   const produtos = todosProdutos || [];
-  const produtosComFoto = produtos.filter(p => Array.isArray(p.imagens) && p.imagens.length > 0);
+  const produtosComFoto = produtos.filter(p => Array.isArray(p.imagens) && p.imagens.length > 0 && typeof p.imagens[0] === 'string' && p.imagens[0].startsWith('http'));
   
   // Apenas produtos com PROMOÇÃO ATIVA DENTRO DO PERÍODO
   const agora = Date.now();
   const produtosPromocao = (superPromocoes || []).filter((prod) => {
+    if (!Array.isArray(prod.imagens) || prod.imagens.length === 0) return false;
     if (prod.estoque !== null && prod.estoque !== undefined && Number(prod.estoque) <= 0) return false;
     
     // Checagem do Início da Promoção (se cadastrado)
     if (prod.promocao_inicio_em) {
       const inicio = new Date(prod.promocao_inicio_em).getTime();
-      if (!isNaN(inicio) && inicio > agora) return false; // Promoção futura
+      if (!isNaN(inicio) && inicio > agora) return false;
     }
 
     // Checagem de Validade / Fim da Promoção
     if (prod.promocao_expira_em) {
       const expira = new Date(prod.promocao_expira_em).getTime();
-      if (isNaN(expira) || expira <= agora) return false; // Promoção expirada
+      if (isNaN(expira) || expira <= agora) return false;
     } else {
-      return false; // Requer data de expiração cadastrada
+      return false;
     }
 
     return true;
   }).slice(0, 8);
 
-  // Mais Vendidos
+  // Mais Vendidos: busca selecionados ou preenche com os mais recentes com foto
   const idsMaisVendidos = destaquesConfig.mais_vendidos || [];
-  let produtosMaisVendidos = idsMaisVendidos.length > 0
-    ? produtos.filter(p => idsMaisVendidos.includes(p.id))
-    : [];
-  if (produtosMaisVendidos.length === 0) {
-    produtosMaisVendidos = produtosComFoto.slice(0, 6);
+  let produtosMaisVendidos = (idsMaisVendidos.length > 0
+    ? produtosComFoto.filter(p => idsMaisVendidos.includes(p.id))
+    : []);
+  
+  if (produtosMaisVendidos.length < 8) {
+    const existing = new Set(produtosMaisVendidos.map(p => p.id));
+    for (const p of produtosComFoto) {
+      if (!existing.has(p.id)) {
+        produtosMaisVendidos.push(p);
+        if (produtosMaisVendidos.length >= 8) break;
+      }
+    }
   }
 
-  // Novidades
+  // Novidades: busca selecionados ou preenche com os mais recentes com foto
   const idsNovidades = destaquesConfig.novidades || [];
-  let produtosNovidades = idsNovidades.length > 0
-    ? produtos.filter(p => idsNovidades.includes(p.id))
-    : [];
-  if (produtosNovidades.length === 0) {
-    produtosNovidades = produtosComFoto.slice(0, 8);
+  let produtosNovidades = (idsNovidades.length > 0
+    ? produtosComFoto.filter(p => idsNovidades.includes(p.id))
+    : []);
+
+  if (produtosNovidades.length < 8) {
+    const existing = new Set(produtosNovidades.map(p => p.id));
+    for (const p of produtosComFoto) {
+      if (!existing.has(p.id)) {
+        produtosNovidades.push(p);
+        if (produtosNovidades.length >= 8) break;
+      }
+    }
   }
 
   return (
