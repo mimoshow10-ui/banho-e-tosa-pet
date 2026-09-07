@@ -30,6 +30,20 @@ function RastreamentoContent() {
   useEffect(() => {
     if (queryPedido) {
       handleBuscar(queryPedido);
+    } else {
+      try {
+        const ult = localStorage.getItem('ultimo_pedido');
+        if (ult) {
+          const parsed = JSON.parse(ult);
+          if (parsed.numero) {
+            setBusca(parsed.numero);
+            handleBuscar(parsed.numero);
+          } else if (parsed.cpf) {
+            setBusca(parsed.cpf);
+            handleBuscar(parsed.cpf);
+          }
+        }
+      } catch {}
     }
   }, [queryPedido]);
 

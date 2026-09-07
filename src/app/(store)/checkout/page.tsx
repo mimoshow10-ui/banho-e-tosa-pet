@@ -251,6 +251,11 @@ export default function CheckoutPage() {
 
       const data = await res.json();
       if (res.ok && data.checkoutUrl) {
+        if (data.numeroPedido) {
+          try {
+            localStorage.setItem('ultimo_pedido', JSON.stringify({ numero: data.numeroPedido, cpf: cpfCnpj, data: new Date().toISOString() }));
+          } catch {}
+        }
         window.location.href = data.checkoutUrl;
       } else {
         alert(data.erro || 'Falha ao conectar com o Mercado Pago. Verifique as credenciais.');
