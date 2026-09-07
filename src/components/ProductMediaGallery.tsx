@@ -9,30 +9,50 @@ interface Props {
   nome: string;
 }
 
-export default function ProductMediaGallery({ imagens, videoUrl, nome }: Props) {
-  const [activeMedia, setActiveMedia] = useState<'video' | number>(videoUrl ? 'video' : 0);
-
-  // Normalizar array de imagens independentemente do formato
-  const safeImages: string[] = [];
+export function extractImageUrls(input: any): string[] {
+  if (!input) return [];
+  let items: any[] = [];
+  
   try {
-    let input = imagens;
     if (typeof input === 'string') {
       const trimmed = input.trim();
       if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
-        try { input = JSON.parse(trimmed); } catch { input = [trimmed]; }
+        try {
+          items = JSON.parse(trimmed);
+        } catch {
+          items = [trimmed];
+        }
       } else {
-        input = [trimmed];
+        items = trimmed.split(/[\r\n]+/).map(s => s.trim()).filter(Boolean);
       }
+    } else if (Array.isArray(input)) {
+      items = input;
     }
-    if (Array.isArray(input)) {
-      for (const item of input) {
-        if (typeof item === 'string' && item.trim()) {
-          const parts = item.split(/[\r\n,]+/).map(s => s.trim()).filter(Boolean);
-          safeImages.push(...parts);
+
+    const urls: string[] = [];
+    for (const item of items) {
+      if (typeof item === 'string' && item.trim()) {
+        const str = item.trim();
+        if (str.startsWith('http://') || str.startsWith('https://') || str.startsWith('/')) {
+          urls.push(str);
+        } else if (str.includes(',')) {
+          const parts = str.split(',').map(s => s.trim()).filter(Boolean);
+          urls.push(...parts);
+        } else {
+          urls.push(str);
         }
       }
     }
-  } catch {}
+    return urls;
+  } catch {
+    return [];
+  }
+}
+
+export default function ProductMediaGallery({ imagens, videoUrl, nome }: Props) {
+  const [activeMedia, setActiveMedia] = useState<'video' | number>(videoUrl ? 'video' : 0);
+
+  const safeImages = extractImageUrls(imagens);
 
   const getYouTubeId = (url: string) => {
     try {

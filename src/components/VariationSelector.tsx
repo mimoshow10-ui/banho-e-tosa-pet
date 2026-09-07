@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link';
+import { extractImageUrls } from './ProductMediaGallery';
 
 export default function VariationSelector({ currentSlug, family }: { currentSlug: string, family: any[] }) {
   if (!family || family.length <= 1) return null;
@@ -18,25 +19,8 @@ export default function VariationSelector({ currentSlug, family }: { currentSlug
         {sortedFamily.map((item) => {
           if (!item || !item.slug) return null;
           const isActive = item.slug === currentSlug;
-          let image: string | null = null;
-
-          try {
-            if (item.imagens) {
-              let raw = item.imagens;
-              if (typeof raw === 'string' && raw.trim().startsWith('[')) {
-                try { raw = JSON.parse(raw); } catch {}
-              }
-              if (Array.isArray(raw) && raw.length > 0) {
-                const first = raw[0];
-                if (typeof first === 'string' && first.trim()) {
-                  image = first.split(/[\r\n,]+/)[0].trim();
-                }
-              } else if (typeof raw === 'string' && raw.trim()) {
-                image = raw.split(/[\r\n,]+/)[0].trim();
-              }
-            }
-          } catch {}
-
+          const fotos = extractImageUrls(item.imagens);
+          const image = fotos[0] || null;
           const priceVal = Number(item.preco_promocional || item.preco || 0);
 
           return (

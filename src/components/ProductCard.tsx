@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import CountdownTimer from './CountdownTimer';
+import { extractImageUrls } from './ProductMediaGallery';
 
 interface ProdutoCardProps {
   produto: {
@@ -16,18 +17,8 @@ interface ProdutoCardProps {
 }
 
 export default function ProductCard({ produto }: ProdutoCardProps) {
-  let foto: string | null = null;
-  try {
-    let raw = produto.imagens;
-    if (typeof raw === 'string' && raw.trim().startsWith('[')) {
-      try { raw = JSON.parse(raw); } catch {}
-    }
-    if (Array.isArray(raw) && raw.length > 0 && typeof raw[0] === 'string') {
-      foto = raw[0].split(/[\r\n,]+/)[0].trim();
-    } else if (typeof raw === 'string' && raw.trim()) {
-      foto = raw.split(/[\r\n,]+/)[0].trim();
-    }
-  } catch {}
+  const fotos = extractImageUrls(produto.imagens);
+  const foto = fotos[0] || null;
 
   const precoNormal = Number(produto.preco || 0);
   const temPromo =
