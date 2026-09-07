@@ -71,7 +71,7 @@ export default async function ProdutoPage({ params }: { params: Promise<{ slug: 
     const { data } = await supabase
       .from('produtos')
       .select('*')
-      .eq('slug', slug)
+      .or(`slug.eq.${slug},id.eq.${slug},codigo_barras.ilike.${slug},sku.ilike.${slug}`)
       .limit(1);
     if (data) produtos = data;
   } catch {}
@@ -95,10 +95,6 @@ export default async function ProdutoPage({ params }: { params: Promise<{ slug: 
       }
     } catch {}
   }
-
-  // Produtos sem foto não devem ser publicados no site
-  const temFoto = Array.isArray(produto.imagens) ? (produto.imagens.length > 0 && typeof produto.imagens[0] === 'string' && produto.imagens[0].length > 0) : typeof produto.imagens === 'string' && produto.imagens.length > 0;
-  if (!temFoto) notFound();
 
   // Buscar família de variações com segurança
   let family: any[] = [];

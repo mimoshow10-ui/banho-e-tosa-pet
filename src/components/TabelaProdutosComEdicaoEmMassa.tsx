@@ -61,6 +61,9 @@ export default function TabelaProdutosComEdicaoEmMassa({ produtos, categorias, p
   const [valorDestaqueMassa, setValorDestaqueMassa] = useState<string>('super_promocao');
   const [valorStatusMassa, setValorStatusMassa] = useState<string>('true');
 
+  // Estado para Produto Pai no Agrupamento de Variações
+  const [prodPaiSelecionado, setProdPaiSelecionado] = useState<string>('');
+
   const [carregando, setCarregando] = useState(false);
   const [mensagem, setMensagem] = useState<{ tipo: 'sucesso' | 'erro'; texto: string } | null>(null);
 
@@ -119,6 +122,8 @@ export default function TabelaProdutosComEdicaoEmMassa({ produtos, categorias, p
         valorPayload = valorDestaqueMassa;
       } else if (acaoMassa === 'status') {
         valorPayload = valorStatusMassa;
+      } else if (acaoMassa === 'agrupar_variacoes') {
+        valorPayload = prodPaiSelecionado || selecionados[0];
       }
 
       const res = await fetch('/api/admin/produtos/edicao-em-massa', {
@@ -194,6 +199,8 @@ export default function TabelaProdutosComEdicaoEmMassa({ produtos, categorias, p
               className="bg-blue-950 text-white border border-blue-700 rounded-xl px-3 py-2 text-xs font-bold focus:outline-none cursor-pointer"
             >
               <option value="">⚙️ Escolha a Ação em Massa...</option>
+              <option value="agrupar_variacoes">👑 Vincular Selecionados como Variações (Pai e Filho)</option>
+              <option value="desvincular_variacoes">🔓 Desvincular Variações (Tornar Todos Produtos Pai)</option>
               <option value="categoria">🏷️ Alterar Grupo & Subgrupo</option>
               <option value="preco">💵 Reajustar Preço Normal (R$ / %)</option>
               <option value="preco_promocional">🏷️ Definir Preço Promocional (R$ / %)</option>
@@ -201,6 +208,27 @@ export default function TabelaProdutosComEdicaoEmMassa({ produtos, categorias, p
               <option value="status">🟢 Ativar / Desativar Produtos</option>
               <option value="excluir">🗑️ Excluir Selecionados</option>
             </select>
+
+            {/* SELETOR DO PRODUTO PAI (QUANDO AGRUPANDO VARIAÇÕES) */}
+            {acaoMassa === 'agrupar_variacoes' && (
+              <div className="flex items-center gap-2 bg-blue-900/60 p-1.5 rounded-xl border border-blue-700">
+                <span className="text-[11px] text-blue-200 font-bold">Produto Principal (Pai):</span>
+                <select
+                  value={prodPaiSelecionado || selecionados[0]}
+                  onChange={(e) => setProdPaiSelecionado(e.target.value)}
+                  className="bg-white text-secondary border border-gray-300 rounded-xl px-3 py-1.5 text-xs font-bold focus:outline-none cursor-pointer max-w-[280px]"
+                >
+                  {selecionados.map((id) => {
+                    const p = produtos.find((item) => item.id === id);
+                    return (
+                      <option key={id} value={id}>
+                        👑 {p ? p.nome : id}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+            )}
 
             {/* 2. SUB-OPÇÕES: GRUPO & SUBGRUPO (ORDEM ALFABÉTICA A-Z E CAMPOS CLICÁVEIS) */}
             {acaoMassa === 'categoria' && (

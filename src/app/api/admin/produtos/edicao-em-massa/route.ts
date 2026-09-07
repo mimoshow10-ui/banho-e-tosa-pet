@@ -117,6 +117,26 @@ export async function POST(req: Request) {
     // ── 6. EXCLUSÃO EM MASSA ──
     } else if (acao === 'excluir') {
       await supabase.from('produtos').delete().in('id', ids);
+
+    // ── 7. AGRUPAR COMO VARIAÇÕES (DEFINIR PAI E FILHOS) ──
+    } else if (acao === 'agrupar_variacoes') {
+      if (ids.length < 2) {
+        return NextResponse.json({ erro: 'Selecione pelo menos 2 produtos para agrupar em Pai e Filho.' }, { status: 400 });
+      }
+      const paiId = valor || ids[0];
+      const filhosIds = ids.filter((id: string) => id !== paiId);
+
+      // Garante que o Pai seja um produto principal (parent_id = null)
+      await supabase.from('produtos').update({ parent_id: null }).eq('id', paiId);
+
+      // Vincula todos os outros produtos selecionados ao Pai
+      const { error } = await supabase.from('produtos').update({ parent_id: paiId }).in('id', filhosIds);
+      if (error) throw new Error(`Erro ao agrupar variações: ${error.message}`);
+
+    // ── 8. DESVINCULAR VARIAÇÕES (TORNA TODOS PRODUTOS PAI) ──
+    } else if (acao === 'desvincular_variacoes') {
+      const { error } = await supabase.from('produtos').update({ parent_id: null }).in('id', ids);
+      if (error) throw new Error(`Erro ao desvincular variações: ${error.message}`);
     } else {
       return NextResponse.json({ erro: 'Ação em massa inválida.' }, { status: 400 });
     }
