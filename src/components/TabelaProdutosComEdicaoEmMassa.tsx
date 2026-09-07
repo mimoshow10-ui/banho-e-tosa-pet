@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { ExternalLink, Trash2, Edit, CheckSquare, Square, Zap, RefreshCw, CheckCircle2, AlertCircle, AlertTriangle, XCircle } from 'lucide-react';
+import { ExternalLink, Trash2, Edit, CheckSquare, Square, Zap, RefreshCw, CheckCircle2, AlertCircle, AlertTriangle, XCircle, ChevronDown, Search } from 'lucide-react';
 import DeleteProductButton from '@/app/admin/produtos/DeleteProductButton';
 
 interface Produto {
@@ -42,9 +42,12 @@ export default function TabelaProdutosComEdicaoEmMassa({ produtos, categorias, p
   // Estado para Modal de Foto Ampliada
   const [fotoModal, setFotoModal] = useState<{ url: string; nome: string } | null>(null);
   
-  // Estados para Grupo & Subgrupo
+  // Estados para Grupo & Subgrupo (Seleção Múltipla e Busca Alfabética)
   const [grupoIdMassa, setGrupoIdMassa] = useState<string>('');
   const [subgrupoIdMassa, setSubgrupoIdMassa] = useState<string>('');
+  const [categoriasSelecionadasMassa, setCategoriasSelecionadasMassa] = useState<string[]>([]);
+  const [dropdownAberto, setDropdownAberto] = useState<boolean>(false);
+  const [buscaCategoria, setBuscaCategoria] = useState<string>('');
 
   // Estados para Reajuste de Preço Normal
   const [modoPrecoMassa, setModoPrecoMassa] = useState<'fixo' | 'aumentar_pct' | 'diminuir_pct'>('fixo');
@@ -61,13 +64,10 @@ export default function TabelaProdutosComEdicaoEmMassa({ produtos, categorias, p
   const [carregando, setCarregando] = useState(false);
   const [mensagem, setMensagem] = useState<{ tipo: 'sucesso' | 'erro'; texto: string } | null>(null);
 
-  // Separar Grupos Principais e Subgrupos
-  const gruposPrincipais = categorias.filter((c) => !c.parent_id);
-  const subgruposDisponiveis = categorias.filter((c) => {
-    if (!c.parent_id) return false;
-    if (grupoIdMassa) return c.parent_id === grupoIdMassa;
-    return true;
-  });
+  // Ordenar todas as categorias em ORDEM ALFABÉTICA (A-Z)
+  const categoriasOrdenadas = [...categorias].sort((a, b) =>
+    (a.nome || '').localeCompare(b.nome || '', 'pt-BR', { sensitivity: 'base' })
+  );
 
   const todosSelecionados = produtos.length > 0 && selecionados.length === produtos.length;
 
@@ -108,7 +108,7 @@ export default function TabelaProdutosComEdicaoEmMassa({ produtos, categorias, p
       let catPayload = null;
 
       if (acaoMassa === 'categoria') {
-        catPayload = subgrupoIdMassa || grupoIdMassa || null;
+        catPayload = categoriasSelecionadasMassa.length > 0 ? categoriasSelecionadasMassa[0] : (subgrupoIdMassa || grupoIdMassa || null);
       } else if (acaoMassa === 'preco') {
         modoPayload = modoPrecoMassa;
         valorPayload = valorPrecoMassa;
@@ -202,33 +202,107 @@ export default function TabelaProdutosComEdicaoEmMassa({ produtos, categorias, p
               <option value="excluir">🗑️ Excluir Selecionados</option>
             </select>
 
-            {/* 2. SUB-OPÇÕES: GRUPO & SUBGRUPO */}
+            {/* 2. SUB-OPÇÕES: GRUPO & SUBGRUPO (ORDEM ALFABÉTICA A-Z E CAMPOS CLICÁVEIS) */}
             {acaoMassa === 'categoria' && (
-              <div className="flex flex-wrap items-center gap-2">
-                {/* Seletor Unificado de Categoria ou Grupo */}
-                <select
-                  value={subgrupoIdMassa || grupoIdMassa}
-                  onChange={(e) => {
-                    const selectedCatId = e.target.value;
-                    const catObj = categorias.find(c => c.id === selectedCatId);
-                    if (catObj?.parent_id) {
-                      setSubgrupoIdMassa(catObj.id);
-                      setGrupoIdMassa(catObj.parent_id);
-                    } else {
-                      setGrupoIdMassa(selectedCatId);
-                      setSubgrupoIdMassa('');
-                    }
-                  }}
-                  className="bg-white text-secondary border border-gray-300 rounded-xl px-3 py-2 text-xs font-bold focus:outline-none cursor-pointer max-w-[280px]"
+              <div className="relative inline-block text-left">
+                <button
+                  type="button"
+                  onClick={() => setDropdownAberto(!dropdownAberto)}
+                  className="bg-white text-secondary border border-gray-300 rounded-xl px-3.5 py-2 text-xs font-bold focus:outline-none cursor-pointer flex items-center justify-between gap-2 min-w-[260px] max-w-[340px] shadow-2xs hover:bg-gray-50 transition"
                 >
-                  <option value="">🏷️ [Selecione o Grupo ou Subgrupo Destino]</option>
-                  <option value="">🚫 Remover da Categoria Atual (Sem Categoria)</option>
-                  {categorias.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.nome}
-                    </option>
-                  ))}
-                </select>
+                  <span className="truncate">
+                    {categoriasSelecionadasMassa.length === 0
+                      ? (subgrupoIdMassa || grupoIdMassa
+                          ? `🏷️ ${categorias.find(c => c.id === (subgrupoIdMassa || grupoIdMassa))?.nome || '1 Categoria Selecionada'}`
+                          : '🏷️ [Selecione o Grupo ou Subgrupo]')
+                      : `🏷️ ${categoriasSelecionadasMassa.length} Categoria(s) Selecionada(s)`}
+                  </span>
+                  <ChevronDown size={14} className="text-gray-500 flex-shrink-0" />
+                </button>
+
+                {dropdownAberto && (
+                  <div className="absolute left-0 mt-1 w-80 bg-white border border-gray-200 rounded-2xl shadow-xl z-50 p-3 space-y-2 text-secondary text-xs animate-in fade-in zoom-in-95 duration-150">
+                    {/* Campo de Busca Interna */}
+                    <div className="relative">
+                      <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+                      <input
+                        type="text"
+                        placeholder="🔍 Buscar grupo ou subgrupo (A-Z)..."
+                        value={buscaCategoria}
+                        onChange={(e) => setBuscaCategoria(e.target.value)}
+                        className="w-full pl-8 pr-3 py-1.5 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary/20"
+                      />
+                    </div>
+
+                    {/* Barra de Ações Rápidas (Limpar / Info) */}
+                    <div className="flex items-center justify-between pb-1 border-b border-gray-100 text-[11px]">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCategoriasSelecionadasMassa([]);
+                          setGrupoIdMassa('');
+                          setSubgrupoIdMassa('');
+                        }}
+                        className="text-red-600 font-bold hover:underline"
+                      >
+                        🚫 Sem Categoria / Limpar
+                      </button>
+                      <span className="text-gray-400 font-medium">Ordem Alfabética (A-Z)</span>
+                    </div>
+
+                    {/* Lista em Ordem Alfabética com Checkboxes Clicáveis */}
+                    <div className="max-h-64 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+                      {categoriasOrdenadas
+                        .filter((c) => (c.nome || '').toLowerCase().includes(buscaCategoria.toLowerCase()))
+                        .map((c) => {
+                          const estaSelecionado = categoriasSelecionadasMassa.includes(c.id) || subgrupoIdMassa === c.id || grupoIdMassa === c.id;
+                          return (
+                            <label
+                              key={c.id}
+                              className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl cursor-pointer transition text-xs select-none ${
+                                estaSelecionado ? 'bg-primary/10 font-bold text-primary border border-primary/20' : 'hover:bg-gray-100 text-gray-700'
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={estaSelecionado}
+                                onChange={() => {
+                                  if (estaSelecionado) {
+                                    setCategoriasSelecionadasMassa((prev) => prev.filter((id) => id !== c.id));
+                                    if (subgrupoIdMassa === c.id) setSubgrupoIdMassa('');
+                                    if (grupoIdMassa === c.id) setGrupoIdMassa('');
+                                  } else {
+                                    setCategoriasSelecionadasMassa((prev) => [...prev, c.id]);
+                                    if (c.parent_id) {
+                                      setSubgrupoIdMassa(c.id);
+                                      setGrupoIdMassa(c.parent_id);
+                                    } else {
+                                      setGrupoIdMassa(c.id);
+                                    }
+                                  }
+                                }}
+                                className="rounded border-gray-300 text-primary focus:ring-primary w-4 h-4 cursor-pointer"
+                              />
+                              <span className="flex-1 truncate">🏷️ {c.nome}</span>
+                            </label>
+                          );
+                        })}
+                    </div>
+
+                    <div className="pt-2 border-t border-gray-100 flex justify-between items-center">
+                      <span className="text-[11px] text-gray-400">
+                        {categoriasSelecionadasMassa.length} marcada(s)
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setDropdownAberto(false)}
+                        className="bg-primary hover:bg-orange-600 text-white px-3 py-1 rounded-lg text-xs font-bold transition shadow-2xs"
+                      >
+                        Pronto
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
