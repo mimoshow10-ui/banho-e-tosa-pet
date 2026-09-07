@@ -46,7 +46,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     const rawDesc = String(produto.seo_description || produto.descricao_curta || `Compre ${produto.nome || 'produtos'} no Banho & Tosa Pet!`);
     const description = rawDesc.replace(/<[^>]*>?/gm, '').replace(/[\r\n]+/g, ' ').slice(0, 160).trim();
 
-    let imagem = '/logo-luxo.jpg';
+    let imagem = '/logo-luxo.png';
     try {
       const fotos = extractImageUrls(produto.imagens);
       if (fotos.length > 0) imagem = fotos[0];

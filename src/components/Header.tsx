@@ -24,7 +24,7 @@ export default async function Header() {
             <Link href="/">
               <div className="relative w-72 md:w-[380px] h-20 md:h-24 cursor-pointer overflow-visible flex items-center">
                 <Image 
-                  src="/logo-luxo.jpg" 
+                  src="/logo-luxo.png" 
                   alt="Banho e Tosa Pet Logo" 
                   fill 
                   className="object-contain object-left scale-[1.5] origin-left" 
