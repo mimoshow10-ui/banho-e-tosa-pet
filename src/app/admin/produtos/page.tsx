@@ -30,7 +30,7 @@ export default async function AdminProdutos(props: {
   const promocao = searchParams.promocao || '';
   const status = searchParams.status || '';
   const pagina = Math.max(1, Number(searchParams.pagina) || 1);
-  const limite = 50;
+  const limite = 200;
   const offset = (pagina - 1) * limite;
 
   const { data: todasCategorias } = await supabase.from('categorias').select('id, nome, parent_id').order('nome');
