@@ -38,6 +38,9 @@ export default function TabelaProdutosComEdicaoEmMassa({ produtos, categorias, p
   const [selecionados, setSelecionados] = useState<string[]>([]);
   // Inicia em neutro por padrão
   const [acaoMassa, setAcaoMassa] = useState<string>('');
+
+  // Estado para Modal de Foto Ampliada
+  const [fotoModal, setFotoModal] = useState<{ url: string; nome: string } | null>(null);
   
   // Estados para Grupo & Subgrupo
   const [grupoIdMassa, setGrupoIdMassa] = useState<string>('');
@@ -351,7 +354,7 @@ export default function TabelaProdutosComEdicaoEmMassa({ produtos, categorias, p
             </span>
           )}
         </div>
-        
+
         <div className="bg-white rounded-2xl border border-gray-200 shadow-xs overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
@@ -371,7 +374,7 @@ export default function TabelaProdutosComEdicaoEmMassa({ produtos, categorias, p
                       )}
                     </button>
                   </th>
-                  <th className="p-4 w-16">Foto</th>
+                  <th className="p-4 w-28">Foto do Produto</th>
                   <th className="p-4 w-32">SKU</th>
                   <th className="p-4">Nome do Produto</th>
                   <th className="p-4">Categoria</th>
@@ -408,22 +411,30 @@ export default function TabelaProdutosComEdicaoEmMassa({ produtos, categorias, p
                           </button>
                         </td>
 
-                        {/* Foto */}
+                        {/* Foto - Ampliada e com Clique para Expandir */}
                         <td className="p-4">
-                          <Link href={`/produto/${item.slug}`} target="_blank" title="Abrir página de vendas">
-                            {fotoValida ? (
+                          {fotoValida ? (
+                            <button
+                              type="button"
+                              onClick={() => setFotoModal({ url: fotoValida, nome: item.nome })}
+                              className="relative group cursor-zoom-in block"
+                              title="Clique para ampliar a foto em alta resolução"
+                            >
                               <img
                                 src={fotoValida}
                                 alt={item.nome}
-                                className="w-12 h-12 object-cover rounded-xl border border-gray-200 hover:opacity-80 transition cursor-pointer shadow-2xs"
+                                className="w-20 h-20 md:w-24 md:h-24 object-contain bg-white rounded-2xl border-2 border-gray-200 shadow-xs group-hover:border-primary group-hover:scale-105 transition-all p-1"
                               />
-                            ) : (
-                              <div className="w-12 h-12 bg-amber-50 rounded-xl border-2 border-amber-300 flex flex-col items-center justify-center text-[10px] font-black text-amber-700 text-center leading-tight shadow-2xs" title="Produto Sem Foto (Não Publicado)">
-                                <span className="text-xs">🟡</span>
-                                <span>Sem Foto</span>
-                              </div>
-                            )}
-                          </Link>
+                              <span className="absolute bottom-1 right-1 bg-black/70 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md opacity-0 group-hover:opacity-100 transition">
+                                🔍 Ampliar
+                              </span>
+                            </button>
+                          ) : (
+                            <div className="w-20 h-20 md:w-24 md:h-24 bg-amber-50 rounded-2xl border-2 border-amber-300 flex flex-col items-center justify-center text-[10px] font-black text-amber-700 text-center leading-tight shadow-2xs p-1" title="Produto Sem Foto (Não Publicado)">
+                              <span className="text-sm">🟡</span>
+                              <span>Sem Foto</span>
+                            </div>
+                          )}
                         </td>
 
                         {/* SKU */}
@@ -551,6 +562,39 @@ export default function TabelaProdutosComEdicaoEmMassa({ produtos, categorias, p
           </div>
         </div>
       </div>
+
+      {/* 🔍 MODAL DE FOTO EXPANDIDA EM ALTA RESOLUÇÃO */}
+      {fotoModal && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200"
+          onClick={() => setFotoModal(null)}
+        >
+          <div
+            className="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl relative space-y-4 text-center border border-gray-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setFotoModal(null)}
+              className="absolute top-4 right-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold w-8 h-8 rounded-full flex items-center justify-center cursor-pointer shadow-xs"
+            >
+              ✕
+            </button>
+
+            <h3 className="text-sm font-bold text-gray-800 pr-8">{fotoModal.nome}</h3>
+
+            <div className="relative w-full max-h-[70vh] flex items-center justify-center bg-gray-50 rounded-2xl overflow-hidden p-2 border border-gray-200">
+              <img
+                src={fotoModal.url}
+                alt={fotoModal.nome}
+                className="max-h-[65vh] w-auto max-w-full object-contain rounded-xl shadow-md"
+              />
+            </div>
+
+            <p className="text-xs text-gray-400 font-medium">Clique fora ou no botão ✕ para fechar</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -37,14 +37,15 @@ export default function ConfiguracoesForms({ temSenhaConfigurada, resendConfig, 
 
   async function handleSalvarSenha(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    const formEl = e.currentTarget;
     setLoadingSenha(true);
     setMsgSenha(null);
     try {
-      const formData = new FormData(e.currentTarget);
+      const formData = new FormData(formEl);
       const res = await salvarSenhaAdmin(formData);
       if (res?.sucesso) {
         setMsgSenha({ tipo: 'sucesso', texto: res.mensagem || 'Senha salva!' });
-        (e.currentTarget as HTMLFormElement).reset();
+        if (formEl) formEl.reset();
       } else {
         setMsgSenha({ tipo: 'erro', texto: res?.erro || 'Erro ao salvar senha.' });
       }
