@@ -5,12 +5,14 @@ import { revalidatePath } from 'next/cache';
 
 export async function salvarTopBar(formData: FormData) {
   try {
-    const texto = formData.get('texto') as string;
+    const texto1 = (formData.get('texto1') as string) || '';
+    const texto2 = (formData.get('texto2') as string) || '';
+    const texto = texto1; // retrocompatibilidade
     const visibilidade = formData.get('visibilidade') as string;
     const cor = formData.get('cor') as string || 'bg-primary';
 
     const { error } = await supabase.from('configuracoes').upsert(
-      { chave: 'marketing_topbar', valor: { texto, visibilidade, cor } },
+      { chave: 'marketing_topbar', valor: { texto, texto1, texto2, visibilidade, cor } },
       { onConflict: 'chave' }
     );
 

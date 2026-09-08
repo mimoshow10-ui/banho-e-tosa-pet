@@ -6,7 +6,9 @@ import { Layout, CheckCircle2, AlertCircle } from 'lucide-react';
 
 interface Props {
   topbar: {
-    texto: string;
+    texto?: string;
+    texto1?: string;
+    texto2?: string;
     visibilidade: string;
     cor: string;
   };
@@ -54,14 +56,26 @@ export default function TopBarForm({ topbar }: Props) {
       )}
 
       <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="md:col-span-2">
-          <label className="block text-xs font-bold text-gray-700 mb-1">Frase de Destaque da Barra *</label>
+        <div>
+          <label className="block text-xs font-bold text-gray-700 mb-1">Frase 1 da Barra *</label>
           <input
             type="text"
-            name="texto"
-            defaultValue={topbar.texto}
+            name="texto1"
+            defaultValue={topbar.texto1 || topbar.texto || 'Frete grátis acima de R$ 99,00'}
+            placeholder="Ex: 🚚 Frete grátis acima de R$ 99,00"
             className="w-full border border-gray-300 rounded-xl p-2.5 text-sm bg-white focus:ring-2 focus:ring-primary focus:outline-none font-bold"
             required
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs font-bold text-gray-700 mb-1">Frase 2 da Barra (Opcional)</label>
+          <input
+            type="text"
+            name="texto2"
+            defaultValue={topbar.texto2 || ''}
+            placeholder="Ex: 💳 Parcele em até 6x sem juros no cartão"
+            className="w-full border border-gray-300 rounded-xl p-2.5 text-sm bg-white focus:ring-2 focus:ring-primary focus:outline-none font-bold"
           />
         </div>
 
