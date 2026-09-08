@@ -15,7 +15,7 @@ export default function TopBar({ topbar }: { topbar: any }) {
   const texto = topbar.texto || '🚚 Frete grátis acima de R$ 99,00';
 
   return (
-    <div className={`w-full ${topbar.cor} text-white py-2 overflow-hidden relative shadow-2xs`}>
+    <div className={`w-full bg-yellow-400 text-slate-950 py-2 overflow-hidden relative shadow-2xs`}>
       <style jsx>{`
         @keyframes marqueeSlow {
           0% {
