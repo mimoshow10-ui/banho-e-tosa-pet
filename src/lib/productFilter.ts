@@ -28,6 +28,7 @@ export function hasValidPhoto(produto: any): boolean {
     lower.includes('placeholder') ||
     lower.includes('no-image') ||
     lower.includes('sem-foto') ||
+    lower.includes('amazonaws.com') ||
     lower === 'null' ||
     lower === 'undefined'
   ) {

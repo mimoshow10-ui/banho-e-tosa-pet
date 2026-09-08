@@ -7,6 +7,8 @@ import TabelaProdutosComEdicaoEmMassa from '@/components/TabelaProdutosComEdicao
 import AdminFiltrosAvancados from '@/components/AdminFiltrosAvancados';
 import { getFamilyConfig } from '@/lib/familyManager';
 
+import { hasValidPhoto } from '@/lib/productFilter';
+
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
@@ -159,6 +161,12 @@ export default async function AdminProdutos(props: {
       status_classificacao: statusClassificacao 
     };
   });
+
+  if (com_foto === 'sim') {
+    produtosFormatados = produtosFormatados.filter(p => hasValidPhoto(p));
+  } else if (com_foto === 'nao') {
+    produtosFormatados = produtosFormatados.filter(p => !hasValidPhoto(p));
+  }
 
   const familyConfig = await getFamilyConfig();
   const paiIds = new Set(Object.keys(familyConfig.productToFamilyMap));
