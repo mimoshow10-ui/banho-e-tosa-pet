@@ -23,22 +23,102 @@ export async function importarSKU(formData: FormData) {
   let redirectTo = '';
 
   try {
+    let tokenCfg: any = null;
     const { data: cfg } = await supabase.from('configuracoes').select('*').eq('chave', 'bling_tokens').single();
-    const token = cfg?.valor?.access_token;
-    
+    let token = cfg?.valor?.access_token;
+    const refreshToken = cfg?.valor?.refresh_token;
+
+    // Auto-refresh token if credentials are present
+    const { data: creds } = await supabase.from('configuracoes').select('*').eq('chave', 'bling_credentials').single();
+    const clientId = creds?.valor?.client_id;
+    const clientSecret = creds?.valor?.client_secret;
+
+    if ((!token || token.length < 5) && refreshToken && clientId && clientSecret) {
+      try {
+        const res = await fetch('https://www.bling.com.br/Api/v3/oauth/token', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Authorization': 'Basic ' + Buffer.from(clientId + ':' + clientSecret).toString('base64'),
+            'Accept': '1.0'
+          },
+          body: new URLSearchParams({
+            grant_type: 'refresh_token',
+            refresh_token: refreshToken
+          })
+        });
+        const dataRef = await res.json();
+        if (dataRef.access_token) {
+          token = dataRef.access_token;
+          await supabase.from('configuracoes').upsert({
+            chave: 'bling_tokens',
+            valor: {
+              access_token: dataRef.access_token,
+              refresh_token: dataRef.refresh_token || refreshToken
+            }
+          }, { onConflict: 'chave' });
+        }
+      } catch (e) {}
+    }
+
     if (!token) {
       redirectTo = makeUrl('erro', 'Token do Bling não encontrado. Vá nas Configurações e autorize o app.');
     } else {
-      const response = await fetch(`https://api.bling.com.br/Api/v3/produtos?codigo=${sku}`, {
+      let response = await fetch(`https://api.bling.com.br/Api/v3/produtos?codigo=${encodeURIComponent(sku)}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       
-      const data = await response.json();
+      let data = await response.json();
+
+      // If token expired, try refreshing once
+      if ((response.status === 401 || data?.error?.type === 'invalid_token') && refreshToken && clientId && clientSecret) {
+        try {
+          const res = await fetch('https://www.bling.com.br/Api/v3/oauth/token', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+              'Authorization': 'Basic ' + Buffer.from(clientId + ':' + clientSecret).toString('base64'),
+              'Accept': '1.0'
+            },
+            body: new URLSearchParams({
+              grant_type: 'refresh_token',
+              refresh_token: refreshToken
+            })
+          });
+          const dataRef = await res.json();
+          if (dataRef.access_token) {
+            token = dataRef.access_token;
+            await supabase.from('configuracoes').upsert({
+              chave: 'bling_tokens',
+              valor: {
+                access_token: dataRef.access_token,
+                refresh_token: dataRef.refresh_token || refreshToken
+              }
+            }, { onConflict: 'chave' });
+
+            response = await fetch(`https://api.bling.com.br/Api/v3/produtos?codigo=${encodeURIComponent(sku)}`, {
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+            data = await response.json();
+          }
+        } catch (e) {}
+      }
+
+      // If still no results by codigo, search by pesquisa param
+      if (!data.data || data.data.length === 0) {
+        const fallbackRes = await fetch(`https://api.bling.com.br/Api/v3/produtos?pesquisa=${encodeURIComponent(sku)}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const fallbackData = await fallbackRes.json();
+        if (fallbackData?.data && fallbackData.data.length > 0) {
+          data = fallbackData;
+        }
+      }
 
       if (response.status === 401 || data?.error?.type === 'invalid_token') {
         redirectTo = makeUrl('erro', 'Token do Bling expirado. Vá em Configurações e autorize o aplicativo novamente!');
       } else if (!data.data || data.data.length === 0) {
-        redirectTo = makeUrl('erro', `Bling não encontrou nenhum produto com o SKU exato: '${sku}'. Verifique a digitação.`);
+        redirectTo = makeUrl('erro', `Bling não encontrou nenhum produto com o SKU: '${sku}'. Verifique se o código está correto no Bling.`);
       } else {
         const produtoBuscado = data.data.find(
           (p: any) =>
@@ -52,106 +132,115 @@ export async function importarSKU(formData: FormData) {
           return;
         }
 
-        async function fetchAndInsertBlingProduct(prodCompletoBase: any, parent_id: string | null = null): Promise<{id: string, imagensBling: any[], imagensPermanentes: any[], prodExistente: any} | null> {
-          const prodId = String(prodCompletoBase.id);
-          const detalhesReq = await fetch(`https://api.bling.com.br/Api/v3/produtos/${prodId}`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-          });
-          const detalhesJson = await detalhesReq.json();
-          const prodCompleto = detalhesJson.data || prodCompletoBase;
-
-          if (String(prodCompleto.id) !== prodId) {
-            console.error(`[IMAGE MAPPING UNRESOLVED] Invariante violado: Esperado BlingId ${prodId}, recebido ${prodCompleto.id}`);
-            return null;
-          }
-
-          let estoqueAtual = 0;
+        async function fetchAndInsertBlingProduct(prodCompletoBase: any, parent_id: string | null = null): Promise<{ success: boolean; id?: string; error?: string }> {
           try {
-            const estoqueReq = await fetch(`https://api.bling.com.br/Api/v3/estoques/saldos?idsProdutos[]=${prodId}`, {
+            const prodId = String(prodCompletoBase.id);
+            const detalhesReq = await fetch(`https://api.bling.com.br/Api/v3/produtos/${prodId}`, {
               headers: { 'Authorization': `Bearer ${token}` }
             });
-            const estoqueJson = await estoqueReq.json();
-            estoqueAtual = estoqueJson.data?.[0]?.saldoFisicoTotal || 0;
-          } catch(e) {}
+            const detalhesJson = await detalhesReq.json();
+            const prodCompleto = detalhesJson.data || prodCompletoBase;
 
-          let imagensBling: string[] = [];
-          const externas = prodCompleto.midia?.imagens?.externas?.map((img: any) => img.link) || [];
-          const internas = prodCompleto.midia?.imagens?.internas?.map((img: any) => img.link) || [];
-          imagensBling = [...externas, ...internas].filter(Boolean);
+            let estoqueAtual = 0;
+            try {
+              const estoqueReq = await fetch(`https://api.bling.com.br/Api/v3/estoques/saldos?idsProdutos[]=${prodId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+              });
+              const estoqueJson = await estoqueReq.json();
+              estoqueAtual = estoqueJson.data?.[0]?.saldoFisicoTotal || 0;
+            } catch(e) {}
 
-          if (imagensBling.length === 0 && Array.isArray(prodCompleto.midia)) {
-            imagensBling = prodCompleto.midia.map((m: any) => m.url || m.link).filter(Boolean);
-          }
+            let imagensBling: string[] = [];
+            const externas = prodCompleto.midia?.imagens?.externas?.map((img: any) => img.link) || [];
+            const internas = prodCompleto.midia?.imagens?.internas?.map((img: any) => img.link) || [];
+            imagensBling = [...externas, ...internas].filter(Boolean);
 
-          if (imagensBling.length === 0 && prodCompleto.imagemURL) {
-            imagensBling = [prodCompleto.imagemURL];
-          }
-
-          const { data: prodExistente } = await supabase.from('produtos').select('id, imagens, origem').eq('bling_id', prodId).maybeSingle();
-
-          const { uploadBlingImagesToSupabase } = await import('@/lib/upload-images');
-          let imagensPermanentes: string[] | null = null;
-          
-          if (imagensBling.length > 0) {
-            imagensPermanentes = await uploadBlingImagesToSupabase(imagensBling, prodId);
-          }
-
-          let imagensFinais: string[] | null = null;
-          if (prodExistente?.origem === 'MANUAL') {
-            imagensFinais = prodExistente.imagens;
-          } else if (imagensPermanentes && imagensPermanentes.length > 0) {
-            imagensFinais = imagensPermanentes;
-          } else if (imagensBling && imagensBling.length > 0) {
-            imagensFinais = imagensBling;
-          } else {
-            imagensFinais = null;
-          }
-
-          if (prodExistente) {
-            await supabase.from('produtos').update({
-              preco: prodCompleto.preco,
-              estoque: estoqueAtual,
-              codigo_barras: prodCompleto.codigo || prodCompleto.gtin,
-              imagens: imagensFinais || prodExistente.imagens
-            }).eq('id', prodExistente.id);
-
-            return { id: prodExistente.id, imagensBling, imagensPermanentes: imagensPermanentes || [], prodExistente };
-          } else {
-            const baseSlug = prodCompleto.nome.toLowerCase().replace(/ /g, '-').normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-            const slug = `${baseSlug}-${prodCompleto.id}`;
-
-            const produtoParaInserir = {
-              bling_id: prodId,
-              codigo_barras: prodCompleto.codigo || prodCompleto.gtin,
-              nome: prodCompleto.nome,
-              preco: prodCompleto.preco,
-              estoque: estoqueAtual,
-              slug: slug,
-              ativo: prodCompleto.situacao === 'A',
-              peso_liquido: prodCompleto.pesoLiquido || 0,
-              peso_bruto: prodCompleto.pesoBruto || 0,
-              largura: prodCompleto.dimensoes?.largura || 0,
-              altura: prodCompleto.dimensoes?.altura || 0,
-              profundidade: prodCompleto.dimensoes?.profundidade || 0,
-              marca: prodCompleto.marca || '',
-              ncm: prodCompleto.tributacao?.ncm || '',
-              descricao_curta: prodCompleto.descricaoCurta || '',
-              imagens: imagensFinais,
-              parent_id: parent_id
-            };
-
-            const { data: insertedData, error } = await supabase.from('produtos').insert([produtoParaInserir]).select('id').single();
-            if (error) {
-              console.error("Insert error ao importar SKU:", error);
-              return null;
+            if (imagensBling.length === 0 && Array.isArray(prodCompleto.midia)) {
+              imagensBling = prodCompleto.midia.map((m: any) => m.url || m.link).filter(Boolean);
             }
-            return { id: insertedData.id, imagensBling, imagensPermanentes: imagensPermanentes || [], prodExistente: null };
+
+            if (imagensBling.length === 0 && prodCompleto.imagemURL) {
+              imagensBling = [prodCompleto.imagemURL];
+            }
+
+            const { data: prodExistente } = await supabase.from('produtos').select('id, imagens, origem').eq('bling_id', prodId).maybeSingle();
+
+            let imagensFinais: string[] | null = null;
+            try {
+              const { uploadBlingImagesToSupabase } = await import('@/lib/upload-images');
+              let imagensPermanentes: string[] | null = null;
+              if (imagensBling.length > 0) {
+                imagensPermanentes = await uploadBlingImagesToSupabase(imagensBling, prodId);
+              }
+              if (prodExistente?.origem === 'MANUAL') {
+                imagensFinais = prodExistente.imagens;
+              } else if (imagensPermanentes && imagensPermanentes.length > 0) {
+                imagensFinais = imagensPermanentes;
+              } else if (imagensBling && imagensBling.length > 0) {
+                imagensFinais = imagensBling;
+              }
+            } catch (e: any) {
+              console.error("Erro ao processar imagens:", e);
+              imagensFinais = imagensBling.length > 0 ? imagensBling : null;
+            }
+
+            if (prodExistente) {
+              const { error: updateErr } = await supabase.from('produtos').update({
+                preco: prodCompleto.preco,
+                estoque: estoqueAtual,
+                codigo_barras: prodCompleto.codigo || prodCompleto.gtin,
+                imagens: imagensFinais || prodExistente.imagens
+              }).eq('id', prodExistente.id);
+
+              if (updateErr) {
+                return { success: false, error: `Erro ao atualizar no banco: ${updateErr.message}` };
+              }
+
+              return { success: true, id: prodExistente.id };
+            } else {
+              const baseSlug = (prodCompleto.nome || `produto-${prodId}`)
+                .toLowerCase()
+                .replace(/ /g, '-')
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "")
+                .replace(/[^a-z0-9-]/g, "");
+              const slug = `${baseSlug}-${prodId}`;
+
+              const produtoParaInserir = {
+                bling_id: prodId,
+                codigo_barras: prodCompleto.codigo || prodCompleto.gtin,
+                nome: prodCompleto.nome || `Produto ${prodId}`,
+                preco: prodCompleto.preco || 0,
+                estoque: estoqueAtual,
+                slug: slug,
+                ativo: prodCompleto.situacao === 'A',
+                peso_liquido: prodCompleto.pesoLiquido || 0,
+                peso_bruto: prodCompleto.pesoBruto || 0,
+                largura: prodCompleto.dimensoes?.largura || 0,
+                altura: prodCompleto.dimensoes?.altura || 0,
+                profundidade: prodCompleto.dimensoes?.profundidade || 0,
+                marca: prodCompleto.marca || '',
+                ncm: prodCompleto.tributacao?.ncm || '',
+                descricao_curta: prodCompleto.descricaoCurta || '',
+                imagens: imagensFinais,
+                parent_id: parent_id
+              };
+
+              const { data: insertedData, error: insertErr } = await supabase.from('produtos').insert([produtoParaInserir]).select('id').single();
+              if (insertErr) {
+                console.error("Insert error ao importar SKU:", insertErr);
+                return { success: false, error: `Erro no banco Supabase: ${insertErr.message}` };
+              }
+              return { success: true, id: insertedData.id };
+            }
+          } catch (e: any) {
+            return { success: false, error: e.message || 'Erro inesperado ao salvar produto.' };
           }
         }
 
         const parentResult = await fetchAndInsertBlingProduct(produtoBuscado, null);
-        if (!parentResult) {
-          redirectTo = makeUrl('erro', 'Erro ao salvar produto importado do Bling.');
+        if (!parentResult.success) {
+          redirectTo = makeUrl('erro', parentResult.error || 'Erro ao salvar produto importado do Bling.');
         } else {
           redirectTo = makeUrl('msg', `Produto para SKU ${sku} processado com sucesso!`);
         }
@@ -162,7 +251,7 @@ export async function importarSKU(formData: FormData) {
       throw error;
     }
     console.error('Erro geral ao importar SKU:', error);
-    redirectTo = makeUrl('erro', `Erro Fatal Code: ${encodeURIComponent(error.message)}`);
+    redirectTo = makeUrl('erro', `Erro ao importar: ${encodeURIComponent(error.message)}`);
   }
   
   if (redirectTo) {
