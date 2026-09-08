@@ -52,7 +52,6 @@ export default function CategoryNavClient({ pais, all, emojis }: Props) {
           {pais.map((cat) => {
             const subs = getSubcategorias(cat.id);
             const temSub = subs.length > 0;
-            const emoji = emojis[cat.slug] || '🐶';
 
             return (
               <div key={cat.id} className="relative group flex-shrink-0">
