@@ -34,10 +34,6 @@ export function extractImageUrls(input: any): string[] {
     for (const item of items) {
       if (typeof item === 'string' && item.trim()) {
         let str = item.trim();
-        // Converte automaticamente miniaturas /t/ do Bling para Alta Definicao /g/
-        if (str.includes('/t/') && (str.includes('bling') || str.includes('amazonaws.com'))) {
-          str = str.replace('/t/', '/g/');
-        }
 
         if (str.startsWith('http://') || str.startsWith('https://') || str.startsWith('/')) {
           urls.push(str);
