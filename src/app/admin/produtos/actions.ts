@@ -7,7 +7,18 @@ import { revalidatePath } from 'next/cache';
 export async function importarSKU(formData: FormData) {
   const rawSku = formData.get('sku') as string;
   const sku = rawSku ? rawSku.trim() : '';
+  const currentParamsStr = (formData.get('currentParams') as string) || '';
+
   if (!sku) return;
+
+  const urlParams = new URLSearchParams(currentParamsStr);
+  urlParams.set('imported_sku', sku);
+
+  function makeUrl(key: 'msg' | 'erro', message: string) {
+    const p = new URLSearchParams(urlParams);
+    p.set(key, message);
+    return `/admin/produtos?${p.toString()}`;
+  }
 
   let redirectTo = '';
 
@@ -16,7 +27,7 @@ export async function importarSKU(formData: FormData) {
     const token = cfg?.valor?.access_token;
     
     if (!token) {
-      redirectTo = '/admin/produtos?erro=Token do Bling não encontrado. Vá nas Configurações e autorize o app.';
+      redirectTo = makeUrl('erro', 'Token do Bling não encontrado. Vá nas Configurações e autorize o app.');
     } else {
       const response = await fetch(`https://api.bling.com.br/Api/v3/produtos?codigo=${sku}`, {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -25,9 +36,9 @@ export async function importarSKU(formData: FormData) {
       const data = await response.json();
 
       if (response.status === 401 || data?.error?.type === 'invalid_token') {
-        redirectTo = `/admin/produtos?erro=Token do Bling expirado. Vá em Configurações e autorize o aplicativo novamente!`;
+        redirectTo = makeUrl('erro', 'Token do Bling expirado. Vá em Configurações e autorize o aplicativo novamente!');
       } else if (!data.data || data.data.length === 0) {
-        redirectTo = `/admin/produtos?erro=Bling não encontrou nenhum produto com o SKU exato: '${sku}'. Verifique a digitação.`;
+        redirectTo = makeUrl('erro', `Bling não encontrou nenhum produto com o SKU exato: '${sku}'. Verifique a digitação.`);
       } else {
         const produtoBuscado = data.data.find(
           (p: any) =>
@@ -36,7 +47,7 @@ export async function importarSKU(formData: FormData) {
         ) || data.data[0];
         
         if (!produtoBuscado) {
-          redirectTo = `/admin/produtos?erro=Bling não encontrou o SKU exato: '${sku}'. Verifique a digitação.`;
+          redirectTo = makeUrl('erro', `Bling não encontrou o SKU exato: '${sku}'. Verifique a digitação.`);
           redirect(redirectTo);
           return;
         }
@@ -97,7 +108,6 @@ export async function importarSKU(formData: FormData) {
           }
 
           if (prodExistente) {
-            // Se o produto já existe na tabela produtos, atualizamos seus dados de preço/estoque sem duplicar a linha!
             await supabase.from('produtos').update({
               preco: prodCompleto.preco,
               estoque: estoqueAtual,
@@ -107,7 +117,6 @@ export async function importarSKU(formData: FormData) {
 
             return { id: prodExistente.id, imagensBling, imagensPermanentes: imagensPermanentes || [], prodExistente };
           } else {
-            // Se não existe, inserimos um novo produto mantendo seu bling_id e slug originais
             const baseSlug = prodCompleto.nome.toLowerCase().replace(/ /g, '-').normalize("NFD").replace(/[\u0300-\u036f]/g, "");
             const slug = `${baseSlug}-${prodCompleto.id}`;
 
@@ -142,9 +151,9 @@ export async function importarSKU(formData: FormData) {
 
         const parentResult = await fetchAndInsertBlingProduct(produtoBuscado, null);
         if (!parentResult) {
-          redirectTo = `/admin/produtos?erro=Erro ao salvar produto importado do Bling.`;
+          redirectTo = makeUrl('erro', 'Erro ao salvar produto importado do Bling.');
         } else {
-          redirectTo = `/admin/produtos?msg=Produto para SKU ${sku} processado com sucesso!`;
+          redirectTo = makeUrl('msg', `Produto para SKU ${sku} processado com sucesso!`);
         }
       }
     }
@@ -153,7 +162,7 @@ export async function importarSKU(formData: FormData) {
       throw error;
     }
     console.error('Erro geral ao importar SKU:', error);
-    redirectTo = `/admin/produtos?erro=Erro Fatal Code: ${encodeURIComponent(error.message)}`;
+    redirectTo = makeUrl('erro', `Erro Fatal Code: ${encodeURIComponent(error.message)}`);
   }
   
   if (redirectTo) {
