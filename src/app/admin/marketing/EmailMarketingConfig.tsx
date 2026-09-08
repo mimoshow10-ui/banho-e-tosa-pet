@@ -75,6 +75,9 @@ export default function EmailMarketingConfig({
   const exValidadeDate = new Date(Date.now() + (parseInt(validadeDias || '15') * 86400 * 1000));
   const exValidadeStr = exValidadeDate.toLocaleDateString('pt-BR');
 
+  const [loadingTest, setLoadingTest] = useState(false);
+  const [testMsg, setTestMsg] = useState<{ tipo: 'sucesso' | 'erro'; texto: string } | null>(null);
+
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (file) {
@@ -95,12 +98,25 @@ export default function EmailMarketingConfig({
 
   async function handleDispararTeste(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    setLoadingTest(true);
+    setTestMsg(null);
     try {
       const formData = new FormData(e.currentTarget);
-      await dispararTesteAction(formData);
-      setTestModalOpen(false);
-    } catch (err) {
-      console.error(err);
+      const res: any = await dispararTesteAction(formData);
+      if (res?.sucesso) {
+        setTestMsg({ tipo: 'sucesso', texto: res.mensagem || 'E-mail de teste enviado com sucesso!' });
+        setTimeout(() => {
+          setTestModalOpen(false);
+          setTestMsg(null);
+          window.location.reload();
+        }, 1500);
+      } else {
+        setTestMsg({ tipo: 'erro', texto: res?.erro || 'Falha ao disparar e-mail de teste.' });
+      }
+    } catch (err: any) {
+      setTestMsg({ tipo: 'erro', texto: err.message || 'Erro de comunicação ao enviar e-mail.' });
+    } finally {
+      setLoadingTest(false);
     }
   }
 
@@ -478,6 +494,19 @@ export default function EmailMarketingConfig({
               </button>
             </div>
 
+            {testMsg && (
+              <div
+                className={`p-3.5 rounded-2xl text-xs font-bold flex items-center gap-2 border ${
+                  testMsg.tipo === 'sucesso'
+                    ? 'bg-green-50 text-green-800 border-green-200'
+                    : 'bg-red-50 text-red-800 border-red-200'
+                }`}
+              >
+                {testMsg.tipo === 'sucesso' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
+                <span>{testMsg.texto}</span>
+              </div>
+            )}
+
             <form onSubmit={handleDispararTeste} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-gray-700 mb-1">Nome do Cliente (Teste) *</label>
@@ -496,6 +525,7 @@ export default function EmailMarketingConfig({
                   name="cliente_email"
                   type="email"
                   required
+                  defaultValue="mimoshow10@gmail.com"
                   placeholder="Ex: cliente@email.com"
                   className="w-full border border-gray-300 rounded-xl p-3 text-sm focus:ring-2 focus:ring-primary focus:outline-none"
                 />
@@ -526,9 +556,10 @@ export default function EmailMarketingConfig({
               <div className="flex gap-3 pt-2">
                 <button
                   type="submit"
-                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-xl transition shadow-xs cursor-pointer"
+                  disabled={loadingTest}
+                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold py-3.5 rounded-xl transition shadow-xs cursor-pointer flex items-center justify-center gap-2"
                 >
-                  Disparar E-mail de Teste
+                  {loadingTest ? 'Enviando...' : 'Disparar E-mail de Teste'}
                 </button>
                 <button
                   type="button"

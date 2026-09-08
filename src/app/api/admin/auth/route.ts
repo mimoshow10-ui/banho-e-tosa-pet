@@ -18,7 +18,11 @@ export async function POST(req: Request) {
 
     // ── 1. FLUXO DE SOLICITAÇÃO DE RECUPERAÇÃO DE SENHA POR E-MAIL ──
     if (acao === 'esqueci_senha') {
-      const emailDestino = emailSanitizado || 'mimosrtes10@hotmail.com';
+      const emailDestino = emailSanitizado || 'mimoshow10@gmail.com';
+
+      if (!ADMIN_ALLOWED_EMAILS.includes(emailDestino)) {
+        return NextResponse.json({ erro: 'E-mail não autorizado para solicitar recuperação de senha.' }, { status: 403 });
+      }
 
       // Buscar API Key do Resend no banco de dados ou env
       const { data: resendDb } = await supabase.from('configuracoes').select('valor').eq('chave', 'resend_config').maybeSingle();
@@ -165,11 +169,15 @@ export async function POST(req: Request) {
 
     const inputSenha = String(senha || '').trim();
 
-    // Validação da senha de acesso
-    const autenticado = 
-      (senhaMestreEnv && inputSenha === senhaMestreEnv) ||
-      (senhaCorretaDb && inputSenha === senhaCorretaDb) ||
-      inputSenha === 'mimoshow2026';
+    // Validação estrita da senha de acesso:
+    // Se houver senha personalizada no DB ou ENV, SOMENTE ELA é aceita!
+    // A senha de fábrica 'mimoshow2026' só é válida se NENHUMA senha customizada tiver sido cadastrada ainda.
+    let autenticado = false;
+    if (senhaMestreEnv || senhaCorretaDb) {
+      autenticado = (senhaMestreEnv && inputSenha === senhaMestreEnv) || (senhaCorretaDb && inputSenha === senhaCorretaDb);
+    } else {
+      autenticado = inputSenha === 'mimoshow2026';
+    }
 
     if (!autenticado) {
       return NextResponse.json({ erro: 'Senha de acesso incorreta.' }, { status: 401 });

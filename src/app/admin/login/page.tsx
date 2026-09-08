@@ -7,7 +7,7 @@ import { Mail, Lock, ShieldCheck, RefreshCw, CheckCircle2, AlertCircle, Eye, Eye
 
 export default function AdminLoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState('mimosrtes10@hotmail.com');
+  const [email, setEmail] = useState('mimoshow10@gmail.com');
   const [senha, setSenha] = useState('');
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [carregando, setCarregando] = useState(false);
@@ -16,7 +16,7 @@ export default function AdminLoginPage() {
   // Estados da Modal de Recuperação de Senha
   const [modalEsqueci, setModalEsqueci] = useState(false);
   const [etapaEsqueci, setEtapaEsqueci] = useState<'solicitar' | 'validar_pin'>('solicitar');
-  const [emailRecuperacao, setEmailRecuperacao] = useState('mimosrtes10@hotmail.com');
+  const [emailRecuperacao, setEmailRecuperacao] = useState('mimoshow10@gmail.com');
   const [pinInput, setPinInput] = useState('');
   const [novaSenhaInput, setNovaSenhaInput] = useState('');
   const [mostrarNovaSenha, setMostrarNovaSenha] = useState(false);

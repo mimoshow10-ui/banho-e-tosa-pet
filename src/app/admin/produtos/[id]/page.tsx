@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import CategorySelector from '@/components/CategorySelector';
 import ImageManager from '@/components/ImageManager';
 import VariacaoManager from '@/components/VariacaoManager';
+import { getFamilyConfig } from '@/lib/familyManager';
 
 async function atualizarProduto(formData: FormData) {
   'use server'
@@ -155,14 +156,25 @@ export default async function EditarProduto(props: { params: Promise<{ id: strin
     destaqueInicial = 'lancamento';
   }
 
-  // Buscar variações já vinculadas (filhos deste produto)
-  const familyId = produto?.parent_id || id;
+  // Buscar família permanente do produto via familyManager
+  const familyConfig = await getFamilyConfig();
+  const activeFamilyId = familyConfig.productToFamilyMap[id];
+  const familyData = activeFamilyId ? familyConfig.familias[activeFamilyId] : null;
+
+  let memberIds: string[] = [];
+  if (familyData && Array.isArray(familyData.members) && familyData.members.length > 0) {
+    memberIds = familyData.members;
+  } else {
+    memberIds = [id];
+  }
+
   const { data: familyRaw } = await supabase
     .from('produtos')
-    .select('id, nome, codigo_barras, imagens, preco')
-    .or(`id.eq.${familyId},parent_id.eq.${familyId}`)
-    .neq('id', id);
-  const variacoes = (familyRaw || []) as any[];
+    .select('id, nome, codigo_barras, imagens, preco, parent_id')
+    .in('id', memberIds);
+
+  const mapProds = new Map((familyRaw || []).map(p => [p.id, p]));
+  const variacoes = memberIds.map(mId => mapProds.get(mId)).filter(Boolean) as any[];
 
   // Todos os produtos para busca (só id, nome, sku, imagem, preco)
   const { data: todosProdutosRaw } = await supabase
@@ -309,13 +321,12 @@ export default async function EditarProduto(props: { params: Promise<{ id: strin
         </div>
 
         <div className="border-t border-border pt-6">
-          <h2 className="text-lg font-bold mb-2 text-secondary">Variações / Produtos Filhos</h2>
+          <h2 className="text-lg font-bold mb-2 text-secondary">Variações da Família</h2>
           <p className="text-xs text-gray-500 mb-4">
-            Vincule ou remova produtos que funcionam como tamanhos ou pacotes (ex: 25 un, 50 un) deste produto.
+            Gerencie os produtos da mesma família que aparecem como opções de variação.
           </p>
 
           <VariacaoManager
-            parentId={familyId}
             currentProdutoId={id}
             variacoesIniciais={variacoes}
             todosProdutos={todosProdutos}

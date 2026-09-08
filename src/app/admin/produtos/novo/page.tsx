@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import ImageManager from '@/components/ImageManager';
 import CategorySelector from '@/components/CategorySelector';
+import { linkProductToFamily } from '@/lib/familyManager';
 
 export default async function NovoProduto() {
   const { data: categorias } = await supabase.from('categorias').select('*').order('nome');
@@ -10,24 +11,57 @@ export default async function NovoProduto() {
   async function salvarProduto(formData: FormData) {
     'use server'
     const nome = formData.get('nome') as string;
-    const preco = parseFloat(formData.get('preco') as string);
-    const estoque = parseInt(formData.get('estoque') as string);
+    const preco = parseFloat(formData.get('preco') as string || '0');
+    const estoque = parseInt(formData.get('estoque') as string || '0');
     const categoria_id = (formData.get('categoria_id') as string) || null;
     const slug = nome.toLowerCase().replace(/ /g, '-').normalize("NFD").replace(/[\u0300-\u036f]/g, "") + '-' + Date.now();
     
     const imagensTxt = formData.get('imagens') as string;
     const imagens = imagensTxt ? imagensTxt.split(/[\r\n,]+/).map(s => s.trim()).filter(s => s) : null;
     
-    await supabase.from('produtos').insert([{ 
+    const { data: insertedPai } = await supabase.from('produtos').insert([{ 
       nome, 
       preco, 
       estoque, 
       categoria_id, 
       slug,
       imagens
-    }]);
+    }]).select('id').single();
+
+    if (insertedPai?.id) {
+      const paiId = insertedPai.id;
+
+      // Processar até 10 variações do formulário (sempre criando produtos individuais novos)
+      for (let i = 1; i <= 10; i++) {
+        const varNome = (formData.get(`var_nome_${i}`) as string || '').trim();
+        const varSku = (formData.get(`var_sku_${i}`) as string || '').trim();
+        const varPrecoStr = (formData.get(`var_preco_${i}`) as string || '').trim();
+        const varEstoqueStr = (formData.get(`var_estoque_${i}`) as string || '').trim();
+
+        if (varNome || varSku || varPrecoStr) {
+          const varPreco = parseFloat(varPrecoStr.replace(',', '.')) || preco;
+          const varEstoque = parseInt(varEstoqueStr) || 0;
+          const varSlug = `${slug}-var-${i}-${Date.now()}`;
+
+          const { data: newVar } = await supabase.from('produtos').insert([{
+            nome: `${nome} - ${varNome || 'Opção ' + i}`,
+            codigo_barras: varSku || null,
+            preco: varPreco,
+            estoque: varEstoque,
+            categoria_id,
+            slug: varSlug,
+            imagens
+          }]).select('id').single();
+
+          if (newVar?.id) {
+            await linkProductToFamily(paiId, newVar.id);
+          }
+        }
+      }
+    }
 
     revalidatePath('/admin/produtos');
+    revalidatePath('/', 'layout');
     redirect('/admin/produtos');
   }
 

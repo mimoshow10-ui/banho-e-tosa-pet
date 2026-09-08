@@ -50,12 +50,11 @@ export default async function Home() {
     produtosEspecificos = [...(specById || []), ...(specBySku || [])];
   }
 
-  // Puxar apenas produtos PAI (parent_id IS NULL) na vitrine
+  // Puxar todos os produtos ativos na vitrine
   const { data: todosProdutos } = await supabase
     .from('produtos')
     .select('*')
     .eq('ativo', true)
-    .is('parent_id', null)
     .order('criado_em', { ascending: false });
 
   // Buscar apenas produtos marcados EXPLICITAMENTE como destaque_super_promocao pelo usuário
@@ -64,7 +63,6 @@ export default async function Home() {
     .select('*')
     .eq('destaque_super_promocao', true)
     .eq('ativo', true)
-    .is('parent_id', null)
     .order('criado_em', { ascending: false });
 
   const produtos = todosProdutos || [];

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { revalidatePath } from 'next/cache';
+import { linkProductToFamily, removeMemberFromFamily } from '@/lib/familyManager';
 
 export async function POST(req: Request) {
   try {
@@ -20,6 +21,27 @@ export async function POST(req: Request) {
       const catTarget = categoria_id || null;
       const { error } = await supabase.from('produtos').update({ categoria_id: catTarget }).in('id', ids);
       if (error) throw new Error(`Erro ao atualizar categorias: ${error.message}`);
+
+      const catsAdicionaisArr: string[] = Array.isArray(body.categorias_adicionais) ? body.categorias_adicionais : [];
+      const finalCats = catsAdicionaisArr.length > 0 ? catsAdicionaisArr : (catTarget ? [catTarget] : []);
+
+      try {
+        const { data: currentCatMap } = await supabase.from('configuracoes').select('valor').eq('chave', 'produtos_categorias_adicionais').single();
+        let mapAtual = currentCatMap?.valor || {};
+        for (const prodId of ids) {
+          if (finalCats.length > 0) {
+            mapAtual[prodId] = finalCats;
+          } else {
+            delete mapAtual[prodId];
+          }
+        }
+        await supabase.from('configuracoes').upsert({
+          chave: 'produtos_categorias_adicionais',
+          valor: mapAtual,
+        }, { onConflict: 'chave' });
+      } catch (errAdic) {
+        console.error('Erro ao atualizar categorias adicionais:', errAdic);
+      }
 
     // ── 2. REAJUSTE DE PREÇO NORMAL (R$ / %) ──
     } else if (acao === 'preco') {
@@ -118,25 +140,27 @@ export async function POST(req: Request) {
     } else if (acao === 'excluir') {
       await supabase.from('produtos').delete().in('id', ids);
 
-    // ── 7. AGRUPAR COMO VARIAÇÕES (DEFINIR PAI E FILHOS) ──
+    // ── 7. AGRUPAR VARIAÇÕES NA MESMA FAMÍLIA ──
     } else if (acao === 'agrupar_variacoes') {
       if (ids.length < 2) {
-        return NextResponse.json({ erro: 'Selecione pelo menos 2 produtos para agrupar em Pai e Filho.' }, { status: 400 });
+        return NextResponse.json({ erro: 'Selecione pelo menos 2 produtos para agrupar na mesma família.' }, { status: 400 });
       }
-      const paiId = valor || ids[0];
-      const filhosIds = ids.filter((id: string) => id !== paiId);
+      const targetId = valor || ids[0];
 
-      // Garante que o Pai seja um produto principal (parent_id = null)
-      await supabase.from('produtos').update({ parent_id: null }).eq('id', paiId);
+      await supabase.from('produtos').update({ parent_id: null }).in('id', ids);
 
-      // Vincula todos os outros produtos selecionados ao Pai
-      const { error } = await supabase.from('produtos').update({ parent_id: paiId }).in('id', filhosIds);
-      if (error) throw new Error(`Erro ao agrupar variações: ${error.message}`);
+      for (const itemChildId of ids) {
+        if (itemChildId !== targetId) {
+          await linkProductToFamily(targetId, itemChildId);
+        }
+      }
 
-    // ── 8. DESVINCULAR VARIAÇÕES (TORNA TODOS PRODUTOS PAI) ──
+    // ── 8. DESVINCULAR VARIAÇÕES (REMOVE MEMBROS DA FAMÍLIA) ──
     } else if (acao === 'desvincular_variacoes') {
-      const { error } = await supabase.from('produtos').update({ parent_id: null }).in('id', ids);
-      if (error) throw new Error(`Erro ao desvincular variações: ${error.message}`);
+      await supabase.from('produtos').update({ parent_id: null }).in('id', ids);
+      for (const prodId of ids) {
+        await removeMemberFromFamily(prodId);
+      }
     } else {
       return NextResponse.json({ erro: 'Ação em massa inválida.' }, { status: 400 });
     }
@@ -149,4 +173,3 @@ export async function POST(req: Request) {
     return NextResponse.json({ erro: err.message || 'Erro ao processar edição em massa.' }, { status: 500 });
   }
 }
-

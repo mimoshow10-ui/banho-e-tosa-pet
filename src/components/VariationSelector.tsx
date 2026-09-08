@@ -1,6 +1,5 @@
 'use client'
 
-import Link from 'next/link';
 import { extractImageUrls } from './ProductMediaGallery';
 
 function extrairQuantidade(nome: string, preco: number): number {
@@ -13,16 +12,36 @@ function extrairQuantidade(nome: string, preco: number): number {
   return 100000 + (preco || 0);
 }
 
-export default function VariationSelector({ currentSlug, family }: { currentSlug: string, family: any[] }) {
+export default function VariationSelector({
+  currentSlug,
+  family,
+  customOrderIds,
+}: {
+  currentSlug: string;
+  family: any[];
+  customOrderIds?: string[];
+}) {
   if (!family || family.length <= 1) return null;
 
-  // Ordenar as variações da MENOR para a MAIOR quantidade (ex: 10un -> 20un -> 30un -> 50un -> 100un)
-  const sortedFamily = [...family].sort((a, b) => {
-    const qA = extrairQuantidade(a?.nome || '', Number(a?.preco || 0));
-    const qB = extrairQuantidade(b?.nome || '', Number(b?.preco || 0));
-    if (qA !== qB) return qA - qB;
-    return (a?.nome || '').localeCompare(b?.nome || '', 'pt-BR');
-  });
+  let sortedFamily = [...family];
+  if (Array.isArray(customOrderIds) && customOrderIds.length > 0) {
+    sortedFamily.sort((a, b) => {
+      const idxA = customOrderIds.indexOf(a.id);
+      const idxB = customOrderIds.indexOf(b.id);
+      if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+      if (idxA !== -1) return -1;
+      if (idxB !== -1) return 1;
+      return 0;
+    });
+  } else {
+    // Ordenar as variações da MENOR para a MAIOR quantidade (ex: 10un -> 20un -> 30un -> 50un -> 100un)
+    sortedFamily.sort((a, b) => {
+      const qA = extrairQuantidade(a?.nome || '', Number(a?.preco || 0));
+      const qB = extrairQuantidade(b?.nome || '', Number(b?.preco || 0));
+      if (qA !== qB) return qA - qB;
+      return (a?.nome || '').localeCompare(b?.nome || '', 'pt-BR');
+    });
+  }
 
   return (
     <div className="border border-gray-200 rounded-xl p-3 bg-gray-50/50 space-y-2">
@@ -30,7 +49,9 @@ export default function VariationSelector({ currentSlug, family }: { currentSlug
         <h3 className="font-bold text-secondary text-xs uppercase tracking-wide flex items-center gap-1.5">
           <span>📦 Opções de Quantidade Disponíveis:</span>
         </h3>
-        <span className="text-[11px] text-gray-500 font-medium">(Menor para Maior)</span>
+        <span className="text-[11px] text-gray-500 font-medium">
+          {customOrderIds && customOrderIds.length > 0 ? '(Ordem Personalizada)' : '(Menor para Maior)'}
+        </span>
       </div>
 
       <div className="flex flex-wrap gap-2">

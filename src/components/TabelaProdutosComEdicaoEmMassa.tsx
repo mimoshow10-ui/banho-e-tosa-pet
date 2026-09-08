@@ -47,7 +47,16 @@ export default function TabelaProdutosComEdicaoEmMassa({ produtos, categorias, p
   const [subgrupoIdMassa, setSubgrupoIdMassa] = useState<string>('');
   const [categoriasSelecionadasMassa, setCategoriasSelecionadasMassa] = useState<string[]>([]);
   const [dropdownAberto, setDropdownAberto] = useState<boolean>(false);
-  const [buscaCategoria, setBuscaCategoria] = useState<string>('');
+  const [filtroTipoCat, setFiltroTipoCat] = useState<'todos' | 'grupos' | 'subgrupos'>('todos');
+
+  const categoriasExibidas = categoriasOrdenadas.filter((c) => {
+    const nomeMatch = (c.nome || '').toLowerCase().includes(buscaCategoria.toLowerCase());
+    if (!nomeMatch) return false;
+
+    if (filtroTipoCat === 'grupos') return !c.parent_id;
+    if (filtroTipoCat === 'subgrupos') return !!c.parent_id;
+    return true;
+  });
 
   // Estados para Reajuste de Preço Normal
   const [modoPrecoMassa, setModoPrecoMassa] = useState<'fixo' | 'aumentar_pct' | 'diminuir_pct'>('fixo');
@@ -111,7 +120,16 @@ export default function TabelaProdutosComEdicaoEmMassa({ produtos, categorias, p
       let catPayload = null;
 
       if (acaoMassa === 'categoria') {
-        catPayload = categoriasSelecionadasMassa.length > 0 ? categoriasSelecionadasMassa[0] : (subgrupoIdMassa || grupoIdMassa || null);
+        const subCatObj = categorias.find((c) => categoriasSelecionadasMassa.includes(c.id) && c.parent_id);
+        if (subCatObj) {
+          catPayload = subCatObj.id;
+        } else if (subgrupoIdMassa) {
+          catPayload = subgrupoIdMassa;
+        } else if (categoriasSelecionadasMassa.length > 0) {
+          catPayload = categoriasSelecionadasMassa[categoriasSelecionadasMassa.length - 1];
+        } else {
+          catPayload = grupoIdMassa || null;
+        }
       } else if (acaoMassa === 'preco') {
         modoPayload = modoPrecoMassa;
         valorPayload = valorPrecoMassa;
@@ -135,6 +153,7 @@ export default function TabelaProdutosComEdicaoEmMassa({ produtos, categorias, p
           modo: modoPayload,
           valor: valorPayload,
           categoria_id: catPayload,
+          categorias_adicionais: categoriasSelecionadasMassa,
         }),
       });
 
@@ -199,8 +218,8 @@ export default function TabelaProdutosComEdicaoEmMassa({ produtos, categorias, p
               className="bg-blue-950 text-white border border-blue-700 rounded-xl px-3 py-2 text-xs font-bold focus:outline-none cursor-pointer"
             >
               <option value="">⚙️ Escolha a Ação em Massa...</option>
-              <option value="agrupar_variacoes">👑 Vincular Selecionados como Variações (Pai e Filho)</option>
-              <option value="desvincular_variacoes">🔓 Desvincular Variações (Tornar Todos Produtos Pai)</option>
+              <option value="agrupar_variacoes">🔗 Vincular Selecionados na mesma Família de Variações</option>
+              <option value="desvincular_variacoes">🔓 Desvincular Variações (Remover da Família)</option>
               <option value="categoria">🏷️ Alterar Grupo & Subgrupo</option>
               <option value="preco">💵 Reajustar Preço Normal (R$ / %)</option>
               <option value="preco_promocional">🏷️ Definir Preço Promocional (R$ / %)</option>
@@ -209,10 +228,10 @@ export default function TabelaProdutosComEdicaoEmMassa({ produtos, categorias, p
               <option value="excluir">🗑️ Excluir Selecionados</option>
             </select>
 
-            {/* SELETOR DO PRODUTO PAI (QUANDO AGRUPANDO VARIAÇÕES) */}
+            {/* SELETOR DO PRODUTO DE REFERÊNCIA (QUANDO AGRUPANDO VARIAÇÕES) */}
             {acaoMassa === 'agrupar_variacoes' && (
               <div className="flex items-center gap-2 bg-blue-900/60 p-1.5 rounded-xl border border-blue-700">
-                <span className="text-[11px] text-blue-200 font-bold">Produto Principal (Pai):</span>
+                <span className="text-[11px] text-blue-200 font-bold">Adicionar à mesma família de:</span>
                 <select
                   value={prodPaiSelecionado || selecionados[0]}
                   onChange={(e) => setProdPaiSelecionado(e.target.value)}
@@ -222,7 +241,7 @@ export default function TabelaProdutosComEdicaoEmMassa({ produtos, categorias, p
                     const p = produtos.find((item) => item.id === id);
                     return (
                       <option key={id} value={id}>
-                        👑 {p ? p.nome : id}
+                        📦 {p ? p.nome : id}
                       </option>
                     );
                   })}
@@ -249,7 +268,7 @@ export default function TabelaProdutosComEdicaoEmMassa({ produtos, categorias, p
                 </button>
 
                 {dropdownAberto && (
-                  <div className="absolute left-0 mt-1 w-80 bg-white border border-gray-200 rounded-2xl shadow-xl z-50 p-3 space-y-2 text-secondary text-xs animate-in fade-in zoom-in-95 duration-150">
+                  <div className="absolute left-0 mt-1 w-96 bg-white border border-gray-200 rounded-2xl shadow-xl z-50 p-3 space-y-2.5 text-secondary text-xs animate-in fade-in zoom-in-95 duration-150">
                     {/* Campo de Busca Interna */}
                     <div className="relative">
                       <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
@@ -258,11 +277,42 @@ export default function TabelaProdutosComEdicaoEmMassa({ produtos, categorias, p
                         placeholder="🔍 Buscar grupo ou subgrupo (A-Z)..."
                         value={buscaCategoria}
                         onChange={(e) => setBuscaCategoria(e.target.value)}
-                        className="w-full pl-8 pr-3 py-1.5 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary/20"
+                        className="w-full pl-8 pr-3 py-1.5 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 font-medium"
                       />
                     </div>
 
-                    {/* Barra de Ações Rápidas (Limpar / Info) */}
+                    {/* Abas de Filtro: Todos | Grupos Principais | Subgrupos */}
+                    <div className="grid grid-cols-3 gap-1 bg-gray-100 p-1 rounded-xl text-[11px] font-bold text-center">
+                      <button
+                        type="button"
+                        onClick={() => setFiltroTipoCat('todos')}
+                        className={`py-1 rounded-lg transition ${
+                          filtroTipoCat === 'todos' ? 'bg-white text-secondary shadow-xs font-black' : 'text-gray-500 hover:text-gray-800'
+                        }`}
+                      >
+                        Todos ({categoriasOrdenadas.length})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFiltroTipoCat('grupos')}
+                        className={`py-1 rounded-lg transition ${
+                          filtroTipoCat === 'grupos' ? 'bg-white text-blue-800 shadow-xs font-black' : 'text-gray-500 hover:text-gray-800'
+                        }`}
+                      >
+                        📁 Grupos
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFiltroTipoCat('subgrupos')}
+                        className={`py-1 rounded-lg transition ${
+                          filtroTipoCat === 'subgrupos' ? 'bg-white text-amber-800 shadow-xs font-black' : 'text-gray-500 hover:text-gray-800'
+                        }`}
+                      >
+                        🏷️ Subgrupos
+                      </button>
+                    </div>
+
+                    {/* Barra de Ações Rápidas (Limpar) */}
                     <div className="flex items-center justify-between pb-1 border-b border-gray-100 text-[11px]">
                       <button
                         type="button"
@@ -273,58 +323,76 @@ export default function TabelaProdutosComEdicaoEmMassa({ produtos, categorias, p
                         }}
                         className="text-red-600 font-bold hover:underline"
                       >
-                        🚫 Sem Categoria / Limpar
+                        🚫 Sem Categoria / Limpar Tudo
                       </button>
-                      <span className="text-gray-400 font-medium">Ordem Alfabética (A-Z)</span>
+                      <span className="text-gray-400 font-medium">Ordem Alfabética A-Z</span>
                     </div>
 
-                    {/* Lista em Ordem Alfabética com Checkboxes Clicáveis */}
+                    {/* Lista Formatada com Badges e Checkboxes */}
                     <div className="max-h-64 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
-                      {categoriasOrdenadas
-                        .filter((c) => (c.nome || '').toLowerCase().includes(buscaCategoria.toLowerCase()))
-                        .map((c) => {
-                          const estaSelecionado = categoriasSelecionadasMassa.includes(c.id) || subgrupoIdMassa === c.id || grupoIdMassa === c.id;
+                      {categoriasExibidas.length === 0 ? (
+                        <p className="p-3 text-center text-xs text-gray-400 font-bold italic">
+                          Nenhum grupo ou subgrupo encontrado.
+                        </p>
+                      ) : (
+                        categoriasExibidas.map((c) => {
+                          const isMainGroup = !c.parent_id;
+                          const estaSelecionado = categoriasSelecionadasMassa.includes(c.id);
+
                           return (
                             <label
                               key={c.id}
-                              className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl cursor-pointer transition text-xs select-none ${
-                                estaSelecionado ? 'bg-primary/10 font-bold text-primary border border-primary/20' : 'hover:bg-gray-100 text-gray-700'
+                              className={`flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-xl cursor-pointer transition text-xs select-none ${
+                                estaSelecionado
+                                  ? 'bg-primary/10 font-bold text-primary border border-primary/20 shadow-2xs'
+                                  : 'hover:bg-gray-100 text-gray-800'
                               }`}
                             >
-                              <input
-                                type="checkbox"
-                                checked={estaSelecionado}
-                                onChange={() => {
-                                  if (estaSelecionado) {
-                                    setCategoriasSelecionadasMassa((prev) => prev.filter((id) => id !== c.id));
-                                    if (subgrupoIdMassa === c.id) setSubgrupoIdMassa('');
-                                    if (grupoIdMassa === c.id) setGrupoIdMassa('');
-                                  } else {
-                                    setCategoriasSelecionadasMassa((prev) => [...prev, c.id]);
-                                    if (c.parent_id) {
-                                      setSubgrupoIdMassa(c.id);
-                                      setGrupoIdMassa(c.parent_id);
+                              <div className="flex items-center gap-2 overflow-hidden flex-1">
+                                <input
+                                  type="checkbox"
+                                  checked={estaSelecionado}
+                                  onChange={() => {
+                                    if (estaSelecionado) {
+                                      setCategoriasSelecionadasMassa((prev) => prev.filter((id) => id !== c.id));
                                     } else {
-                                      setGrupoIdMassa(c.id);
+                                      const novas = [...categoriasSelecionadasMassa, c.id];
+                                      if (c.parent_id && !novas.includes(c.parent_id)) {
+                                        novas.push(c.parent_id);
+                                      }
+                                      setCategoriasSelecionadasMassa(novas);
                                     }
-                                  }
-                                }}
-                                className="rounded border-gray-300 text-primary focus:ring-primary w-4 h-4 cursor-pointer"
-                              />
-                              <span className="flex-1 truncate">🏷️ {c.nome}</span>
+                                  }}
+                                  className="rounded border-gray-300 text-primary focus:ring-primary w-4 h-4 cursor-pointer flex-shrink-0"
+                                />
+                                <span className="truncate font-medium">
+                                  {isMainGroup ? `📁 ${c.nome}` : `🏷️ ${c.nome}`}
+                                </span>
+                              </div>
+
+                              {isMainGroup ? (
+                                <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200 flex-shrink-0">
+                                  Grupo
+                                </span>
+                              ) : (
+                                <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200 flex-shrink-0">
+                                  Subgrupo
+                                </span>
+                              )}
                             </label>
                           );
-                        })}
+                        })
+                      )}
                     </div>
 
                     <div className="pt-2 border-t border-gray-100 flex justify-between items-center">
-                      <span className="text-[11px] text-gray-400">
-                        {categoriasSelecionadasMassa.length} marcada(s)
+                      <span className="text-[11px] text-gray-500 font-bold">
+                        {categoriasSelecionadasMassa.length} marcação(ões) ativa(s)
                       </span>
                       <button
                         type="button"
                         onClick={() => setDropdownAberto(false)}
-                        className="bg-primary hover:bg-orange-600 text-white px-3 py-1 rounded-lg text-xs font-bold transition shadow-2xs"
+                        className="bg-primary hover:bg-orange-600 text-white px-3.5 py-1 rounded-lg text-xs font-bold transition shadow-2xs cursor-pointer"
                       >
                         Pronto
                       </button>
@@ -549,16 +617,12 @@ export default function TabelaProdutosComEdicaoEmMassa({ produtos, categorias, p
                           {item.codigo_barras || 'Sem SKU'}
                         </td>
 
-                        {/* Nome do Produto e Status Pai/Filho */}
+                        {/* Nome do Produto e Status da Família */}
                         <td className="p-4 font-bold text-gray-800">
                           <div className="flex items-center gap-2 flex-wrap mb-1">
-                            {paiIds.has(item.id) ? (
-                              <span title="Produto Pai (Possui Variações)" className="bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-black px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-2xs">
-                                👑 Produto Pai
-                              </span>
-                            ) : item.parent_id ? (
-                              <span title="Produto Filho (Variação de outro produto)" className="bg-blue-100 text-blue-900 border border-blue-300 text-[10px] font-black px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-2xs">
-                                🔗 Produto Filho
+                            {paiIds.has(item.id) || item.parent_id ? (
+                              <span title="Produto com Variações (Pertence a uma Família)" className="bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-black px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-2xs">
+                                🔗 Família de Variações
                               </span>
                             ) : (
                               <span title="Produto Único Independente" className="bg-gray-100 text-gray-600 border border-gray-200 text-[10px] font-semibold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-2xs">

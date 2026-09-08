@@ -37,7 +37,7 @@ export async function runImportHAL() {
 
     for (const prod of produtosBling) {
       const sku = prod.codigo;
-      const prodId = prod.id;
+      const prodId = String(prod.id);
       console.log(`Importando SKU: ${sku} (ID Bling: ${prodId}) - ${prod.nome}...`);
 
       try {
@@ -64,16 +64,18 @@ export async function runImportHAL() {
           imagensBling = prodCompleto.midia.map((m: any) => m.url || m.link).filter(Boolean);
         }
 
+        const { data: prodExistente } = await supabase.from('produtos').select('id').eq('bling_id', prodId).maybeSingle();
         const baseSlug = prodCompleto.nome.toLowerCase().replace(/ /g, '-').normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-        const slug = `${baseSlug}-${prodCompleto.id}`;
+        const slugUnique = `${baseSlug}-${prodCompleto.id}-${Date.now()}`;
+        const finalBlingId = prodExistente ? null : prodId;
 
         const payload = {
-          bling_id: String(prodCompleto.id),
+          bling_id: finalBlingId,
           codigo_barras: prodCompleto.codigo || prodCompleto.gtin,
           nome: prodCompleto.nome,
           preco: prodCompleto.preco,
           estoque: estoque,
-          slug: slug,
+          slug: slugUnique,
           ativo: prodCompleto.situacao === 'A',
           peso_liquido: prodCompleto.pesoLiquido || 0,
           peso_bruto: prodCompleto.pesoBruto || 0,
@@ -86,16 +88,16 @@ export async function runImportHAL() {
           imagens: imagensBling.length > 0 ? imagensBling : null,
         };
 
-        const { data: upsertData, error: upsertError } = await supabase
+        const { data: insertData, error: insertError } = await supabase
           .from('produtos')
-          .upsert(payload, { onConflict: 'bling_id' })
+          .insert([payload])
           .select('id, nome, codigo_barras, preco, estoque')
           .single();
 
-        if (upsertError) {
-          resultados.push({ sku, nome: prod.nome, status: 'erro', mensagem: upsertError.message });
+        if (insertError) {
+          resultados.push({ sku, nome: prod.nome, status: 'erro', mensagem: insertError.message });
         } else {
-          resultados.push({ sku, nome: upsertData.nome, preco: upsertData.preco, estoque: upsertData.estoque, status: 'sucesso' });
+          resultados.push({ sku, nome: insertData.nome, preco: insertData.preco, estoque: insertData.estoque, status: 'sucesso' });
         }
       } catch (err: any) {
         resultados.push({ sku, status: 'erro', mensagem: err.message });

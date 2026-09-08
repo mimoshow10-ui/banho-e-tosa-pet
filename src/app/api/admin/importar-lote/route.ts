@@ -39,7 +39,6 @@ export async function POST(req: Request) {
           continue;
         }
 
-        // Busca exata pelo SKU/código ou ID do Bling
         const produtoBuscado = data.data.find(
           (p: any) =>
             (p.codigo && p.codigo.trim().toLowerCase() === sku.toLowerCase()) ||
@@ -51,8 +50,7 @@ export async function POST(req: Request) {
           continue;
         }
 
-        // Buscar detalhes estritos do produto individual pelo ID exato
-        const prodId = produtoBuscado.id;
+        const prodId = String(produtoBuscado.id);
         const detalhesReq = await fetch(`https://api.bling.com.br/Api/v3/produtos/${prodId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -68,7 +66,6 @@ export async function POST(req: Request) {
           estoqueAtual = estoqueJson.data?.[0]?.saldoFisicoTotal || 0;
         } catch {}
 
-        // Extrair fotos estritamente pertencentes a ESTE produto no Bling
         let imagensBling: string[] = [];
         const ext = prodCompleto.midia?.imagens?.externas?.map((img: any) => img.link) || [];
         const int = prodCompleto.midia?.imagens?.internas?.map((img: any) => img.link) || [];
@@ -94,38 +91,51 @@ export async function POST(req: Request) {
             ? imagensBling
             : null;
 
-        const baseSlug = prodCompleto.nome.toLowerCase().replace(/ /g, '-').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-        const slug = `${baseSlug}-${prodCompleto.id}`;
+        const { data: prodExistente } = await supabase.from('produtos').select('id, imagens').eq('bling_id', prodId).maybeSingle();
 
-        const payload = {
-          bling_id: String(prodCompleto.id),
-          codigo_barras: prodCompleto.codigo || prodCompleto.gtin,
-          nome: prodCompleto.nome,
-          preco: prodCompleto.preco,
-          estoque: estoqueAtual,
-          slug: slug,
-          ativo: prodCompleto.situacao === 'A',
-          peso_liquido: prodCompleto.pesoLiquido || 0,
-          peso_bruto: prodCompleto.pesoBruto || 0,
-          largura: prodCompleto.dimensoes?.largura || 0,
-          altura: prodCompleto.dimensoes?.altura || 0,
-          profundidade: prodCompleto.dimensoes?.profundidade || 0,
-          marca: prodCompleto.marca || '',
-          ncm: prodCompleto.tributacao?.ncm || '',
-          descricao_curta: prodCompleto.descricaoCurta || '',
-          imagens: imagensFinais,
-        };
+        if (prodExistente) {
+          await supabase.from('produtos').update({
+            preco: prodCompleto.preco,
+            estoque: estoqueAtual,
+            codigo_barras: prodCompleto.codigo || prodCompleto.gtin,
+            imagens: imagensFinais || prodExistente.imagens
+          }).eq('id', prodExistente.id);
 
-        const { data: upserted, error } = await supabase
-          .from('produtos')
-          .upsert(payload, { onConflict: 'bling_id' })
-          .select('id, nome, codigo_barras')
-          .single();
-
-        if (error) {
-          resultados.push({ sku, status: 'erro', mensagem: error.message });
+          resultados.push({ sku: prodCompleto.codigo || sku, status: 'sucesso', nome: prodCompleto.nome });
         } else {
-          resultados.push({ sku: upserted.codigo_barras || sku, status: 'sucesso', nome: upserted.nome });
+          const baseSlug = prodCompleto.nome.toLowerCase().replace(/ /g, '-').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+          const slug = `${baseSlug}-${prodCompleto.id}`;
+
+          const payload = {
+            bling_id: prodId,
+            codigo_barras: prodCompleto.codigo || prodCompleto.gtin,
+            nome: prodCompleto.nome,
+            preco: prodCompleto.preco,
+            estoque: estoqueAtual,
+            slug: slug,
+            ativo: prodCompleto.situacao === 'A',
+            peso_liquido: prodCompleto.pesoLiquido || 0,
+            peso_bruto: prodCompleto.pesoBruto || 0,
+            largura: prodCompleto.dimensoes?.largura || 0,
+            altura: prodCompleto.dimensoes?.altura || 0,
+            profundidade: prodCompleto.dimensoes?.profundidade || 0,
+            marca: prodCompleto.marca || '',
+            ncm: prodCompleto.tributacao?.ncm || '',
+            descricao_curta: prodCompleto.descricaoCurta || '',
+            imagens: imagensFinais,
+          };
+
+          const { data: inserted, error } = await supabase
+            .from('produtos')
+            .insert([payload])
+            .select('id, nome, codigo_barras')
+            .single();
+
+          if (error) {
+            resultados.push({ sku, status: 'erro', mensagem: error.message });
+          } else {
+            resultados.push({ sku: inserted.codigo_barras || sku, status: 'sucesso', nome: inserted.nome });
+          }
         }
       } catch (err: any) {
         resultados.push({ sku, status: 'erro', mensagem: err.message || 'Erro ao processar' });

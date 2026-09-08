@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
+import { getFamilyConfig } from '@/lib/familyManager';
 import CountdownTimer from '@/components/CountdownTimer';
 import VariationSelector from '@/components/VariationSelector';
 import FreteCalculator from '@/components/FreteCalculator';
@@ -57,23 +58,9 @@ async function buscarProdutoMultiEstagio(slugOrQuery: string) {
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   try {
     const { slug } = await params;
-    const rawProduto = await buscarProdutoMultiEstagio(slug);
+    const produto = await buscarProdutoMultiEstagio(slug);
 
-    if (!rawProduto) return { title: 'Produto não encontrado | Banho & Tosa Pet' };
-
-    let produto = rawProduto;
-    if (rawProduto.parent_id) {
-      try {
-        const { data: parentProduct } = await supabase
-          .from('produtos')
-          .select('nome, descricao_curta, seo_title, seo_description, imagens')
-          .eq('id', rawProduto.parent_id)
-          .maybeSingle();
-        if (parentProduct) {
-          produto = parentProduct;
-        }
-      } catch {}
-    }
+    if (!produto) return { title: 'Produto não encontrado | Banho & Tosa Pet' };
 
     const title = String(produto.seo_title || `${produto.nome || 'Produto'} | Banho & Tosa Pet`).slice(0, 70);
     const rawDesc = String(produto.seo_description || produto.descricao_curta || `Compre ${produto.nome || 'produtos'} no Banho & Tosa Pet!`);
@@ -103,38 +90,42 @@ export default async function ProdutoPage({ params }: { params: Promise<{ slug: 
 
   if (!rawProduto) notFound();
 
-  // O produto ativo é exatamente a variação clicada pelo cliente (para exibir preço e SKU correspondentes)
-  let produto = { ...rawProduto };
-  if (rawProduto.parent_id) {
-    try {
-      const { data: parentProduct } = await supabase
-        .from('produtos')
-        .select('imagens')
-        .eq('id', rawProduto.parent_id)
-        .maybeSingle();
+  // O produto ativo é exatamente o produto individual clicado pelo cliente
+  const produto = { ...rawProduto };
 
-      if (parentProduct) {
-        const fotosFilho = extractImageUrls(rawProduto.imagens);
-        if (fotosFilho.length === 0 && parentProduct.imagens) {
-          produto.imagens = parentProduct.imagens;
-        }
-      }
-    } catch {}
-  }
-
-  // Buscar família de variações completa (Pai + todos os Filhos)
+  // Buscar família de variações permanente completa
   let family: any[] = [];
+  let customOrderIds: string[] | undefined = undefined;
   try {
-    const familyId = rawProduto.parent_id || rawProduto.id;
-    if (familyId) {
-      const { data: familyData } = await supabase
-        .from('produtos')
-        .select('id, nome, slug, imagens, preco, preco_promocional, estoque, ativo, parent_id')
-        .or(`id.eq.${familyId},parent_id.eq.${familyId}`)
-        .eq('ativo', true);
-      family = familyData || [];
+    const familyConfig = await getFamilyConfig();
+    const famId = familyConfig.productToFamilyMap[rawProduto.id];
+    const familyData = famId ? familyConfig.familias[famId] : null;
+
+    let memberIds: string[] = [];
+    if (familyData && Array.isArray(familyData.members) && familyData.members.length > 0) {
+      memberIds = familyData.members;
+    } else {
+      memberIds = [rawProduto.id];
     }
-  } catch {}
+
+    const { data: familyDataRaw } = await supabase
+      .from('produtos')
+      .select('id, nome, slug, imagens, preco, preco_promocional, estoque, ativo')
+      .in('id', memberIds)
+      .eq('ativo', true);
+
+    if (familyDataRaw && familyDataRaw.length > 0) {
+      const mapProds = new Map(familyDataRaw.map(p => [p.id, p]));
+      const ordenados = memberIds.map(id => mapProds.get(id)).filter(Boolean);
+      for (const p of familyDataRaw) {
+        if (!memberIds.includes(p.id)) ordenados.push(p);
+      }
+      family = ordenados;
+      customOrderIds = memberIds;
+    }
+  } catch (errFam) {
+    console.error('[PRODUTO STOREFRONT] Erro ao carregar família:', errFam);
+  }
 
   const temVariacoes = Array.isArray(family) && family.length > 1;
   const preco = Number(produto.preco || 0);
@@ -189,12 +180,12 @@ export default async function ProdutoPage({ params }: { params: Promise<{ slug: 
             )}
           </div>
 
-          {/* Variações (só aparece se tiver filhos vinculados) */}
+          {/* Variações da Família */}
           {temVariacoes && (
             <SafeComponent>
               <div>
                 <p className="text-sm font-bold text-gray-500 mb-2">Escolha uma opção:</p>
-                <VariationSelector currentSlug={rawProduto.slug} family={family || []} />
+                <VariationSelector currentSlug={rawProduto.slug} family={family || []} customOrderIds={customOrderIds} />
               </div>
             </SafeComponent>
           )}

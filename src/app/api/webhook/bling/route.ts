@@ -4,9 +4,6 @@ import { supabase } from '@/lib/supabase';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    
-    // O Bling envia um payload quando você clica em "Exportar Produtos" na Multiloja
-    // Vamos iterar sobre os produtos recebidos
     const produtosBling = body.retorno?.produtos || body.produtos || [];
 
     if (!produtosBling.length) {
@@ -17,19 +14,23 @@ export async function POST(request: Request) {
 
     for (const item of produtosBling) {
       const prod = item.produto || item;
-      
-      const slug = prod.nome.toLowerCase().replace(/ /g, '-').normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      const prodId = String(prod.codigo || prod.id);
+      const baseSlug = (prod.nome || 'produto').toLowerCase().replace(/ /g, '-').normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
-      // Insere ou atualiza o produto no Supabase (se o bling_id já existir, ele atualiza)
+      const { data: prodExistente } = await supabase.from('produtos').select('id').eq('bling_id', prodId).maybeSingle();
+      const finalBlingId = prodExistente ? null : prodId;
+      const slugUnique = `${baseSlug}-${prodId}-${Date.now()}`;
+
       await supabase
         .from('produtos')
-        .upsert({
-          bling_id: prod.codigo || prod.id,
+        .insert([{
+          bling_id: finalBlingId,
+          codigo_barras: prod.codigo || null,
           nome: prod.nome,
           preco: parseFloat(prod.preco || 0),
           estoque: parseInt(prod.estoqueAtual || prod.estoque || 0),
-          slug: slug
-        }, { onConflict: 'bling_id' });
+          slug: slugUnique
+        }]);
     }
 
     return NextResponse.json({ status: 'success', message: 'Produtos exportados com sucesso para o banco de dados!' });

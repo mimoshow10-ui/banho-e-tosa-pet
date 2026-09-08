@@ -5,6 +5,7 @@ import ImportBlingForm from '@/components/ImportBlingForm';
 import ImportadorLoteModal from '@/components/ImportadorLoteModal';
 import TabelaProdutosComEdicaoEmMassa from '@/components/TabelaProdutosComEdicaoEmMassa';
 import AdminFiltrosAvancados from '@/components/AdminFiltrosAvancados';
+import { getFamilyConfig } from '@/lib/familyManager';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -91,14 +92,18 @@ export default async function AdminProdutos(props: {
       const pai = catMap.get(cat.parent_id);
       return {
         id: cat.id,
-        nome: `🏷️ ${pai?.nome} > ${cat.nome}`,
+        nome: `${pai?.nome} > ${cat.nome}`,
+        nomePuro: cat.nome,
+        parentNome: pai?.nome,
         isSub: true,
         parent_id: cat.parent_id,
       };
     }
     return {
       id: cat.id,
-      nome: `📂 ${cat.nome} (Grupo Principal)`,
+      nome: cat.nome,
+      nomePuro: cat.nome,
+      parentNome: null,
       isSub: false,
       parent_id: null,
     };
@@ -155,8 +160,8 @@ export default async function AdminProdutos(props: {
     };
   });
 
-  const { data: filhos } = await supabase.from('produtos').select('parent_id').not('parent_id', 'is', null);
-  const paiIds = new Set((filhos || []).map((f: any) => f.parent_id));
+  const familyConfig = await getFamilyConfig();
+  const paiIds = new Set(Object.keys(familyConfig.productToFamilyMap));
 
   function createPaginationUrl(targetPage: number) {
     const params = new URLSearchParams();

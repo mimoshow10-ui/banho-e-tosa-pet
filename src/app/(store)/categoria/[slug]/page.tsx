@@ -1,8 +1,7 @@
 import Link from 'next/link';
-import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
-import { notFound } from 'next/navigation';
 import ProductCard from '@/components/ProductCard';
+import { notFound } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -13,9 +12,12 @@ export default async function CategoriaPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  
-  // Buscar a categoria/grupo/subgrupo pelo slug
-  const { data: catAtual } = await supabase.from('categorias').select('*').eq('slug', slug).single();
+
+  const { data: catAtual } = await supabase
+    .from('categorias')
+    .select('*')
+    .eq('slug', slug)
+    .maybeSingle();
 
   if (!catAtual && slug !== 'todas') {
     return notFound();
@@ -26,7 +28,7 @@ export default async function CategoriaPage({
   let grupoPai: any = null;
 
   if (slug === 'todas') {
-    const { data } = await supabase.from('produtos').select('*').eq('ativo', true).is('parent_id', null).order('criado_em', { ascending: false });
+    const { data } = await supabase.from('produtos').select('*').eq('ativo', true).order('criado_em', { ascending: false });
     if (data) produtos = data;
   } else if (catAtual) {
     const isGrupo = !catAtual.parent_id;
@@ -70,7 +72,7 @@ export default async function CategoriaPage({
       }
     } catch {}
 
-    let query = supabase.from('produtos').select('*').eq('ativo', true).is('parent_id', null);
+    let query = supabase.from('produtos').select('*').eq('ativo', true);
 
     if (prodIdsAdicionais.length > 0) {
       query = query.or(`categoria_id.in.(${idsRelacionados.join(',')}),id.in.(${prodIdsAdicionais.join(',')})`);
@@ -82,78 +84,77 @@ export default async function CategoriaPage({
     if (data) produtos = data;
   }
 
-  // Filtrar apenas produtos que possuem foto cadastrada e válida
-  produtos = (produtos || []).filter(p => Array.isArray(p.imagens) && p.imagens.length > 0 && typeof p.imagens[0] === 'string' && p.imagens[0].length > 0);
-
-  const tituloExibido = slug === 'todas' ? 'Todos os Produtos' : catAtual?.nome || slug;
+  // Filtrar apenas produtos que possuem foto válida
+  const produtosFiltrados = produtos.filter((p: any) =>
+    Array.isArray(p.imagens) && p.imagens.length > 0 && typeof p.imagens[0] === 'string' && p.imagens[0].length > 0
+  );
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
-      {/* Breadcrumb Hierárquico */}
-      <nav className="text-sm text-gray-500 mb-6 flex items-center gap-2">
-        <Link href="/" className="hover:text-primary transition">Home</Link>
+      {/* Breadcrumb */}
+      <nav className="text-sm text-gray-500 mb-8 flex items-center flex-wrap gap-2">
+        <Link href="/" className="hover:text-primary transition font-bold">Home</Link>
         <span>&gt;</span>
-        {grupoPai ? (
+        <Link href="/categoria/todas" className="hover:text-primary transition font-bold">Categorias</Link>
+
+        {grupoPai && (
           <>
-            <Link href={`/categoria/${grupoPai.slug}`} className="hover:text-primary transition font-medium text-gray-700">
+            <span>&gt;</span>
+            <Link href={`/categoria/${grupoPai.slug}`} className="hover:text-primary transition font-bold">
               {grupoPai.nome}
             </Link>
-            <span>&gt;</span>
-            <span className="text-secondary font-bold">{catAtual?.nome}</span>
           </>
-        ) : (
-          <span className="text-secondary font-bold">{tituloExibido}</span>
         )}
+
+        <span>&gt;</span>
+        <span className="text-secondary font-black">{catAtual ? catAtual.nome : 'Todas as Categorias'}</span>
       </nav>
 
-      {/* Se for um Grupo e tiver Subgrupos, exibe Pílulas de Subgrupos */}
+      {/* Cabeçalho da Categoria */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-heading font-black text-secondary">
+          {catAtual ? catAtual.nome : 'Todas as Categorias'}
+        </h1>
+        {catAtual?.descricao && (
+          <p className="text-gray-500 text-sm mt-1">{catAtual.descricao}</p>
+        )}
+      </div>
+
+      {/* Subgrupos pills */}
       {subgrupos.length > 0 && (
-        <div className="mb-8 bg-purple-50/50 p-4 rounded-2xl border border-purple-100">
-          <h3 className="font-bold text-xs uppercase tracking-wide text-purple-900 mb-3">
-            Subgrupos em {catAtual?.nome}:
-          </h3>
-          <div className="flex flex-wrap gap-2">
-            {subgrupos.map((sub) => (
-              <Link
-                key={sub.id}
-                href={`/categoria/${sub.slug}`}
-                className="bg-white border border-purple-200 hover:border-purple-500 text-purple-900 hover:text-purple-700 px-4 py-2 rounded-full text-xs font-bold transition shadow-2xs flex items-center gap-1.5"
-              >
-                <span>🏷️ {sub.nome}</span>
-              </Link>
-            ))}
-          </div>
+        <div className="flex flex-wrap gap-2 mb-8">
+          {subgrupos.map((s) => (
+            <Link
+              key={s.id}
+              href={`/categoria/${s.slug}`}
+              className="px-4 py-2 bg-gray-100 hover:bg-primary hover:text-white text-secondary text-xs font-bold rounded-full transition shadow-2xs"
+            >
+              🏷️ {s.nome}
+            </Link>
+          ))}
         </div>
       )}
 
-      {/* Grid de Produtos */}
-      <main className="flex-1">
-        <div className="flex flex-col sm:flex-row justify-between items-center mb-6 pb-4 border-b border-border">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-heading font-bold text-secondary">{tituloExibido}</h1>
-            {grupoPai && (
-              <p className="text-xs text-gray-500 mt-0.5">Subgrupo pertencente a <strong>{grupoPai.nome}</strong></p>
-            )}
-          </div>
-          <div className="flex items-center gap-4 mt-4 sm:mt-0">
-            <span className="text-sm font-medium text-gray-500">{produtos.length} produtos encontrados</span>
-          </div>
-        </div>
+      {/* Contagem de Produtos */}
+      <div className="flex justify-between items-center mb-6 pb-4 border-b border-border">
+        <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">
+          Exibindo {produtosFiltrados.length} produto(s)
+        </span>
+      </div>
 
-        {/* Grid de Cards de Produto */}
-        {produtos.length > 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {produtos.map((prod: any) => (
-              <ProductCard key={prod.id} produto={prod} />
-            ))}
-          </div>
-        ) : (
-          <div className="bg-gray-50 p-12 text-center rounded-2xl border border-dashed border-gray-300">
-            <p className="text-gray-600 font-bold text-lg mb-2">Nenhum produto cadastrado aqui no momento.</p>
-            <p className="text-gray-400 text-xs">Acesse o Painel Admin para vincular produtos a este Grupo ou Subgrupo.</p>
-          </div>
-        )}
-      </main>
+      {/* Grid de Produtos */}
+      {produtosFiltrados.length > 0 ? (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-6">
+          {produtosFiltrados.map((prod) => (
+            <ProductCard key={prod.id} produto={prod} />
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-16 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+          <p className="text-lg font-bold text-gray-700">Nenhum produto publicado nesta categoria ainda.</p>
+          <p className="text-xs text-gray-400 mt-1">Navegue pelas outras categorias para conferir nossos produtos!</p>
+        </div>
+      )}
     </div>
   );
 }

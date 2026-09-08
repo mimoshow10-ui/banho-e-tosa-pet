@@ -21,7 +21,6 @@ export default async function BuscaPage({
       .from('produtos')
       .select('*')
       .eq('ativo', true)
-      .is('parent_id', null)
       .or(`nome.ilike.%${q}%,codigo_barras.ilike.%${q}%,descricao.ilike.%${q}%`)
       .order('criado_em', { ascending: false });
 
@@ -38,35 +37,22 @@ export default async function BuscaPage({
       </nav>
 
       <div className="flex justify-between items-center mb-6 pb-4 border-b border-border">
-        <div>
-          <h1 className="text-2xl font-heading font-bold text-secondary">
-            {q ? `Resultados para "${q}"` : 'Busca de Produtos'}
-          </h1>
-          <p className="text-sm text-gray-500 mt-1">
-            {produtos.length} {produtos.length === 1 ? 'produto encontrado' : 'produtos encontrados'}
-          </p>
-        </div>
+        <h1 className="text-2xl font-bold text-secondary">
+          Resultados para "{q}" ({produtos.length})
+        </h1>
       </div>
 
       {produtos.length > 0 ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-6">
           {produtos.map((prod) => (
             <ProductCard key={prod.id} produto={prod} />
           ))}
         </div>
       ) : (
-        <div className="bg-gray-50 p-12 text-center rounded-2xl border border-dashed border-gray-300 my-8">
-          <p className="text-2xl mb-2">🔍</p>
-          <p className="text-gray-700 font-bold text-lg mb-1">
-            Nenhum produto encontrado para "{q}"
-          </p>
-          <p className="text-gray-500 text-sm mb-6">
-            Tente buscar por termos mais genéricos como "adesivo", "gravata", "laço" ou pelo código do produto.
-          </p>
-          <Link
-            href="/categoria/todas"
-            className="inline-block bg-primary text-white font-bold px-6 py-2.5 rounded-full hover:bg-orange-600 transition text-sm"
-          >
+        <div className="text-center py-12 bg-gray-50 rounded-xl border border-dashed border-border">
+          <p className="text-gray-500 font-bold mb-2">Nenhum produto encontrado para "{q}".</p>
+          <p className="text-sm text-gray-400 mb-4">Tente buscar por termos mais genéricos como "gravata", "laço" ou "adesivo".</p>
+          <Link href="/categoria/todas" className="inline-block bg-primary text-white font-bold px-6 py-2 rounded-lg hover:bg-orange-600 transition text-sm">
             Ver Todos os Produtos
           </Link>
         </div>

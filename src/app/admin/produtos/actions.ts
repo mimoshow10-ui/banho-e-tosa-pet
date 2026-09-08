@@ -33,7 +33,7 @@ export async function importarSKU(formData: FormData) {
           (p: any) =>
             (p.codigo && p.codigo.trim().toLowerCase() === sku.toLowerCase()) ||
             String(p.id) === sku
-        );
+        ) || data.data[0];
         
         if (!produtoBuscado) {
           redirectTo = `/admin/produtos?erro=Bling não encontrou o SKU exato: '${sku}'. Verifique a digitação.`;
@@ -41,7 +41,7 @@ export async function importarSKU(formData: FormData) {
           return;
         }
 
-        async function fetchAndUpsertBlingProduct(prodCompletoBase: any, parent_id: string | null = null): Promise<{id: string, imagensBling: any[], imagensPermanentes: any[], prodExistente: any} | null> {
+        async function fetchAndInsertBlingProduct(prodCompletoBase: any, parent_id: string | null = null): Promise<{id: string, imagensBling: any[], imagensPermanentes: any[], prodExistente: any} | null> {
           const prodId = String(prodCompletoBase.id);
           const detalhesReq = await fetch(`https://api.bling.com.br/Api/v3/produtos/${prodId}`, {
             headers: { 'Authorization': `Bearer ${token}` }
@@ -49,7 +49,6 @@ export async function importarSKU(formData: FormData) {
           const detalhesJson = await detalhesReq.json();
           const prodCompleto = detalhesJson.data || prodCompletoBase;
 
-          // Trava de Segurança: Garantir que o produto consultado seja ESTRITAMENTE o prodId retornado
           if (String(prodCompleto.id) !== prodId) {
             console.error(`[IMAGE MAPPING UNRESOLVED] Invariante violado: Esperado BlingId ${prodId}, recebido ${prodCompleto.id}`);
             return null;
@@ -86,7 +85,6 @@ export async function importarSKU(formData: FormData) {
             imagensPermanentes = await uploadBlingImagesToSupabase(imagensBling, prodId);
           }
 
-          // Se a origem for MANUAL, preservamos as fotos manuais do usuário intactas
           let imagensFinais: string[] | null = null;
           if (prodExistente?.origem === 'MANUAL') {
             imagensFinais = prodExistente.imagens;
@@ -98,52 +96,55 @@ export async function importarSKU(formData: FormData) {
             imagensFinais = null;
           }
 
-          const baseSlug = prodCompleto.nome.toLowerCase().replace(/ /g, '-').normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-          const slug = `${baseSlug}-${prodCompleto.id}`;
+          if (prodExistente) {
+            // Se o produto já existe na tabela produtos, atualizamos seus dados de preço/estoque sem duplicar a linha!
+            await supabase.from('produtos').update({
+              preco: prodCompleto.preco,
+              estoque: estoqueAtual,
+              codigo_barras: prodCompleto.codigo || prodCompleto.gtin,
+              imagens: imagensFinais || prodExistente.imagens
+            }).eq('id', prodExistente.id);
 
-          const produtoParaInserir = {
-            bling_id: prodId,
-            codigo_barras: prodCompleto.codigo || prodCompleto.gtin,
-            nome: prodCompleto.nome,
-            preco: prodCompleto.preco,
-            estoque: estoqueAtual,
-            slug: slug,
-            ativo: prodCompleto.situacao === 'A',
-            peso_liquido: prodCompleto.pesoLiquido || 0,
-            peso_bruto: prodCompleto.pesoBruto || 0,
-            largura: prodCompleto.dimensoes?.largura || 0,
-            altura: prodCompleto.dimensoes?.altura || 0,
-            profundidade: prodCompleto.dimensoes?.profundidade || 0,
-            marca: prodCompleto.marca || '',
-            ncm: prodCompleto.tributacao?.ncm || '',
-            descricao_curta: prodCompleto.descricaoCurta || '',
-            imagens: imagensFinais,
-            parent_id: parent_id
-          };
+            return { id: prodExistente.id, imagensBling, imagensPermanentes: imagensPermanentes || [], prodExistente };
+          } else {
+            // Se não existe, inserimos um novo produto mantendo seu bling_id e slug originais
+            const baseSlug = prodCompleto.nome.toLowerCase().replace(/ /g, '-').normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            const slug = `${baseSlug}-${prodCompleto.id}`;
 
-          const { data: upsertedData, error } = await supabase.from('produtos').upsert(produtoParaInserir, { onConflict: 'bling_id' }).select('id').single();
-          if (error) {
-            console.error("Upsert error:", error);
-            return null;
+            const produtoParaInserir = {
+              bling_id: prodId,
+              codigo_barras: prodCompleto.codigo || prodCompleto.gtin,
+              nome: prodCompleto.nome,
+              preco: prodCompleto.preco,
+              estoque: estoqueAtual,
+              slug: slug,
+              ativo: prodCompleto.situacao === 'A',
+              peso_liquido: prodCompleto.pesoLiquido || 0,
+              peso_bruto: prodCompleto.pesoBruto || 0,
+              largura: prodCompleto.dimensoes?.largura || 0,
+              altura: prodCompleto.dimensoes?.altura || 0,
+              profundidade: prodCompleto.dimensoes?.profundidade || 0,
+              marca: prodCompleto.marca || '',
+              ncm: prodCompleto.tributacao?.ncm || '',
+              descricao_curta: prodCompleto.descricaoCurta || '',
+              imagens: imagensFinais,
+              parent_id: parent_id
+            };
+
+            const { data: insertedData, error } = await supabase.from('produtos').insert([produtoParaInserir]).select('id').single();
+            if (error) {
+              console.error("Insert error ao importar SKU:", error);
+              return null;
+            }
+            return { id: insertedData.id, imagensBling, imagensPermanentes: imagensPermanentes || [], prodExistente: null };
           }
-          return { id: upsertedData.id, imagensBling, imagensPermanentes: imagensPermanentes || [], prodExistente };
         }
 
-        const parentResult = await fetchAndUpsertBlingProduct(produtoBuscado, null);
+        const parentResult = await fetchAndInsertBlingProduct(produtoBuscado, null);
         if (!parentResult) {
-          redirectTo = `/admin/produtos?erro=Banco recusou salvar o produto PAI.`;
+          redirectTo = `/admin/produtos?erro=Erro ao salvar produto importado do Bling.`;
         } else {
-          try {
-            if (parentResult.imagensBling.length === 0 && (!parentResult.prodExistente?.imagens || parentResult.prodExistente.imagens.length === 0)) {
-              redirectTo = `/admin/produtos?msg=Produto ${sku} importado, MAS O BLING NÃO ENVIOU FOTOS.`;
-            } else if (parentResult.imagensBling.length > 0 && (!parentResult.imagensPermanentes || parentResult.imagensPermanentes.length === 0) && (!parentResult.prodExistente?.imagens || parentResult.prodExistente.imagens.length === 0)) {
-              redirectTo = `/admin/produtos?msg=Produto ${sku} importado sem fotos. As URLs no Bling estão quebradas.`;
-            } else {
-              redirectTo = `/admin/produtos?msg=Produto ${sku} importado com sucesso!`;
-            }
-          } catch (e) {
-            redirectTo = `/admin/produtos?msg=Produto ${sku} importado com sucesso!`;
-          }
+          redirectTo = `/admin/produtos?msg=Produto para SKU ${sku} processado com sucesso!`;
         }
       }
     }

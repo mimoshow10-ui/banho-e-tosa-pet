@@ -1,33 +1,103 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { revalidatePath } from 'next/cache';
+import {
+  linkProductToFamily,
+  reorderFamilyMembers,
+  removeMemberFromFamily
+} from '@/lib/familyManager';
 
-// POST: vincular filho ao pai
-export async function POST(req: NextRequest) {
-  const { paiId, filhoId } = await req.json();
-  if (!paiId || !filhoId) {
-    return NextResponse.json({ error: 'paiId e filhoId obrigatórios' }, { status: 400 });
+// GET: buscar produtos para vincular como variação em tempo real em todo o catálogo
+export async function GET(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const q = (searchParams.get('q') || '').trim();
+
+    if (!q || q.length < 2) {
+      return NextResponse.json({ produtos: [] });
+    }
+
+    const { data: produtos, error } = await supabase
+      .from('produtos')
+      .select('id, nome, codigo_barras, imagens, preco, parent_id')
+      .or(`nome.ilike.%${q}%,codigo_barras.ilike.%${q}%`)
+      .limit(50);
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ produtos: produtos || [] });
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message || 'Erro ao buscar produtos' }, { status: 500 });
   }
-
-  // Verifica se o pai já é filho de outro (não pode ser pai e filho ao mesmo tempo)
-  const { data: pai } = await supabase.from('produtos').select('parent_id').eq('id', paiId).single();
-  const paiEfetivo = pai?.parent_id || paiId;
-
-  // Vincula o filho ao pai efetivo
-  const { error } = await supabase.from('produtos').update({ parent_id: paiEfetivo }).eq('id', filhoId);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-
-  return NextResponse.json({ ok: true });
 }
 
-// DELETE: desvincular filho
-export async function DELETE(req: NextRequest) {
-  const { filhoId } = await req.json();
-  if (!filhoId) {
-    return NextResponse.json({ error: 'filhoId obrigatório' }, { status: 400 });
+// POST: vincular produtos à mesma família permanente de variações
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const targetId = body.targetProductId || body.paiId;
+    const memberId = body.newMemberId || body.filhoId;
+
+    if (!targetId || !memberId) {
+      return NextResponse.json({ error: 'IDs dos produtos obrigatórios' }, { status: 400 });
+    }
+
+    const familiaAtualizada = await linkProductToFamily(targetId, memberId);
+
+    revalidatePath('/admin/produtos');
+    revalidatePath('/', 'layout');
+
+    return NextResponse.json({ ok: true, family: familiaAtualizada });
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message || 'Erro ao vincular variação' }, { status: 500 });
   }
+}
 
-  const { error } = await supabase.from('produtos').update({ parent_id: null }).eq('id', filhoId);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+// PUT: reordenar exibição das variações dentro da mesma família
+export async function PUT(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const { action, familyId, ordemIds, memberId } = body;
 
-  return NextResponse.json({ ok: true });
+    if (action === 'reordenar') {
+      const memberIdTarget = memberId || familyId || (Array.isArray(ordemIds) && ordemIds[0]);
+      if (!memberIdTarget || !Array.isArray(ordemIds)) {
+        return NextResponse.json({ error: 'memberId/ordemIds são obrigatórios' }, { status: 400 });
+      }
+
+      await reorderFamilyMembers(memberIdTarget, ordemIds);
+
+      revalidatePath('/admin/produtos');
+      revalidatePath('/', 'layout');
+
+      return NextResponse.json({ ok: true });
+    }
+
+    return NextResponse.json({ error: 'Ação inválida' }, { status: 400 });
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message || 'Erro ao processar requisição' }, { status: 500 });
+  }
+}
+
+// DELETE: desvincular variação mantendo a integridade dos demais membros
+export async function DELETE(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const targetMemberId = body.memberId || body.filhoId;
+
+    if (!targetMemberId) {
+      return NextResponse.json({ error: 'memberId obrigatório' }, { status: 400 });
+    }
+
+    await removeMemberFromFamily(targetMemberId);
+
+    revalidatePath('/admin/produtos');
+    revalidatePath('/', 'layout');
+
+    return NextResponse.json({ ok: true });
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message || 'Erro ao desvincular variação' }, { status: 500 });
+  }
 }
