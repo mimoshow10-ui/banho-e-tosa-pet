@@ -48,15 +48,7 @@ export default function TabelaProdutosComEdicaoEmMassa({ produtos, categorias, p
   const [categoriasSelecionadasMassa, setCategoriasSelecionadasMassa] = useState<string[]>([]);
   const [dropdownAberto, setDropdownAberto] = useState<boolean>(false);
   const [filtroTipoCat, setFiltroTipoCat] = useState<'todos' | 'grupos' | 'subgrupos'>('todos');
-
-  const categoriasExibidas = categoriasOrdenadas.filter((c) => {
-    const nomeMatch = (c.nome || '').toLowerCase().includes(buscaCategoria.toLowerCase());
-    if (!nomeMatch) return false;
-
-    if (filtroTipoCat === 'grupos') return !c.parent_id;
-    if (filtroTipoCat === 'subgrupos') return !!c.parent_id;
-    return true;
-  });
+  const [buscaCategoria, setBuscaCategoria] = useState<string>('');
 
   // Estados para Reajuste de Preço Normal
   const [modoPrecoMassa, setModoPrecoMassa] = useState<'fixo' | 'aumentar_pct' | 'diminuir_pct'>('fixo');
@@ -80,6 +72,15 @@ export default function TabelaProdutosComEdicaoEmMassa({ produtos, categorias, p
   const categoriasOrdenadas = [...categorias].sort((a, b) =>
     (a.nome || '').localeCompare(b.nome || '', 'pt-BR', { sensitivity: 'base' })
   );
+
+  const categoriasExibidas = categoriasOrdenadas.filter((c) => {
+    const nomeMatch = (c.nome || '').toLowerCase().includes(buscaCategoria.toLowerCase());
+    if (!nomeMatch) return false;
+
+    if (filtroTipoCat === 'grupos') return !c.parent_id;
+    if (filtroTipoCat === 'subgrupos') return !!c.parent_id;
+    return true;
+  });
 
   const todosSelecionados = produtos.length > 0 && selecionados.length === produtos.length;
 
