@@ -163,7 +163,14 @@ export async function importarSKU(formData: FormData) {
               imagensBling = [prodCompleto.imagemURL];
             }
 
-            const { data: prodExistente } = await supabase.from('produtos').select('id, imagens, origem').eq('bling_id', prodId).maybeSingle();
+            let queryExistente = supabase.from('produtos').select('id, imagens, origem');
+            if (prodCompleto.codigo) {
+              queryExistente = queryExistente.or(`bling_id.eq.${prodId},codigo_barras.eq.${prodCompleto.codigo}`);
+            } else {
+              queryExistente = queryExistente.eq('bling_id', prodId);
+            }
+            const { data: existentes } = await queryExistente.limit(1);
+            const prodExistente = existentes && existentes.length > 0 ? existentes[0] : null;
 
             let imagensFinais: string[] | null = null;
             try {
@@ -186,10 +193,12 @@ export async function importarSKU(formData: FormData) {
 
             if (prodExistente) {
               const { error: updateErr } = await supabase.from('produtos').update({
+                nome: prodCompleto.nome || undefined,
                 preco: prodCompleto.preco,
                 estoque: estoqueAtual,
                 codigo_barras: prodCompleto.codigo || prodCompleto.gtin,
-                imagens: imagensFinais || prodExistente.imagens
+                imagens: imagensFinais || prodExistente.imagens,
+                ativo: prodCompleto.situacao === 'A'
               }).eq('id', prodExistente.id);
 
               if (updateErr) {
@@ -228,6 +237,19 @@ export async function importarSKU(formData: FormData) {
 
               const { data: insertedData, error: insertErr } = await supabase.from('produtos').insert([produtoParaInserir]).select('id').single();
               if (insertErr) {
+                if (insertErr.message.includes('duplicate key') || insertErr.code === '23505') {
+                  const { data: retryExistente } = await supabase.from('produtos').select('id').or(`bling_id.eq.${prodId},codigo_barras.eq.${prodCompleto.codigo}`).limit(1);
+                  if (retryExistente && retryExistente.length > 0) {
+                    await supabase.from('produtos').update({
+                      nome: prodCompleto.nome || undefined,
+                      preco: prodCompleto.preco,
+                      estoque: estoqueAtual,
+                      imagens: imagensFinais || undefined,
+                      ativo: prodCompleto.situacao === 'A'
+                    }).eq('id', retryExistente[0].id);
+                    return { success: true, id: retryExistente[0].id };
+                  }
+                }
                 console.error("Insert error ao importar SKU:", insertErr);
                 return { success: false, error: `Erro no banco Supabase: ${insertErr.message}` };
               }
