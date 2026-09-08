@@ -19,9 +19,9 @@ export default async function Header() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-1">
           
-          {/* Logo do Site (Aumentado 50%) */}
-          <div className="flex items-center">
-            <Link href="/">
+          {/* Logo do Site */}
+          <div className="flex items-center gap-3">
+            <Link href="/" className="flex items-center gap-2">
               <div className="relative w-72 md:w-[380px] h-20 md:h-24 cursor-pointer overflow-visible flex items-center">
                 <Image 
                   src="/logo-luxo.png" 
@@ -32,6 +32,9 @@ export default async function Header() {
                 />
               </div>
             </Link>
+            <span className="bg-yellow-400 text-black px-3 py-1 rounded-full font-black text-sm shadow-md animate-pulse">
+              Banho & Tosa Pet (Amarelo)
+            </span>
           </div>
 
           {/* Barra de Pesquisa */}
