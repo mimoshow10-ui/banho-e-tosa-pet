@@ -68,12 +68,11 @@ export default async function Home() {
     .order('criado_em', { ascending: false });
 
   const produtos = todosProdutos || [];
-  const produtosComFoto = produtos.filter(hasValidPhoto);
+  const produtosComFoto = produtos;
 
-  // Apenas produtos com PROMOCAO EXPLICITAMENTE MARCADA, DENTRO DO PERIODO E COM FOTO VALIDA
+  // Apenas produtos com PROMOCAO EXPLICITAMENTE MARCADA E DENTRO DO PERIODO
   const agora = Date.now();
   const produtosPromocao = (superPromocoes || []).filter((prod) => {
-    if (!hasValidPhoto(prod)) return false;
     if (prod.estoque !== null && prod.estoque !== undefined && Number(prod.estoque) <= 0) return false;
     if (novidadesSet.has(prod.id) || maisVendidosSet.has(prod.id) || (prod.sku && (novidadesSet.has(prod.sku) || maisVendidosSet.has(prod.sku)))) return false;
     

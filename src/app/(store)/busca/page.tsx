@@ -26,7 +26,7 @@ export default async function BuscaPage({
       .or(`nome.ilike.%${q}%,codigo_barras.ilike.%${q}%,descricao.ilike.%${q}%`)
       .order('criado_em', { ascending: false });
 
-    if (data) produtos = data.filter(hasValidPhoto);
+    if (data) produtos = data;
   }
 
   return (

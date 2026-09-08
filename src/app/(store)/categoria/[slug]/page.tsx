@@ -85,8 +85,7 @@ export default async function CategoriaPage({
     if (data) produtos = data;
   }
 
-  // Filtrar APENAS produtos que possuem foto valida
-  const produtosFiltrados = produtos.filter(hasValidPhoto);
+  const produtosFiltrados = produtos;
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
