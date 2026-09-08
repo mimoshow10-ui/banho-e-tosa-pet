@@ -6,7 +6,7 @@ import TopBar from './TopBar';
 import SearchBar from './SearchBar';
 import CategoryNav from './CategoryNav';
 import CartCountBadge from './CartCountBadge';
-import HomeOnlyCategoryNav from './HomeOnlyCategoryNav';
+
 
 export default async function Header() {
   const { data: configs } = await supabase.from('configuracoes').select('*');
@@ -63,10 +63,8 @@ export default async function Header() {
         </div>
       </div>
 
-      {/* Menu Superior Horizontal de Categorias (EXIBIDO APENAS NA HOME '/') */}
-      <HomeOnlyCategoryNav>
-        <CategoryNav />
-      </HomeOnlyCategoryNav>
+      {/* Menu Superior Horizontal de Categorias (Exibido em todas as páginas) */}
+      <CategoryNav />
     </header>
   );
 }
