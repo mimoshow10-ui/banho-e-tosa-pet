@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { ExternalLink, Trash2, Edit, CheckSquare, Square, Zap, RefreshCw, CheckCircle2, AlertCircle, AlertTriangle, XCircle, ChevronDown, Search } from 'lucide-react';
 import DeleteProductButton from '@/app/admin/produtos/DeleteProductButton';
 
@@ -35,6 +36,9 @@ interface Props {
 }
 
 export default function TabelaProdutosComEdicaoEmMassa({ produtos, categorias, paiIds }: Props) {
+  const searchParams = useSearchParams();
+  const currentParamsStr = searchParams.toString();
+
   const [selecionados, setSelecionados] = useState<string[]>([]);
   // Inicia em neutro por padrão
   const [acaoMassa, setAcaoMassa] = useState<string>('');
@@ -720,7 +724,7 @@ export default function TabelaProdutosComEdicaoEmMassa({ produtos, categorias, p
                         <td className="p-4 text-right">
                           <div className="flex items-center justify-end gap-2">
                             <Link
-                              href={`/admin/produtos/${item.id}`}
+                              href={`/admin/produtos/${item.id}${currentParamsStr ? `?ret=${encodeURIComponent(currentParamsStr)}` : ''}`}
                               className="text-blue-600 hover:text-blue-800 font-bold text-xs bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-200 hover:bg-blue-100 transition flex items-center gap-1"
                             >
                               <Edit size={12} />

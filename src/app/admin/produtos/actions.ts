@@ -281,12 +281,15 @@ export async function importarSKU(formData: FormData) {
   }
 }
 
-export async function excluirProduto(id: string) {
+export async function excluirProduto(id: string, currentParamsStr?: string) {
   const { error } = await supabase.from('produtos').delete().eq('id', id);
+  const p = new URLSearchParams(currentParamsStr || '');
   if (error) {
-    redirect(`/admin/produtos?erro=Erro ao excluir produto: ${error.message}`);
+    p.set('erro', `Erro ao excluir produto: ${error.message}`);
+  } else {
+    p.set('msg', 'Produto excluído com sucesso!');
   }
   revalidatePath('/admin/produtos');
   revalidatePath('/', 'layout');
-  redirect(`/admin/produtos?msg=Produto excluído com sucesso!`);
+  redirect(`/admin/produtos?${p.toString()}`);
 }
