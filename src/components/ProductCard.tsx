@@ -18,7 +18,11 @@ interface ProdutoCardProps {
   };
 }
 
+import { hasValidPhoto } from '@/lib/productFilter';
+
 export default function ProductCard({ produto }: ProdutoCardProps) {
+  if (!hasValidPhoto(produto)) return null;
+
   const fotos = extractImageUrls(produto.imagens);
   const foto = fotos[0] || null;
   const sku = produto.codigo_barras || produto.sku || null;

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import ProductCard from '@/components/ProductCard';
 import { notFound } from 'next/navigation';
+import { hasValidPhoto } from '@/lib/productFilter';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -84,10 +85,8 @@ export default async function CategoriaPage({
     if (data) produtos = data;
   }
 
-  // Filtrar apenas produtos que possuem foto válida
-  const produtosFiltrados = produtos.filter((p: any) =>
-    Array.isArray(p.imagens) && p.imagens.length > 0 && typeof p.imagens[0] === 'string' && p.imagens[0].length > 0
-  );
+  // Filtrar APENAS produtos que possuem foto valida
+  const produtosFiltrados = produtos.filter(hasValidPhoto);
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">

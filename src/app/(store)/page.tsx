@@ -7,6 +7,8 @@ import HomeCouponsBanner from "@/components/HomeCouponsBanner";
 import ProductCard from "@/components/ProductCard";
 import BenefitsBar from "@/components/BenefitsBar";
 
+import { hasValidPhoto } from "@/lib/productFilter";
+
 export const revalidate = 0;
 export const dynamic = 'force-dynamic';
 
@@ -34,7 +36,7 @@ export default async function Home() {
 
   const explicitIds = Array.from(new Set([...idsNovidades, ...idsMaisVendidos]));
 
-  // Buscar produtos explicitamente selecionados por ID ou SKU para garantir exibição imediata
+  // Buscar produtos explicitamente selecionados por ID ou SKU para garantir exibicao imediata
   let produtosEspecificos: any[] = [];
   if (explicitIds.length > 0) {
     const { data: specById } = await supabase
@@ -57,7 +59,7 @@ export default async function Home() {
     .eq('ativo', true)
     .order('criado_em', { ascending: false });
 
-  // Buscar apenas produtos marcados EXPLICITAMENTE como destaque_super_promocao pelo usuário
+  // Buscar apenas produtos marcados EXPLICITAMENTE como destaque_super_promocao pelo usuario
   const { data: superPromocoes } = await supabase
     .from('produtos')
     .select('*')
@@ -66,22 +68,22 @@ export default async function Home() {
     .order('criado_em', { ascending: false });
 
   const produtos = todosProdutos || [];
-  const produtosComFoto = produtos.filter(p => Array.isArray(p.imagens) && p.imagens.length > 0 && typeof p.imagens[0] === 'string' && p.imagens[0].startsWith('http'));
+  const produtosComFoto = produtos.filter(hasValidPhoto);
 
-  // Apenas produtos com PROMOÇÃO EXPLICITAMENTE MARCADA E DENTRO DO PERÍODO
+  // Apenas produtos com PROMOCAO EXPLICITAMENTE MARCADA, DENTRO DO PERIODO E COM FOTO VALIDA
   const agora = Date.now();
   const produtosPromocao = (superPromocoes || []).filter((prod) => {
-    if (!Array.isArray(prod.imagens) || prod.imagens.length === 0) return false;
+    if (!hasValidPhoto(prod)) return false;
     if (prod.estoque !== null && prod.estoque !== undefined && Number(prod.estoque) <= 0) return false;
     if (novidadesSet.has(prod.id) || maisVendidosSet.has(prod.id) || (prod.sku && (novidadesSet.has(prod.sku) || maisVendidosSet.has(prod.sku)))) return false;
     
-    // Checagem do Início da Promoção (se cadastrado)
+    // Checagem do Inicio da Promocao (se cadastrado)
     if (prod.promocao_inicio_em) {
       const inicio = new Date(prod.promocao_inicio_em).getTime();
       if (!isNaN(inicio) && inicio > agora) return false;
     }
 
-    // Checagem de Validade / Fim da Promoção (se cadastrado)
+    // Checagem de Validade / Fim da Promocao (se cadastrado)
     if (prod.promocao_expira_em) {
       const expira = new Date(prod.promocao_expira_em).getTime();
       if (isNaN(expira) || expira <= agora) return false;
@@ -90,7 +92,7 @@ export default async function Home() {
     return true;
   });
 
-  // Mapeador de produtos por ID e SKU para manter a ordem exata escolhida pelo usuário no Admin
+  // Mapeador de produtos por ID e SKU para manter a ordem exata escolhida pelo usuario no Admin
   const prodMap = new Map<string, any>();
   produtos.forEach(p => {
     prodMap.set(p.id, p);
@@ -101,19 +103,19 @@ export default async function Home() {
     if (p.sku) prodMap.set(p.sku, p);
   });
 
-  // Novidades: exibe EXATAMENTE os produtos escolhidos pelo usuário no Admin
+  // Novidades: APENAS produtos com foto valida
   let produtosNovidades = idsNovidades
     .map(id => prodMap.get(id))
-    .filter(Boolean);
+    .filter(hasValidPhoto);
 
   if (produtosNovidades.length === 0) {
     produtosNovidades = produtosComFoto.slice(0, 12);
   }
 
-  // Mais Vendidos: exibe EXATAMENTE os produtos escolhidos pelo usuário no Admin
+  // Mais Vendidos: APENAS produtos com foto valida
   let produtosMaisVendidos = idsMaisVendidos
     .map(id => prodMap.get(id))
-    .filter(Boolean);
+    .filter(hasValidPhoto);
 
   if (produtosMaisVendidos.length === 0) {
     produtosMaisVendidos = produtosComFoto.slice(12, 24);
