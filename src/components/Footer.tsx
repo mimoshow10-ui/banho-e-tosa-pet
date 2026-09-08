@@ -9,17 +9,17 @@ export default function Footer() {
           
           {/* Sobre com Logomarca MimoShow */}
           <div className="space-y-3">
+            <h3 className="text-xl font-heading font-bold text-accent">Grupo MimoShow</h3>
             <Link href="/">
-              <div className="relative w-56 h-16 cursor-pointer">
+              <div className="relative w-48 h-14 cursor-pointer">
                 <Image
                   src="/logo-mimoshow.png"
                   alt="Logomarca Grupo MimoShow"
                   fill
-                  className="object-contain object-left"
+                  className="object-contain object-left mix-blend-multiply"
                 />
               </div>
             </Link>
-            <h3 className="text-xl font-heading font-bold text-accent">Grupo MimoShow</h3>
             <p className="text-sm text-gray-300 leading-relaxed">
               O maior fabricante de acessórios para banho e tosa do Brasil. Seu pet merece estilo e conforto todos os dias.
             </p>
