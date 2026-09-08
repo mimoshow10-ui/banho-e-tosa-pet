@@ -8,19 +8,6 @@ interface Categoria {
   parent_id: string | null;
 }
 
-const EMOJIS: Record<string, string> = {
-  'adesivos': '🎨',
-  'bandanas': '🩲',
-  'cartelas-sticker': '🐶',
-  'colarinhos': '🐾',
-  'faixas-decorativas': '🐶',
-  'gargantilhas': '📿',
-  'gravatinhas': '👔',
-  'lacinhos': '🎀',
-  'outubro-rosa': '🐶',
-  'quadros': '🐶',
-};
-
 export default async function CategoryNav() {
   const { data: categoriasAll } = await supabase
     .from('categorias')
@@ -32,5 +19,5 @@ export default async function CategoryNav() {
 
   if (pais.length === 0) return null;
 
-  return <CategoryNavClient pais={pais} all={all} emojis={EMOJIS} />;
+  return <CategoryNavClient pais={pais} all={all} emojis={{}} />;
 }

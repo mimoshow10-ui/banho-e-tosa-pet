@@ -58,9 +58,8 @@ export default function CategoryNavClient({ pais, all, emojis }: Props) {
               <div key={cat.id} className="relative group flex-shrink-0">
                 <Link
                   href={`/categoria/${cat.slug}`}
-                  className="flex items-center gap-2 bg-white border border-gray-200 hover:border-primary rounded-full px-4 py-1.5 text-xs md:text-sm font-bold text-secondary hover:text-primary transition shadow-2xs hover:shadow-xs"
+                  className="flex items-center gap-1.5 bg-white border border-gray-200 hover:border-primary rounded-full px-4 py-1.5 text-xs md:text-sm font-bold text-secondary hover:text-primary transition shadow-2xs hover:shadow-xs"
                 >
-                  <span className="text-sm md:text-base leading-none">{emoji}</span>
                   <span>{cat.nome}</span>
                   {temSub && <ChevronDown size={14} className="text-gray-400 group-hover:text-primary transition ml-0.5" />}
                 </Link>
@@ -86,9 +85,8 @@ export default function CategoryNavClient({ pais, all, emojis }: Props) {
           {/* Botao Ver Tudo */}
           <Link
             href="/categoria/todas"
-            className="flex-shrink-0 flex items-center gap-2 bg-primary text-white border border-primary rounded-full px-5 py-1.5 text-xs md:text-sm font-bold hover:bg-orange-600 transition shadow-2xs"
+            className="flex-shrink-0 flex items-center gap-1.5 bg-primary text-white border border-primary rounded-full px-5 py-1.5 text-xs md:text-sm font-bold hover:bg-orange-600 transition shadow-2xs"
           >
-            <span className="text-sm md:text-base leading-none">🛍️</span>
             <span>Ver Tudo</span>
           </Link>
         </div>
