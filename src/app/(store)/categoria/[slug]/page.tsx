@@ -43,33 +43,8 @@ export default async function CategoriaPage({
         .eq('parent_id', catAtual.id)
         .order('nome');
 
-      const rawSubs = subs || [];
-
-      // Filtrar subgrupos para exibir APENAS os que possuem produtos ativos vinculados
-      const { data: prodsAtivos } = await supabase
-        .from('produtos')
-        .select('id, categoria_id')
-        .eq('ativo', true);
-
-      const activeProdIds = new Set((prodsAtivos || []).map(p => p.id));
-      const catIdsComProdutos = new Set<string>();
-      (prodsAtivos || []).forEach(p => { if (p.categoria_id) catIdsComProdutos.add(p.categoria_id); });
-
-      const { data: cfgMap } = await supabase.from('configuracoes').select('valor').eq('chave', 'produto_categorias_map').maybeSingle();
-      const { data: cfgAdic } = await supabase.from('configuracoes').select('valor').eq('chave', 'produtos_categorias_adicionais').maybeSingle();
-
-      const m1: Record<string, string[]> = cfgMap?.valor || {};
-      const m2: Record<string, string[]> = cfgAdic?.valor || {};
-
-      for (const [pId, catIds] of Object.entries(m1)) {
-        if (activeProdIds.has(pId) && Array.isArray(catIds)) catIds.forEach(cId => catIdsComProdutos.add(cId));
-      }
-      for (const [pId, catIds] of Object.entries(m2)) {
-        if (activeProdIds.has(pId) && Array.isArray(catIds)) catIds.forEach(cId => catIdsComProdutos.add(cId));
-      }
-
-      subgrupos = rawSubs.filter(s => catIdsComProdutos.has(s.id));
-      idsRelacionados = [catAtual.id, ...rawSubs.map(s => s.id)];
+      subgrupos = subs || [];
+      idsRelacionados = [catAtual.id, ...subgrupos.map(s => s.id)];
     } else {
       // 2. É um Subgrupo — buscar o Grupo Pai
       const { data: pai } = await supabase
