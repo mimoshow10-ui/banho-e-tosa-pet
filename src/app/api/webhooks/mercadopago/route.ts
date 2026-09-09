@@ -12,44 +12,41 @@ export async function POST(request: Request) {
     if (!id && body?.data?.id) id = String(body.data.id);
     if (!topic && body?.type) topic = String(body.type);
 
-    console.log(`[WEBHOOK MERCADO PAGO] Notificação recebida: topic=${topic}, id=${id}`);
+    const resourceId = id || body?.data?.id || body?.id;
+    const notificationType = topic || body?.type || body?.topic;
 
-    if (id) {
-      // Puxar token do Mercado Pago
+    console.log(`[WEBHOOK MERCADO PAGO] Notificação recebida: type=${notificationType}, id=${resourceId}`);
+
+    if (resourceId) {
       let accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
       if (!accessToken) {
         const { data: mpCfg } = await supabase.from('configuracoes').select('valor').eq('chave', 'mercadopago_config').maybeSingle();
         accessToken = mpCfg?.valor?.access_token;
       }
 
-      if (accessToken && (topic === 'payment' || topic === 'merchant_order' || !topic)) {
+      if (accessToken && (notificationType === 'payment' || notificationType === 'merchant_order' || !notificationType)) {
         try {
-          const mpRes = await fetch(`https://api.mercadopago.com/v1/payments/${id}`, {
-            headers: { Authorization: `Bearer ${accessToken}` }
+          const mpRes = await fetch(`https://api.mercadopago.com/v1/payments/${resourceId}`, {
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+              'Accept': 'application/json'
+            }
           });
-          const payment = await mpRes.json();
 
-          if (payment && payment.status === 'approved') {
-            const numeroPedido = payment.external_reference;
-            if (numeroPedido) {
-              console.log(`[WEBHOOK MERCADO PAGO] Pagamento APROVADO para pedido #${numeroPedido}`);
-              await aprovarPedidoEGerarEtiqueta(numeroPedido, payment);
+          if (mpRes.ok) {
+            const paymentData = await mpRes.json();
+            const mpStatus = paymentData.status;
+            const extRef = paymentData.external_reference;
+
+            if (extRef && mpStatus === 'approved') {
+              console.log(`[WEBHOOK MERCADO PAGO] Pagamento APROVADO para pedido #${extRef}`);
+              await aprovarPedidoEGerarEtiqueta(extRef, paymentData);
             }
           }
-        } catch (mpErr) {
-          console.error('[WEBHOOK MERCADO PAGO] Erro ao consultar pagamento no Mercado Pago:', mpErr);
+        } catch (e) {
+          console.error('[WEBHOOK MP FETCH ERROR]', e);
         }
       }
-
-      await supabase.from('configuracoes').upsert({
-        chave: `mp_webhook_${Date.now()}`,
-        valor: {
-          topic,
-          id,
-          body,
-          recebido_em: new Date().toISOString()
-        }
-      });
     }
 
     return NextResponse.json({ status: 'ok' }, { status: 200 });

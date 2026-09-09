@@ -20,34 +20,20 @@ async function buscarProdutoMultiEstagio(slugOrQuery: string) {
   if (!raw) return null;
 
   try {
-    // 1. Busca direta por slug exato
+    // 1. Busca exata por slug
     const { data: pSlug } = await supabase.from('produtos').select('*').eq('slug', raw).maybeSingle();
     if (pSlug) return pSlug;
 
-    // 2. Busca por ID
+    // 2. Busca exata por ID
     const { data: pId } = await supabase.from('produtos').select('*').eq('id', raw).maybeSingle();
     if (pId) return pId;
 
-    // 3. Busca por código de barras / SKU
-    const { data: pBarra } = await supabase.from('produtos').select('*').ilike('codigo_barras', raw).maybeSingle();
+    // 3. Busca exata por código de barras ou SKU
+    const { data: pBarra } = await supabase.from('produtos').select('*').eq('codigo_barras', raw).maybeSingle();
     if (pBarra) return pBarra;
 
-    // 4. Se o slug tem sufixo numérico (ex: -15831840276) ou prefixo (ex: 1-), busca ilike no slug e código de barras
-    const clean = raw.replace(/-\d+$/, '').replace(/^\d+-/, '').trim();
-    if (clean && clean.length > 2) {
-      const { data: pClean } = await supabase.from('produtos').select('*').ilike('slug', `%${clean}%`).maybeSingle();
-      if (pClean) return pClean;
-
-      const { data: pCleanBarra } = await supabase.from('produtos').select('*').ilike('codigo_barras', `%${clean}%`).maybeSingle();
-      if (pCleanBarra) return pCleanBarra;
-    }
-
-    // 5. Palavras-chave no nome do produto
-    const palavras = (clean || raw).split('-').filter((w) => w.length > 2).slice(0, 3).join(' ');
-    if (palavras && palavras.length > 2) {
-      const { data: pNome } = await supabase.from('produtos').select('*').ilike('nome', `%${palavras}%`).maybeSingle();
-      if (pNome) return pNome;
-    }
+    const { data: pSku } = await supabase.from('produtos').select('*').eq('sku', raw).maybeSingle();
+    if (pSku) return pSku;
   } catch (err) {
     console.error('[PRODUTO LOOKUP] Erro no buscarProdutoMultiEstagio:', err);
   }

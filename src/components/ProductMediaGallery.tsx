@@ -33,7 +33,8 @@ export function extractImageUrls(input: any): string[] {
     const urls: string[] = [];
     for (const item of items) {
       if (typeof item === 'string' && item.trim()) {
-        const str = item.trim();
+        let str = item.trim();
+
         if (str.startsWith('http://') || str.startsWith('https://') || str.startsWith('/')) {
           urls.push(str);
         } else if (str.includes(',')) {

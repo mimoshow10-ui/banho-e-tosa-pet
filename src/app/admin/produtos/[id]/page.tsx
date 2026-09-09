@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
@@ -123,6 +124,8 @@ async function atualizarProduto(formData: FormData) {
   revalidatePath('/admin/produtos');
   revalidatePath('/');
   
+  const ret_params = (formData.get('ret_params') as string) || '';
+
   const { data: prodExistente } = await supabase.from('produtos').select('slug').eq('id', id).single();
   if (prodExistente) {
     revalidatePath(`/produto/${prodExistente.slug}`);
@@ -133,11 +136,15 @@ async function atualizarProduto(formData: FormData) {
     if (cat) revalidatePath(`/categoria/${cat.slug}`);
   }
   
-  redirect(`/admin/produtos?msg=Produto atualizado com sucesso!`);
+  const p = new URLSearchParams(ret_params);
+  p.set('msg', 'Produto atualizado com sucesso!');
+  redirect(`/admin/produtos?${p.toString()}`);
 }
 
-export default async function EditarProduto(props: { params: Promise<{ id: string }> }) {
+export default async function EditarProduto(props: { params: Promise<{ id: string }>; searchParams: Promise<{ ret?: string }> }) {
   const { id } = await props.params;
+  const searchParams = await props.searchParams;
+  const retParams = searchParams.ret || '';
 
   const { data: produto } = await supabase.from('produtos').select('*').eq('id', id).single();
   const { data: categorias } = await supabase.from('categorias').select('*');
@@ -195,10 +202,19 @@ export default async function EditarProduto(props: { params: Promise<{ id: strin
 
   return (
     <div className="max-w-4xl bg-white p-8 rounded-xl shadow-sm border border-border font-sans">
-      <h1 className="text-2xl font-bold mb-6 text-secondary">Editar Produto</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-secondary">Editar Produto</h1>
+        <Link
+          href={`/admin/produtos${retParams ? `?${retParams}` : ''}`}
+          className="text-xs font-bold text-gray-600 hover:text-primary transition bg-gray-100 px-4 py-2 rounded-xl border border-gray-200"
+        >
+          &larr; Voltar para os Produtos
+        </Link>
+      </div>
       
       <form action={atualizarProduto} className="flex flex-col gap-6">
         <input type="hidden" name="id" value={id} />
+        <input type="hidden" name="ret_params" value={retParams} />
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="md:col-span-3">
             <label className="block text-sm font-medium mb-1">Nome do Produto</label>

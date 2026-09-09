@@ -6,11 +6,16 @@ import TopBar from './TopBar';
 import SearchBar from './SearchBar';
 import CategoryNav from './CategoryNav';
 import CartCountBadge from './CartCountBadge';
-import HomeOnlyCategoryNav from './HomeOnlyCategoryNav';
+
 
 export default async function Header() {
   const { data: configs } = await supabase.from('configuracoes').select('*');
-  const topbar = configs?.find(c => c.chave === 'marketing_topbar')?.valor || { texto: 'Frete grátis acima de R$ 99,00', visibilidade: 'todas', cor: 'bg-primary' };
+  const topbar = configs?.find(c => c.chave === 'marketing_topbar')?.valor || {
+    texto1: '🚚 Frete grátis acima de R$ 99,00',
+    texto2: '💳 Parcele em até 6x sem juros no cartão',
+    visibilidade: 'todas',
+    cor: 'bg-primary'
+  };
 
   return (
     <header className="w-full bg-white shadow-sm sticky top-0 z-50">
@@ -58,10 +63,8 @@ export default async function Header() {
         </div>
       </div>
 
-      {/* Menu Superior Horizontal de Categorias (EXIBIDO APENAS NA HOME '/') */}
-      <HomeOnlyCategoryNav>
-        <CategoryNav />
-      </HomeOnlyCategoryNav>
+      {/* Menu Superior Horizontal de Categorias (Exibido em todas as páginas) */}
+      <CategoryNav />
     </header>
   );
 }

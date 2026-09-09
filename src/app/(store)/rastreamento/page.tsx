@@ -96,20 +96,25 @@ function RastreamentoContent() {
 
   // Define as etapas do pedido para a timeline visual
   function getEtapas(p: any) {
-    const status = (p.status || 'PAGAMENTO_APROVADO').toUpperCase();
+    const s = (p.status || 'AGUARDANDO_PAGAMENTO').toString().toUpperCase().trim();
     const isBlingOk = p.bling_status === 'OK';
     const temRastreio = Boolean(p.codigo_rastreio);
 
+    const isPago = ['PAGAMENTO_APROVADO', 'PAGO', 'APROVADO', 'EM_SEPARACAO', 'ENVIADO', 'ENTREGUE'].includes(s);
+    const isEmSeparacao = isPago && (s === 'EM_SEPARACAO' || isBlingOk || s === 'ENVIADO' || s === 'ENTREGUE');
+    const isEnviado = isPago && (s === 'ENVIADO' || s === 'ENTREGUE' || temRastreio);
+    const isEntregue = isPago && s === 'ENTREGUE';
+
     const etapa1 = true; // Pedido Realizado
-    const etapa2 = status !== 'PENDENTE' && status !== 'CANCELADO'; // Pagamento Aprovado
-    const etapa3 = etapa2 && (isBlingOk || status === 'ENVIADO' || status === 'ENTREGUE'); // Em Separação / Bling
-    const etapa4 = status === 'ENVIADO' || status === 'ENTREGUE' || temRastreio; // Enviado aos Correios / Transportadora
-    const etapa5 = status === 'ENTREGUE'; // Entregue ao Cliente
+    const etapa2 = isPago; // Pagamento Aprovado
+    const etapa3 = isEmSeparacao; // Em Separação / Bling
+    const etapa4 = isEnviado; // Enviado
+    const etapa5 = isEntregue; // Entregue
 
     return [
       { id: 1, titulo: 'Pedido Realizado', sub: new Date(p.criado_em || Date.now()).toLocaleDateString('pt-BR'), ok: etapa1 },
-      { id: 2, titulo: 'Pagamento Aprovado', sub: etapa2 ? 'Confirmado' : 'Aguardando', ok: etapa2 },
-      { id: 3, titulo: 'Em Separação', sub: etapa3 ? 'Nota emitida (Bling)' : 'Em breve', ok: etapa3 },
+      { id: 2, titulo: 'Pagamento Aprovado', sub: etapa2 ? 'Confirmado ✔️' : 'Aguardando pagamento', ok: etapa2 },
+      { id: 3, titulo: 'Em Separação', sub: etapa3 ? (isBlingOk ? 'Nota emitida (Bling)' : 'Em preparação') : 'Em breve', ok: etapa3 },
       { id: 4, titulo: 'Enviado', sub: etapa4 ? (p.codigo_rastreio ? `Rastreio: ${p.codigo_rastreio}` : 'Em trânsito') : 'Aguardando envio', ok: etapa4 },
       { id: 5, titulo: 'Entregue', sub: etapa5 ? 'Pedido concluído 🎉' : 'Previsão de entrega', ok: etapa5 },
     ];

@@ -12,33 +12,23 @@ export default function TopBar({ topbar }: { topbar: any }) {
     return null;
   }
 
-  const texto = topbar.texto || '🚚 Frete grátis acima de R$ 99,00';
+  const frase1 = topbar.texto1 || topbar.texto || '🚚 Frete grátis acima de R$ 99,00';
+  const frase2 = topbar.texto2 || '';
 
   return (
-    <div className={`w-full ${topbar.cor} text-white py-2 overflow-hidden relative shadow-2xs`}>
-      <style jsx>{`
-        @keyframes marqueeSlow {
-          0% {
-            transform: translateX(100vw);
-          }
-          100% {
-            transform: translateX(-100%);
-          }
-        }
-        .animate-marquee-slow {
-          display: inline-block;
-          white-space: nowrap;
-          animation: marqueeSlow 25s linear infinite;
-        }
-        .animate-marquee-slow:hover {
-          animation-play-state: paused;
-        }
-      `}</style>
+    <div className={`w-full ${topbar.cor || 'bg-primary'} text-white py-2 px-4 shadow-2xs`}>
+      <div className="max-w-7xl mx-auto flex flex-col items-center justify-center gap-1 text-center font-sans">
+        {/* Linha 1 */}
+        <span className="text-xs sm:text-sm font-black tracking-wide leading-tight drop-shadow-xs">
+          {frase1}
+        </span>
 
-      <div className="w-full flex items-center justify-center">
-        <div className="animate-marquee-slow text-base md:text-lg font-black tracking-wider">
-          <span>{texto}</span>
-        </div>
+        {/* Linha 2 (Abaixo da Linha 1, se preenchida) */}
+        {frase2 && frase2.trim() && (
+          <span className="text-[11px] sm:text-xs font-bold text-white/95 tracking-wide leading-tight border-t border-white/20 pt-1 mt-0.5 w-full max-w-xl">
+            {frase2}
+          </span>
+        )}
       </div>
     </div>
   );

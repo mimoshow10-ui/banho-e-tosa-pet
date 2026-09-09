@@ -70,3 +70,89 @@ export async function getProdutosIDsDaCategoria(categoriaId: string): Promise<st
 
   return Array.from(new Set([...idsDiretos, ...idsAdicionais]));
 }
+
+export interface CategoriaItem {
+  id: string;
+  nome: string;
+  slug: string;
+  parent_id: string | null;
+}
+
+/**
+ * Retorna apenas os Grupos Principais e Subgrupos que possuem pelo menos 1 produto ativo publicado na loja.
+ */
+export async function getCategoriasComProdutosAtivos(): Promise<{
+  pais: CategoriaItem[];
+  all: CategoriaItem[];
+}> {
+  try {
+    const { data: categoriasAll } = await supabase
+      .from('categorias')
+      .select('id, nome, slug, parent_id')
+      .order('nome');
+
+    if (!categoriasAll || categoriasAll.length === 0) {
+      return { pais: [], all: [] };
+    }
+
+    const { data: produtosAtivos } = await supabase
+      .from('produtos')
+      .select('id, categoria_id')
+      .eq('ativo', true);
+
+    const activeProdIds = new Set((produtosAtivos || []).map(p => p.id));
+    const catIdsComProdutos = new Set<string>();
+
+    (produtosAtivos || []).forEach(p => {
+      if (p.categoria_id) catIdsComProdutos.add(p.categoria_id);
+    });
+
+    const { data: cfgMap } = await supabase
+      .from('configuracoes')
+      .select('valor')
+      .eq('chave', 'produto_categorias_map')
+      .maybeSingle();
+
+    const { data: cfgAdic } = await supabase
+      .from('configuracoes')
+      .select('valor')
+      .eq('chave', 'produtos_categorias_adicionais')
+      .maybeSingle();
+
+    const map1: Record<string, string[]> = cfgMap?.valor || {};
+    const map2: Record<string, string[]> = cfgAdic?.valor || {};
+
+    for (const [pId, catIds] of Object.entries(map1)) {
+      if (activeProdIds.has(pId) && Array.isArray(catIds)) {
+        catIds.forEach(cId => catIdsComProdutos.add(cId));
+      }
+    }
+    for (const [pId, catIds] of Object.entries(map2)) {
+      if (activeProdIds.has(pId) && Array.isArray(catIds)) {
+        catIds.forEach(cId => catIdsComProdutos.add(cId));
+      }
+    }
+
+    const allCats = (categoriasAll || []) as CategoriaItem[];
+
+    // Subgrupos com produtos ativos
+    const subgruposAtivos = allCats.filter(c => c.parent_id !== null && catIdsComProdutos.has(c.id));
+    const parentIdsComSubgruposAtivos = new Set(subgruposAtivos.map(s => s.parent_id));
+
+    // Grupos pai com produtos ativos (diretos ou via subgrupo)
+    const paisAtivos = allCats.filter(
+      c => c.parent_id === null && (catIdsComProdutos.has(c.id) || parentIdsComSubgruposAtivos.has(c.id))
+    );
+
+    const paisIdsSet = new Set(paisAtivos.map(p => p.id));
+    const subgruposFiltrados = subgruposAtivos.filter(s => s.parent_id && paisIdsSet.has(s.parent_id));
+
+    return {
+      pais: paisAtivos,
+      all: [...paisAtivos, ...subgruposFiltrados]
+    };
+  } catch (err) {
+    console.error('Erro ao buscar categorias ativas:', err);
+    return { pais: [], all: [] };
+  }
+}

@@ -3,6 +3,8 @@ import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
 import ProductCard from '@/components/ProductCard';
 
+import { hasValidPhoto } from '@/lib/productFilter';
+
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
@@ -24,7 +26,7 @@ export default async function BuscaPage({
       .or(`nome.ilike.%${q}%,codigo_barras.ilike.%${q}%,descricao.ilike.%${q}%`)
       .order('criado_em', { ascending: false });
 
-    if (data) produtos = data.filter((p: any) => Array.isArray(p.imagens) && p.imagens.length > 0 && typeof p.imagens[0] === 'string' && p.imagens[0].length > 0);
+    if (data) produtos = data;
   }
 
   return (

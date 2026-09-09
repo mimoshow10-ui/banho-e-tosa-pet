@@ -4,6 +4,8 @@ import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, CheckCircle2, Clock, Truck, User, MapPin, PackageCheck, AlertCircle, Building2 } from 'lucide-react';
 
+import GerenciarPedidoControl from '../GerenciarPedidoControl';
+
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
@@ -68,7 +70,7 @@ export default async function DetalhePedidoPage({
           {isPago ? (
             <span className="bg-green-100 text-green-800 font-bold px-4 py-2 rounded-xl text-sm inline-flex items-center gap-1.5 shadow-2xs">
               <CheckCircle2 size={18} />
-              Status: Pagamento Aprovado
+              Status: {pedido.status}
             </span>
           ) : (
             <div className="flex items-center gap-2">
@@ -88,6 +90,9 @@ export default async function DetalhePedidoPage({
           )}
         </div>
       </div>
+
+      {/* Painel Interativo de Gestao do Pedido (Status, Bling e Rastreio) */}
+      <GerenciarPedidoControl pedido={pedido} />
 
       {/* Card Sinal do Bling (Sincronização) */}
       <div className={`p-5 rounded-2xl border flex items-center justify-between shadow-2xs ${

@@ -7,6 +7,8 @@ import TabelaProdutosComEdicaoEmMassa from '@/components/TabelaProdutosComEdicao
 import AdminFiltrosAvancados from '@/components/AdminFiltrosAvancados';
 import { getFamilyConfig } from '@/lib/familyManager';
 
+import { hasValidPhoto } from '@/lib/productFilter';
+
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
@@ -21,6 +23,7 @@ export default async function AdminProdutos(props: {
     com_foto?: string;
     promocao?: string;
     status?: string;
+    classificacao?: string;
   }>;
 }) {
   const searchParams = await props.searchParams;
@@ -30,6 +33,7 @@ export default async function AdminProdutos(props: {
   const com_foto = searchParams.com_foto || '';
   const promocao = searchParams.promocao || '';
   const status = searchParams.status || '';
+  const classificacao = searchParams.classificacao || '';
   const pagina = Math.max(1, Number(searchParams.pagina) || 1);
   const limite = 200;
   const offset = (pagina - 1) * limite;
@@ -160,6 +164,20 @@ export default async function AdminProdutos(props: {
     };
   });
 
+  if (com_foto === 'sim') {
+    produtosFormatados = produtosFormatados.filter(p => hasValidPhoto(p));
+  } else if (com_foto === 'nao') {
+    produtosFormatados = produtosFormatados.filter(p => !hasValidPhoto(p));
+  }
+
+  if (classificacao === 'ok') {
+    produtosFormatados = produtosFormatados.filter(p => p.status_classificacao === 'ok');
+  } else if (classificacao === 'apenas_grupo') {
+    produtosFormatados = produtosFormatados.filter(p => p.status_classificacao === 'apenas_grupo');
+  } else if (classificacao === 'sem_categoria') {
+    produtosFormatados = produtosFormatados.filter(p => p.status_classificacao === 'sem_categoria');
+  }
+
   const familyConfig = await getFamilyConfig();
   const paiIds = new Set(Object.keys(familyConfig.productToFamilyMap));
 
@@ -171,6 +189,7 @@ export default async function AdminProdutos(props: {
     if (com_foto) params.set('com_foto', com_foto);
     if (promocao) params.set('promocao', promocao);
     if (status) params.set('status', status);
+    if (classificacao) params.set('classificacao', classificacao);
     params.set('pagina', String(targetPage));
     return `/admin/produtos?${params.toString()}`;
   }
