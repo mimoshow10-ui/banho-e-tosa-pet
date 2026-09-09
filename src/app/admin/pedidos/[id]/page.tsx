@@ -7,6 +7,20 @@ import { ArrowLeft, CheckCircle2, Clock, Truck, User, MapPin, PackageCheck, Aler
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
+import { aprovarPedidoEGerarEtiqueta } from '@/lib/orderManager';
+
+async function aprovarManualmente(formData: FormData) {
+  'use server';
+  const numero = formData.get('numero') as string;
+  const idPed = formData.get('id') as string;
+  if (numero) {
+    await aprovarPedidoEGerarEtiqueta(numero);
+  }
+  revalidatePath('/admin/pedidos');
+  revalidatePath(`/admin/pedidos/${idPed}`);
+  redirect(`/admin/pedidos/${idPed}?msg=Pedido aprovado e processado com sucesso!`);
+}
+
 export default async function DetalhePedidoPage({
   params,
 }: {
@@ -30,11 +44,12 @@ export default async function DetalhePedidoPage({
 
   const isPago = pedido.status === 'PAGAMENTO_APROVADO' || pedido.status === 'ENVIADO' || pedido.status === 'ENTREGUE';
   const isBlingOk = pedido.bling_status === 'OK';
+  const isMelhorEnvioOk = pedido.melhor_envio_status === 'CADASTRADO';
 
   return (
     <div className="max-w-5xl space-y-6">
       {/* Voltar e Topo */}
-      <div className="flex items-center justify-between border-b border-border pb-4">
+      <div className="flex items-center justify-between border-b border-border pb-4 flex-wrap gap-4">
         <div className="flex items-center gap-4">
           <Link href="/admin/pedidos" className="p-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition">
             <ArrowLeft size={20} />
@@ -56,10 +71,20 @@ export default async function DetalhePedidoPage({
               Status: Pagamento Aprovado
             </span>
           ) : (
-            <span className="bg-amber-100 text-amber-800 font-bold px-4 py-2 rounded-xl text-sm inline-flex items-center gap-1.5 shadow-2xs">
-              <Clock size={18} />
-              Status: Aguardando Pagamento
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="bg-amber-100 text-amber-800 font-bold px-4 py-2 rounded-xl text-sm inline-flex items-center gap-1.5 shadow-2xs">
+                <Clock size={18} />
+                Status: Aguardando Pagamento
+              </span>
+
+              <form action={aprovarManualmente}>
+                <input type="hidden" name="numero" value={pedido.numero_pedido || pedido.id} />
+                <input type="hidden" name="id" value={pedido.id} />
+                <button type="submit" className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-2xs transition cursor-pointer">
+                  ✅ Marcar Pago & Enviar para Melhor Envio
+                </button>
+              </form>
+            </div>
           )}
         </div>
       </div>

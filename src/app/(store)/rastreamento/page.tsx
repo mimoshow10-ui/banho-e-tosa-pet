@@ -28,7 +28,14 @@ function RastreamentoContent() {
   const [buscado, setBuscado] = useState(false);
 
   useEffect(() => {
-    if (queryPedido) {
+    const statusParam = searchParams.get('status') || searchParams.get('collection_status');
+    if (queryPedido && (statusParam === 'sucesso' || statusParam === 'approved' || statusParam === 'success')) {
+      fetch('/api/pedidos/confirmar-pagamento', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ numeroPedido: queryPedido })
+      }).then(() => handleBuscar(queryPedido)).catch(() => handleBuscar(queryPedido));
+    } else if (queryPedido) {
       handleBuscar(queryPedido);
     } else {
       try {
@@ -53,7 +60,6 @@ function RastreamentoContent() {
 
     setLoading(true);
     setBuscado(true);
-    setPedido(null);
 
     try {
       const { data: config } = await supabase
