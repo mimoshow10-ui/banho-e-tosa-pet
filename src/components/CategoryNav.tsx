@@ -1,21 +1,8 @@
-import { supabase } from '@/lib/supabase';
 import CategoryNavClient from './CategoryNavClient';
-
-interface Categoria {
-  id: string;
-  nome: string;
-  slug: string;
-  parent_id: string | null;
-}
+import { getCategoriasComProdutosAtivos } from '@/lib/categoria-vincular';
 
 export default async function CategoryNav() {
-  const { data: categoriasAll } = await supabase
-    .from('categorias')
-    .select('id, nome, slug, parent_id')
-    .order('nome');
-
-  const all = (categoriasAll || []) as Categoria[];
-  const pais = all.filter(c => c.parent_id === null);
+  const { pais, all } = await getCategoriasComProdutosAtivos();
 
   if (pais.length === 0) return null;
 
