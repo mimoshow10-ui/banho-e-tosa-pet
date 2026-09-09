@@ -1,41 +1,7 @@
 'use client'
 
 import { extractImageUrls } from './ProductMediaGallery';
-
-function extrairQuantidade(nome: string, preco: number): number {
-  const n = (nome || '').trim().toLowerCase();
-
-  // 1. Kit com X / Kit X
-  const kitMatch = n.match(/\bkit\s*(?:com\s*)?(\d+)\b/i);
-  if (kitMatch) {
-    const num = parseInt(kitMatch[1], 10);
-    if (!isNaN(num) && num > 0) return num;
-  }
-
-  // 2. X unidades / un / und / pcs / pçs / folhas / cartelas / pares / pacotes / pct / ct
-  const unitMatch = n.match(/\b(\d+)\s*(?:unidades|unidade|unid|und|un|pcs|pc|pçs|pça|peças|peça|pares|par|folhas|folha|cartelas|cartela|ct|pct|pacote|pacotes)\b/i);
-  if (unitMatch) {
-    const num = parseInt(unitMatch[1], 10);
-    if (!isNaN(num) && num > 0) return num;
-  }
-
-  // 3. Número no início do nome (ex: "100 Gravatas Cetim", "10 Adesivos")
-  const startMatch = n.match(/^(\d+)\s+/);
-  if (startMatch) {
-    const num = parseInt(startMatch[1], 10);
-    if (!isNaN(num) && num > 0 && num < 5000) return num;
-  }
-
-  // 4. Qualquer número isolado (ex: "Gravata 50 P")
-  const anyMatch = n.match(/\b(\d+)\b/);
-  if (anyMatch) {
-    const num = parseInt(anyMatch[1], 10);
-    if (!isNaN(num) && num > 0 && num < 2000) return num;
-  }
-
-  // Fallback: se não encontrar quantidade no nome, ordena pelo preço
-  return 100000 + (preco || 0);
-}
+import { ordenarProdutosPorQuantidade } from '@/lib/quantityExtractor';
 
 export default function VariationSelector({
   currentSlug,
@@ -48,25 +14,8 @@ export default function VariationSelector({
 }) {
   if (!family || family.length <= 1) return null;
 
-  let sortedFamily = [...family];
-  sortedFamily.sort((a, b) => {
-    const qA = extrairQuantidade(a?.nome || '', Number(a?.preco || 0));
-    const qB = extrairQuantidade(b?.nome || '', Number(b?.preco || 0));
-
-    if (qA !== qB) {
-      return qA - qB; // Menor para maior quantidade
-    }
-
-    if (Array.isArray(customOrderIds) && customOrderIds.length > 0) {
-      const idxA = customOrderIds.indexOf(a.id);
-      const idxB = customOrderIds.indexOf(b.id);
-      if (idxA !== -1 && idxB !== -1) return idxA - idxB;
-      if (idxA !== -1) return -1;
-      if (idxB !== -1) return 1;
-    }
-
-    return (a?.nome || '').localeCompare(b?.nome || '', 'pt-BR');
-  });
+  // Garante a ordenação rigorosa da MENOR para a MAIOR quantidade (ex: 10 -> 20 -> 30 -> 50 -> 100...)
+  const sortedFamily = ordenarProdutosPorQuantidade(family);
 
   return (
     <div className="border border-gray-200 rounded-xl p-3 bg-gray-50/50 space-y-2">
@@ -75,7 +24,7 @@ export default function VariationSelector({
           <span>📦 Opções de Quantidade Disponíveis:</span>
         </h3>
         <span className="text-[11px] text-gray-500 font-medium">
-          {customOrderIds && customOrderIds.length > 0 ? '(Ordem Personalizada)' : '(Menor para Maior)'}
+          (Menor para Maior)
         </span>
       </div>
 

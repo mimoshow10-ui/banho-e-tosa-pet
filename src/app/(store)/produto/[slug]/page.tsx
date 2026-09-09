@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { getFamilyConfig } from '@/lib/familyManager';
+import { ordenarProdutosPorQuantidade } from '@/lib/quantityExtractor';
 import CountdownTimer from '@/components/CountdownTimer';
 import VariationSelector from '@/components/VariationSelector';
 import FreteCalculator from '@/components/FreteCalculator';
@@ -10,6 +11,7 @@ import ProductCouponsBanner from '@/components/ProductCouponsBanner';
 import AddToCartButtons from '@/components/AddToCartButtons';
 import SafeComponent from '@/components/SafeComponent';
 import { notFound } from 'next/navigation';
+import { hasValidPhoto } from '@/lib/productFilter';
 import type { Metadata } from 'next';
 
 export const dynamic = 'force-dynamic';
@@ -74,7 +76,8 @@ export default async function ProdutoPage({ params }: { params: Promise<{ slug: 
   
   const rawProduto = await buscarProdutoMultiEstagio(slug);
 
-  if (!rawProduto) notFound();
+  // Regra Estrita: produto SÓ aparece na tela de vendas se tiver foto
+  if (!rawProduto || !hasValidPhoto(rawProduto)) notFound();
 
   // O produto ativo é exatamente o produto individual clicado pelo cliente
   const produto = { ...rawProduto };
@@ -101,13 +104,9 @@ export default async function ProdutoPage({ params }: { params: Promise<{ slug: 
       .eq('ativo', true);
 
     if (familyDataRaw && familyDataRaw.length > 0) {
-      const mapProds = new Map(familyDataRaw.map(p => [p.id, p]));
-      const ordenados = memberIds.map(id => mapProds.get(id)).filter(Boolean);
-      for (const p of familyDataRaw) {
-        if (!memberIds.includes(p.id)) ordenados.push(p);
-      }
-      family = ordenados;
-      customOrderIds = memberIds;
+      const familyComFoto = familyDataRaw.filter(hasValidPhoto);
+      family = ordenarProdutosPorQuantidade(familyComFoto);
+      customOrderIds = family.map(p => p.id);
     }
   } catch (errFam) {
     console.error('[PRODUTO STOREFRONT] Erro ao carregar família:', errFam);

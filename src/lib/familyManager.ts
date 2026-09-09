@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { ordenarProdutosPorQuantidade } from './quantityExtractor';
 
 export interface FamilyData {
   familyId: string;
@@ -133,16 +134,34 @@ export async function linkProductToFamily(
 
   const unifiedMembers = Array.from(new Set([...targetMembers, ...newMembers, targetProductId, newMemberId]));
 
+  // Ordenar membros sempre por quantidade crescente (menor para maior)
+  let sortedMembers = unifiedMembers;
+  try {
+    const { data: prods } = await supabase
+      .from('produtos')
+      .select('id, nome, preco, preco_promocional')
+      .in('id', unifiedMembers);
+    if (prods && prods.length > 0) {
+      const sortedProds = ordenarProdutosPorQuantidade(prods);
+      sortedMembers = sortedProds.map(p => p.id);
+      for (const mId of unifiedMembers) {
+        if (!sortedMembers.includes(mId)) sortedMembers.push(mId);
+      }
+    }
+  } catch (errSort) {
+    console.error('[FAMILY MANAGER] Erro ao ordenar membros por quantidade:', errSort);
+  }
+
   if (existingFamilyIdNew && existingFamilyIdNew !== activeFamilyId) {
     delete config.familias[existingFamilyIdNew];
   }
 
   config.familias[activeFamilyId] = {
     familyId: activeFamilyId,
-    members: unifiedMembers,
+    members: sortedMembers,
   };
 
-  for (const mId of unifiedMembers) {
+  for (const mId of sortedMembers) {
     config.productToFamilyMap[mId] = activeFamilyId;
   }
 

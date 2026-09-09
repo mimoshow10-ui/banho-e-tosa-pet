@@ -24,8 +24,17 @@ import { hasValidPhoto } from '@/lib/productFilter';
 export default function ProductCard({ produto }: ProdutoCardProps) {
   const [imageError, setImageError] = useState(false);
 
+  // Regra Estrita: produto SÓ aparece na tela de vendas se tiver foto válida e funcional
+  if (!hasValidPhoto(produto) || imageError) {
+    return null;
+  }
+
   const fotos = extractImageUrls(produto.imagens);
   let foto = (imageError || !fotos[0]) ? null : fotos[0];
+
+  if (!foto) {
+    return null;
+  }
     
   if (foto && foto.startsWith('http://')) {
     foto = foto.replace(/^http:\/\//i, 'https://');

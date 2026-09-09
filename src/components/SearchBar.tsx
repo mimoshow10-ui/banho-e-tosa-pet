@@ -6,6 +6,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Search, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { hasValidPhoto } from '@/lib/productFilter';
 
 interface ProdutoBusca {
   id: string;
@@ -50,9 +51,10 @@ export default function SearchBar() {
         .select('id, nome, slug, preco, preco_promocional, imagens')
         .eq('ativo', true)
         .or(`nome.ilike.%${query}%,codigo_barras.ilike.%${query}%`)
-        .limit(6);
+        .limit(12);
 
-      setResultados(data || []);
+      const validos = (data || []).filter(hasValidPhoto).slice(0, 6);
+      setResultados(validos);
       setOpen(true);
       setLoading(false);
     }, 250);
