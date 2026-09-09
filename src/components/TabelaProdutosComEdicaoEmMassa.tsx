@@ -564,7 +564,7 @@ export default function TabelaProdutosComEdicaoEmMassa({ produtos, categorias, p
                   produtos.map((item) => {
                     const isChecked = selecionados.includes(item.id);
                     const rawFotoUrl = extrairFoto(item.imagens);
-                    const fotoValida = rawFotoUrl && !rawFotoUrl.includes('amazonaws.com') ? rawFotoUrl : null;
+                    const fotoValida = rawFotoUrl || null;
 
                     return (
                       <tr
