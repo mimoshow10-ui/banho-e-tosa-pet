@@ -71,10 +71,16 @@ async function atualizarProduto(formData: FormData) {
 
   let { error } = await supabase.from('produtos').update(payload).eq('id', id);
   
-  if (error && (error.code === 'PGRST204' || error.message?.includes('promocao_inicio_em'))) {
-    delete payload.promocao_inicio_em;
-    const res = await supabase.from('produtos').update(payload).eq('id', id);
-    error = res.error;
+  // Resiliência de esquema: caso o banco não tenha certas colunas opcionais, remove e retenta
+  while (error && (error.code === 'PGRST204' || error.message?.includes('schema cache'))) {
+    const match = error.message && error.message.match(/Could not find the '([^']+)' column/);
+    if (match && match[1] && match[1] in payload) {
+      delete payload[match[1]];
+      const res = await supabase.from('produtos').update(payload).eq('id', id);
+      error = res.error;
+    } else {
+      break;
+    }
   }
 
   if (error) {
