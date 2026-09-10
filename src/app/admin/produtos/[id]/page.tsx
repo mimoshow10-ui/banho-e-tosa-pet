@@ -151,10 +151,17 @@ async function atualizarProduto(formData: FormData) {
   redirect(`/admin/produtos?${p.toString()}`);
 }
 
-export default async function EditarProduto(props: { params: Promise<{ id: string }>; searchParams: Promise<{ ret?: string }> }) {
+import FormSubmitButton from '@/components/FormSubmitButton';
+
+export default async function EditarProduto(props: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ ret?: string; erro?: string; msg?: string }>;
+}) {
   const { id } = await props.params;
   const searchParams = await props.searchParams;
   const retParams = searchParams.ret || '';
+  const erroMsg = searchParams.erro || '';
+  const okMsg = searchParams.msg || '';
 
   const { data: produto } = await supabase.from('produtos').select('*').eq('id', id).single();
   const { data: categorias } = await supabase.from('categorias').select('*');
@@ -211,8 +218,8 @@ export default async function EditarProduto(props: { params: Promise<{ id: strin
   }
 
   return (
-    <div className="max-w-4xl bg-white p-8 rounded-xl shadow-sm border border-border font-sans">
-      <div className="flex justify-between items-center mb-6">
+    <div className="max-w-4xl bg-white p-8 rounded-xl shadow-sm border border-border font-sans space-y-6">
+      <div className="flex justify-between items-center pb-2 border-b border-gray-100">
         <h1 className="text-2xl font-bold text-secondary">Editar Produto</h1>
         <Link
           href={`/admin/produtos${retParams ? `?${retParams}` : ''}`}
@@ -221,6 +228,18 @@ export default async function EditarProduto(props: { params: Promise<{ id: strin
           &larr; Voltar para os Produtos
         </Link>
       </div>
+
+      {erroMsg && (
+        <div className="bg-red-100 border border-red-300 text-red-800 p-4 rounded-2xl font-bold text-xs">
+          ❌ {erroMsg}
+        </div>
+      )}
+
+      {okMsg && (
+        <div className="bg-green-100 border border-green-300 text-green-800 p-4 rounded-2xl font-bold text-xs">
+          ✅ {okMsg}
+        </div>
+      )}
       
       <form action={atualizarProduto} className="flex flex-col gap-6">
         <input type="hidden" name="id" value={id} />
@@ -388,9 +407,9 @@ export default async function EditarProduto(props: { params: Promise<{ id: strin
           <p className="text-xs text-gray-500 mt-1">IDs dos produtos que aparecerão na seção "Compre Junto".</p>
         </div>
 
-        <button type="submit" className="bg-primary text-white py-3 rounded-lg font-bold hover:bg-orange-600 transition mt-4 cursor-pointer">
-          Salvar Alterações
-        </button>
+        <div className="pt-4 border-t border-gray-100">
+          <FormSubmitButton label="Salvar Alterações" loadingLabel="Salvando Alterações no Banco..." />
+        </div>
       </form>
     </div>
   );
