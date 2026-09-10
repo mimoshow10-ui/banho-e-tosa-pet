@@ -18,6 +18,7 @@ export default async function AdminProdutos(props: {
     erro?: string;
     q?: string;
     pagina?: string;
+    limite?: string;
     grupo_id?: string;
     subgrupo_id?: string;
     com_foto?: string;
@@ -35,7 +36,7 @@ export default async function AdminProdutos(props: {
   const status = searchParams.status || '';
   const classificacao = searchParams.classificacao || '';
   const pagina = Math.max(1, Number(searchParams.pagina) || 1);
-  const limite = 200;
+  const limite = Math.max(1, Number(searchParams.limite) || 100);
   const offset = (pagina - 1) * limite;
 
   const { data: todasCategorias } = await supabase.from('categorias').select('id, nome, parent_id').order('nome');
@@ -190,6 +191,7 @@ export default async function AdminProdutos(props: {
     if (promocao) params.set('promocao', promocao);
     if (status) params.set('status', status);
     if (classificacao) params.set('classificacao', classificacao);
+    if (searchParams.limite) params.set('limite', searchParams.limite);
     params.set('pagina', String(targetPage));
     return `/admin/produtos?${params.toString()}`;
   }
@@ -210,7 +212,7 @@ export default async function AdminProdutos(props: {
               📦 Total Encontrado: {totalNoBanco || 0} produto(s)
             </span>
             <span className="bg-blue-50 text-secondary border border-blue-200 text-xs font-bold px-3 py-1 rounded-full shadow-2xs">
-              📄 Página {pagina} de {totalPaginas} (50 por página)
+              📄 Página {pagina} de {totalPaginas} ({limite} por página)
             </span>
           </div>
           <p className="text-xs text-gray-500 mt-0.5">Gerencie os anúncios, preços, estoques e edições em massa da loja.</p>
@@ -263,7 +265,7 @@ export default async function AdminProdutos(props: {
       {/* Navegação de Paginação */}
       <div className="flex flex-col sm:flex-row items-center justify-between bg-white p-4 rounded-2xl border border-gray-200 shadow-xs text-xs font-bold text-gray-600 gap-3">
         <span>
-          Exibindo anúncios <strong className="text-primary font-black">{(pagina - 1) * limite + 1} a {Math.min(pagina * limite, totalNoBanco || 0)}</strong> nesta página (<strong>200 anúncios por página</strong> • Total de <strong>{totalNoBanco || 0}</strong> produtos em {totalPaginas} páginas)
+          Exibindo anúncios <strong className="text-primary font-black">{(pagina - 1) * limite + 1} a {Math.min(pagina * limite, totalNoBanco || 0)}</strong> nesta página (<strong>{limite} anúncios por página</strong> • Total de <strong>{totalNoBanco || 0}</strong> produtos em {totalPaginas} páginas)
         </span>
         <div className="flex items-center gap-2">
           {pagina > 1 && (
