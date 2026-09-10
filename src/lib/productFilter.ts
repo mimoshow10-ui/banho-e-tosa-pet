@@ -28,6 +28,8 @@ export function hasValidPhoto(produto: any): boolean {
     lower.includes('placeholder') ||
     lower.includes('no-image') ||
     lower.includes('sem-foto') ||
+    lower.includes('tray-phpassets-tmp') ||
+    lower.includes('copia-de-inserir-um-titulo') ||
     lower === 'null' ||
     lower === 'undefined'
   ) {
