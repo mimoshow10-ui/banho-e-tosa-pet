@@ -124,7 +124,7 @@ export async function importarSKU(formData: FormData) {
           (p: any) =>
             (p.codigo && p.codigo.trim().toLowerCase() === sku.toLowerCase()) ||
             String(p.id) === sku
-        ) || data.data[0];
+        );
         
         if (!produtoBuscado) {
           redirectTo = makeUrl('erro', `Bling não encontrou o SKU exato: '${sku}'. Verifique a digitação.`);

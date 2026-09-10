@@ -43,7 +43,7 @@ export async function POST(req: Request) {
           (p: any) =>
             (p.codigo && p.codigo.trim().toLowerCase() === sku.toLowerCase()) ||
             String(p.id) === sku
-        ) || data.data[0];
+        );
 
         if (!produtoBuscado) {
           resultados.push({ sku, status: 'erro', mensagem: `Nenhum produto correspondente a '${sku}'` });
