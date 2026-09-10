@@ -19,8 +19,13 @@ export default function CategorySelector({
   defaultCategoriasAdicionais?: string[];
 }) {
   const list = Array.isArray(categorias) ? categorias : [];
-  const grupos = list.filter((c) => c && !c.parent_id);
-  const subgrupos = list.filter((c) => c && Boolean(c.parent_id));
+  const grupos = list
+    .filter((c) => c && !c.parent_id)
+    .sort((a, b) => (a.nome || '').localeCompare(b.nome || '', 'pt-BR', { sensitivity: 'base' }));
+
+  const subgrupos = list
+    .filter((c) => c && Boolean(c.parent_id))
+    .sort((a, b) => (a.nome || '').localeCompare(b.nome || '', 'pt-BR', { sensitivity: 'base' }));
 
   // Inicializar IDs selecionados a partir das props
   const initialSet = new Set<string>();

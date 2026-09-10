@@ -17,8 +17,12 @@ interface Props {
 }
 
 export default function CategoryNavClient({ pais, all, emojis }: Props) {
+  const paisOrdenados = [...pais].sort((a, b) => (a.nome || '').localeCompare(b.nome || '', 'pt-BR', { sensitivity: 'base' }));
+
   const getSubcategorias = (paiId: string) => {
-    return all.filter(c => c.parent_id === paiId);
+    return all
+      .filter(c => c.parent_id === paiId)
+      .sort((a, b) => (a.nome || '').localeCompare(b.nome || '', 'pt-BR', { sensitivity: 'base' }));
   };
 
   return (
@@ -26,7 +30,7 @@ export default function CategoryNavClient({ pais, all, emojis }: Props) {
       <div className="max-w-7xl mx-auto px-4 py-2">
         {/* Duas fileiras de categorias - flex-wrap */}
         <div className="flex flex-wrap gap-2">
-          {pais.map((cat) => {
+          {paisOrdenados.map((cat) => {
             const subs = getSubcategorias(cat.id);
             const temSub = subs.length > 0;
 

@@ -40,8 +40,13 @@ export default function CategoriasClient({
   editarCategoriaAction,
   excluirCategoriaAction,
 }: Props) {
-  const grupos = categorias.filter((c) => !c.parent_id);
-  const subgrupos = categorias.filter((c) => c.parent_id);
+  const grupos = categorias
+    .filter((c) => !c.parent_id)
+    .sort((a, b) => (a.nome || '').localeCompare(b.nome || '', 'pt-BR', { sensitivity: 'base' }));
+
+  const subgrupos = categorias
+    .filter((c) => c.parent_id)
+    .sort((a, b) => (a.nome || '').localeCompare(b.nome || '', 'pt-BR', { sensitivity: 'base' }));
 
   // Estado dos grupos expandidos (Accordion)
   const [expandedIds, setExpandedIds] = useState<Record<string, boolean>>(() => {

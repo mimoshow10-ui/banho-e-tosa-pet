@@ -26,11 +26,15 @@ export default function AdminFiltrosAvancados({ categorias }: Props) {
   const [status, setStatus] = useState(searchParams.get('status') || '');
   const [classificacao, setClassificacao] = useState(searchParams.get('classificacao') || '');
 
-  // Separar Grupos Principais (sem parent_id) e Subgrupos
-  const gruposPrincipais = categorias.filter(c => !c.parent_id);
-  const subgruposDisponiveis = grupoId 
+  // Separar Grupos Principais (sem parent_id) e Subgrupos em ordem alfabética (A-Z)
+  const gruposPrincipais = categorias
+    .filter(c => !c.parent_id)
+    .sort((a, b) => (a.nome || '').localeCompare(b.nome || '', 'pt-BR', { sensitivity: 'base' }));
+
+  const subgruposDisponiveis = (grupoId 
     ? categorias.filter(c => c.parent_id === grupoId)
-    : categorias.filter(c => !!c.parent_id);
+    : categorias.filter(c => !!c.parent_id))
+    .sort((a, b) => (a.nome || '').localeCompare(b.nome || '', 'pt-BR', { sensitivity: 'base' }));
 
   function aplicarFiltrosDireto(novosValores?: {
     q?: string;
