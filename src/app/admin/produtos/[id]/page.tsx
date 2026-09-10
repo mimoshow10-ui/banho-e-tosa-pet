@@ -10,14 +10,18 @@ import { getFamilyConfig } from '@/lib/familyManager';
 async function atualizarProduto(formData: FormData) {
   'use server'
   const id = formData.get('id') as string;
-  const nome = formData.get('nome') as string;
-  const preco_str = formData.get('preco') as string;
-  const preco = parseFloat(preco_str.replace(',', '.'));
+  const nome = (formData.get('nome') as string || '').trim();
   
-  const preco_promocional_str = formData.get('preco_promocional') as string;
-  const preco_promocional = preco_promocional_str ? parseFloat(preco_promocional_str.replace(',', '.')) : null;
-  const estoque = parseInt(formData.get('estoque') as string);
-  const categoria_id = formData.get('categoria_id') as string;
+  const preco_raw = (formData.get('preco') as string || '0').replace(/[^0-9.,]/g, '').replace(',', '.');
+  const preco = parseFloat(preco_raw) || 0;
+  
+  const preco_promocional_raw = (formData.get('preco_promocional') as string || '').replace(/[^0-9.,]/g, '').replace(',', '.');
+  const preco_promocional = preco_promocional_raw ? parseFloat(preco_promocional_raw) || null : null;
+
+  const estoque_raw = (formData.get('estoque') as string || '0').replace(/[^0-9]/g, '');
+  const estoque = parseInt(estoque_raw, 10) || 0;
+
+  const categoria_id = (formData.get('categoria_id') as string) || null;
   
   // Convert imagens textarea content to array
   const imagensTxt = formData.get('imagens') as string;
