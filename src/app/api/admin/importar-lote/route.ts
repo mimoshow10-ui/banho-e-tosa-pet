@@ -38,11 +38,22 @@ export async function POST(req: Request) {
       if (!sku) continue;
 
       try {
-        const response = await fetch(`https://api.bling.com.br/Api/v3/produtos?pagina=1&limite=50&pesquisa=${encodeURIComponent(sku)}`, {
+        let response = await fetch(`https://api.bling.com.br/Api/v3/produtos?codigo=${encodeURIComponent(sku)}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
-        const data = await response.json();
+        let data = await response.json();
+
+        // Se não encontrar por codigo exato, tenta por pesquisa
+        if (!data.data || data.data.length === 0) {
+          const fallbackRes = await fetch(`https://api.bling.com.br/Api/v3/produtos?pagina=1&limite=50&pesquisa=${encodeURIComponent(sku)}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          const fallbackData = await fallbackRes.json();
+          if (fallbackData?.data && fallbackData.data.length > 0) {
+            data = fallbackData;
+          }
+        }
 
         if (response.status === 401 || data?.error?.type === 'invalid_token') {
           resultados.push({ sku, status: 'erro', mensagem: 'Token do Bling expirado' });
