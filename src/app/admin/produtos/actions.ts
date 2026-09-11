@@ -17,6 +17,9 @@ export async function importarSKU(formData: FormData) {
   function makeUrl(key: 'msg' | 'erro', message: string) {
     const p = new URLSearchParams(urlParams);
     p.set(key, message);
+    if (key === 'msg') {
+      p.set('q', sku);
+    }
     return `/admin/produtos?${p.toString()}`;
   }
 
