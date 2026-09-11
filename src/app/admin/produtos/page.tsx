@@ -25,6 +25,7 @@ export default async function AdminProdutos(props: {
     promocao?: string;
     status?: string;
     classificacao?: string;
+    qtd_fotos?: string;
   }>;
 }) {
   const searchParams = await props.searchParams;
@@ -35,6 +36,7 @@ export default async function AdminProdutos(props: {
   const promocao = searchParams.promocao || '';
   const status = searchParams.status || '';
   const classificacao = searchParams.classificacao || '';
+  const qtd_fotos = searchParams.qtd_fotos || '';
   const pagina = Math.max(1, Number(searchParams.pagina) || 1);
   const limite = Math.max(1, Number(searchParams.limite) || 100);
   const offset = (pagina - 1) * limite;
@@ -68,6 +70,18 @@ export default async function AdminProdutos(props: {
   } else if (com_foto === 'nao') {
     countQuery = countQuery.or('imagens.is.null,imagens.eq.{}');
     query = query.or('imagens.is.null,imagens.eq.{}');
+  }
+
+  // Filter by exact photo count (1 to 10+)
+  if (qtd_fotos) {
+    const n = parseInt(qtd_fotos, 10);
+    if (!isNaN(n) && n >= 1 && n <= 9) {
+      countQuery = countQuery.not(`imagens->${n - 1}`, 'is', null).is(`imagens->${n}`, null);
+      query = query.not(`imagens->${n - 1}`, 'is', null).is(`imagens->${n}`, null);
+    } else if (n >= 10) {
+      countQuery = countQuery.not(`imagens->9`, 'is', null);
+      query = query.not(`imagens->9`, 'is', null);
+    }
   }
 
   // Filter by Promotion

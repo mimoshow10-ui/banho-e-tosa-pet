@@ -25,6 +25,7 @@ export default function AdminFiltrosAvancados({ categorias }: Props) {
   const [promocao, setPromocao] = useState(searchParams.get('promocao') || '');
   const [status, setStatus] = useState(searchParams.get('status') || '');
   const [classificacao, setClassificacao] = useState(searchParams.get('classificacao') || '');
+  const [qtdFotos, setQtdFotos] = useState(searchParams.get('qtd_fotos') || '');
 
   // Separar Grupos Principais (sem parent_id) e Subgrupos em ordem alfabética (A-Z)
   const gruposPrincipais = categorias
@@ -44,6 +45,7 @@ export default function AdminFiltrosAvancados({ categorias }: Props) {
     promocao?: string;
     status?: string;
     classificacao?: string;
+    qtdFotos?: string;
   }) {
     const valQ = novosValores?.q !== undefined ? novosValores.q : q;
     const valGrupo = novosValores?.grupoId !== undefined ? novosValores.grupoId : grupoId;
@@ -52,6 +54,7 @@ export default function AdminFiltrosAvancados({ categorias }: Props) {
     const valPromo = novosValores?.promocao !== undefined ? novosValores.promocao : promocao;
     const valStatus = novosValores?.status !== undefined ? novosValores.status : status;
     const valClass = novosValores?.classificacao !== undefined ? novosValores.classificacao : classificacao;
+    const valQtdFotos = novosValores?.qtdFotos !== undefined ? novosValores.qtdFotos : qtdFotos;
 
     const params = new URLSearchParams();
     if (valQ.trim()) params.set('q', valQ.trim());
@@ -61,6 +64,7 @@ export default function AdminFiltrosAvancados({ categorias }: Props) {
     if (valPromo) params.set('promocao', valPromo);
     if (valStatus) params.set('status', valStatus);
     if (valClass) params.set('classificacao', valClass);
+    if (valQtdFotos) params.set('qtd_fotos', valQtdFotos);
     params.set('pagina', '1');
 
     router.push(`/admin/produtos?${params.toString()}`);
@@ -74,10 +78,11 @@ export default function AdminFiltrosAvancados({ categorias }: Props) {
     setPromocao('');
     setStatus('');
     setClassificacao('');
+    setQtdFotos('');
     router.push('/admin/produtos');
   }
 
-  const temFiltroAtivo = !!(q || grupoId || subgrupoId || comFoto || promocao || status || classificacao);
+  const temFiltroAtivo = !!(q || grupoId || subgrupoId || comFoto || promocao || status || classificacao || qtdFotos);
 
   return (
     <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-xs space-y-4 font-sans">
@@ -329,6 +334,48 @@ export default function AdminFiltrosAvancados({ categorias }: Props) {
               <span>🔴 Apenas Inativos</span>
             </span>
           </label>
+        </div>
+
+        {/* 4. Filtro por Quantidade Exata de Fotos (1 a 10) */}
+        <div className="pt-3 border-t border-gray-100 flex flex-wrap items-center gap-2">
+          <span className="text-xs font-bold text-gray-700 flex items-center gap-1 mr-1">
+            <ImageIcon size={15} className="text-blue-600" />
+            <span>Qtd. de Fotos:</span>
+          </span>
+          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => {
+            const isSelected = qtdFotos === String(n);
+            return (
+              <button
+                key={n}
+                type="button"
+                onClick={() => {
+                  const val = isSelected ? '' : String(n);
+                  setQtdFotos(val);
+                  aplicarFiltrosDireto({ qtdFotos: val });
+                }}
+                className={`min-w-[32px] h-8 px-2 rounded-xl text-xs font-bold transition flex items-center justify-center cursor-pointer border ${
+                  isSelected
+                    ? 'bg-blue-600 text-white border-blue-600 shadow-xs font-black ring-2 ring-blue-300'
+                    : 'bg-white text-gray-700 border-gray-200 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700'
+                }`}
+                title={n === 10 ? '10 ou mais fotos' : `${n} foto(s)`}
+              >
+                {n === 10 ? '10+' : `${n}`}
+              </button>
+            );
+          })}
+          {qtdFotos && (
+            <button
+              type="button"
+              onClick={() => {
+                setQtdFotos('');
+                aplicarFiltrosDireto({ qtdFotos: '' });
+              }}
+              className="text-[11px] text-gray-400 hover:text-red-600 font-bold ml-1 hover:underline cursor-pointer"
+            >
+              (Limpar Qtd)
+            </button>
+          )}
         </div>
       </form>
     </div>
