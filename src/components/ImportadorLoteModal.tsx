@@ -1,13 +1,29 @@
 'use client';
 
 import { useState } from 'react';
-import { Upload, FileText, CheckCircle2, AlertCircle, RefreshCw, X, PackagePlus } from 'lucide-react';
+import { Upload, FileText, CheckCircle2, AlertCircle, RefreshCw, X, PackagePlus, Check, AlertTriangle } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+
+interface ItemResultado {
+  sku: string;
+  status: 'sucesso' | 'erro';
+  mensagem?: string;
+  nome?: string;
+}
 
 export default function ImportadorLoteModal() {
+  const router = useRouter();
   const [aberto, setAberto] = useState(false);
   const [skusTexto, setSkusTexto] = useState('');
   const [carregando, setCarregando] = useState(false);
-  const [resultado, setResultado] = useState<any>(null);
+
+  // Estados de progresso em tempo real
+  const [totalItens, setTotalItens] = useState(0);
+  const [processadosCount, setProcessadosCount] = useState(0);
+  const [sucessosCount, setSucessosCount] = useState(0);
+  const [errosCount, setErrosCount] = useState(0);
+  const [itensResultado, setItensResultado] = useState<ItemResultado[]>([]);
+  const [skuAtual, setSkuAtual] = useState<string>('');
 
   function lerArquivoCSV(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -26,29 +42,74 @@ export default function ImportadorLoteModal() {
   async function iniciarImportacao() {
     if (!skusTexto.trim()) return;
 
+    const skusArray = Array.from(
+      new Set(
+        skusTexto
+          .split(/[\r\n,;\t]+/)
+          .map(s => s.trim())
+          .filter(Boolean)
+      )
+    );
+
+    if (skusArray.length === 0) return;
+
+    // Resetar estados
     setCarregando(true);
-    setResultado(null);
+    setTotalItens(skusArray.length);
+    setProcessadosCount(0);
+    setSucessosCount(0);
+    setErrosCount(0);
+    setItensResultado([]);
 
-    try {
-      const skusArray = skusTexto
-        .split(/[\r\n,;\t]+/)
-        .map(s => s.trim())
-        .filter(Boolean);
+    // Processa os SKUs um a um (ou em pares) para evitar timeout do servidor
+    for (let i = 0; i < skusArray.length; i++) {
+      const currentSku = skusArray[i];
+      setSkuAtual(currentSku);
 
-      const res = await fetch('/api/admin/importar-lote', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ skus: skusArray, textoCsv: skusTexto }),
-      });
+      try {
+        const res = await fetch('/api/admin/importar-lote', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ skus: [currentSku] }),
+        });
 
-      const data = await res.json();
-      setResultado(data);
-    } catch {
-      setResultado({ erro: 'Falha de comunicação com o servidor.' });
-    } finally {
-      setCarregando(false);
+        const data = await res.json();
+        
+        let itemResult: ItemResultado;
+        if (data.resultados && data.resultados.length > 0) {
+          itemResult = data.resultados[0];
+        } else if (data.erro) {
+          itemResult = { sku: currentSku, status: 'erro', mensagem: data.erro };
+        } else {
+          itemResult = { sku: currentSku, status: 'erro', mensagem: 'Resposta desconhecida' };
+        }
+
+        setItensResultado(prev => [itemResult, ...prev]);
+
+        if (itemResult.status === 'sucesso') {
+          setSucessosCount(prev => prev + 1);
+        } else {
+          setErrosCount(prev => prev + 1);
+        }
+      } catch (err: any) {
+        const errItem: ItemResultado = {
+          sku: currentSku,
+          status: 'erro',
+          mensagem: err.message || 'Falha de conexão com o servidor'
+        };
+        setItensResultado(prev => [errItem, ...prev]);
+        setErrosCount(prev => prev + 1);
+      }
+
+      setProcessadosCount(i + 1);
     }
+
+    setCarregando(false);
+    setSkuAtual('');
+    router.refresh();
   }
+
+  const porcentagem = totalItens > 0 ? Math.round((processadosCount / totalItens) * 100) : 0;
 
   return (
     <>
@@ -70,8 +131,9 @@ export default function ImportadorLoteModal() {
             {/* Fechar */}
             <button
               type="button"
+              disabled={carregando}
               onClick={() => setAberto(false)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-2 rounded-full hover:bg-gray-100 transition cursor-pointer"
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 p-2 rounded-full hover:bg-gray-100 transition cursor-pointer disabled:opacity-30"
             >
               <X size={20} />
             </button>
@@ -82,7 +144,7 @@ export default function ImportadorLoteModal() {
                 Importação de Produtos em Lote
               </h2>
               <p className="text-xs text-gray-500 mt-1">
-                Cole a lista de SKUs do Bling ou envie um arquivo CSV/TXT para cadastrar múltiplos produtos de uma só vez.
+                Cole a lista de SKUs do Bling ou envie um arquivo CSV/TXT para cadastrar múltiplos produtos em tempo real sem erros de timeout.
               </p>
             </div>
 
@@ -94,9 +156,10 @@ export default function ImportadorLoteModal() {
               </label>
               <input
                 type="file"
+                disabled={carregando}
                 accept=".csv, .txt"
                 onChange={lerArquivoCSV}
-                className="w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-primary file:text-white hover:file:bg-orange-600 cursor-pointer"
+                className="w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-primary file:text-white hover:file:bg-orange-600 cursor-pointer disabled:opacity-50"
               />
             </div>
 
@@ -106,22 +169,84 @@ export default function ImportadorLoteModal() {
                 Cole a lista de SKUs (Separados por vírgula, espaço ou quebra de linha):
               </label>
               <textarea
-                rows={6}
+                rows={5}
+                disabled={carregando}
                 value={skusTexto}
                 onChange={(e) => setSkusTexto(e.target.value)}
                 placeholder="Exemplo:&#10;MS5153-H7&#10;SKU-GRAVATA-01&#10;SKU-LACINHO-P&#10;SKU-BANDANA-G"
-                className="w-full border border-gray-300 rounded-2xl p-3 text-xs font-mono font-bold text-gray-800 bg-white focus:ring-2 focus:ring-primary focus:outline-none"
+                className="w-full border border-gray-300 rounded-2xl p-3 text-xs font-mono font-bold text-gray-800 bg-white focus:ring-2 focus:ring-primary focus:outline-none disabled:opacity-50"
               />
             </div>
+
+            {/* Barra de Progresso em Tempo Real */}
+            {totalItens > 0 && (
+              <div className="bg-amber-50/60 border border-amber-200 rounded-2xl p-4 space-y-3 animate-in fade-in">
+                <div className="flex items-center justify-between text-xs font-bold text-gray-800">
+                  <span className="flex items-center gap-2">
+                    {carregando && <RefreshCw size={14} className="animate-spin text-primary" />}
+                    <span>{carregando ? `Processando item ${processadosCount} de ${totalItens}...` : 'Importação Finalizada!'}</span>
+                  </span>
+                  <span className="font-mono text-primary font-black">{porcentagem}%</span>
+                </div>
+
+                {/* Progress bar fill */}
+                <div className="w-full bg-gray-200 h-3 rounded-full overflow-hidden">
+                  <div 
+                    className="bg-primary h-full transition-all duration-300 rounded-full"
+                    style={{ width: `${porcentagem}%` }}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between text-xs font-bold pt-1">
+                  <div className="flex gap-2">
+                    <span className="bg-green-600 text-white px-2.5 py-0.5 rounded-full text-[11px] flex items-center gap-1">
+                      <Check size={12} /> {sucessosCount} Sucessos
+                    </span>
+                    {errosCount > 0 && (
+                      <span className="bg-red-600 text-white px-2.5 py-0.5 rounded-full text-[11px] flex items-center gap-1">
+                        <AlertTriangle size={12} /> {errosCount} Erros
+                      </span>
+                    )}
+                  </div>
+                  {skuAtual && (
+                    <span className="text-gray-500 text-[11px] font-mono truncate max-w-[200px]">
+                      Atual: <strong className="text-secondary">{skuAtual}</strong>
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Detalhamento em Tempo Real por Item */}
+            {itensResultado.length > 0 && (
+              <div className="space-y-2 pt-2">
+                <h4 className="text-xs font-bold text-gray-700">Resultado dos Itens:</h4>
+                <div className="max-h-44 overflow-y-auto space-y-1.5 border border-gray-200 rounded-2xl p-3 bg-gray-50 text-xs">
+                  {itensResultado.map((r, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-2 bg-white rounded-xl border border-gray-100 shadow-2xs">
+                      <div className="flex flex-col">
+                        <span className="font-mono font-bold text-gray-800">{r.sku}</span>
+                        {r.nome && <span className="text-[10px] text-gray-500 truncate max-w-[300px]">{r.nome}</span>}
+                      </div>
+                      <span className={`font-bold flex items-center gap-1 text-[11px] ${r.status === 'sucesso' ? 'text-green-600' : 'text-red-500'}`}>
+                        {r.status === 'sucesso' ? <CheckCircle2 size={14} /> : <AlertCircle size={14} />}
+                        {r.mensagem || (r.status === 'sucesso' ? 'Importado com Sucesso' : 'Erro')}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Botão de Disparo */}
             <div className="flex justify-end gap-3 pt-2">
               <button
                 type="button"
+                disabled={carregando}
                 onClick={() => setAberto(false)}
-                className="px-5 py-2.5 rounded-xl border border-gray-300 text-xs font-bold text-gray-600 hover:bg-gray-100 transition cursor-pointer"
+                className="px-5 py-2.5 rounded-xl border border-gray-300 text-xs font-bold text-gray-600 hover:bg-gray-100 transition cursor-pointer disabled:opacity-50"
               >
-                Cancelar
+                {carregando ? 'Aguarde...' : 'Fechar'}
               </button>
               
               <button
@@ -133,7 +258,7 @@ export default function ImportadorLoteModal() {
                 {carregando ? (
                   <>
                     <RefreshCw size={16} className="animate-spin" />
-                    <span>Processando Lote...</span>
+                    <span>Processando ({processadosCount}/{totalItens})...</span>
                   </>
                 ) : (
                   <>
@@ -143,46 +268,6 @@ export default function ImportadorLoteModal() {
                 )}
               </button>
             </div>
-
-            {/* Resultado da Importação */}
-            {resultado && (
-              <div className="space-y-4 pt-4 border-t border-gray-100 animate-in fade-in">
-                {resultado.erro ? (
-                  <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-2xl text-xs font-bold flex items-center gap-2">
-                    <AlertCircle size={18} />
-                    <span>{resultado.erro}</span>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between bg-green-50 border border-green-200 text-green-800 p-4 rounded-2xl">
-                      <div className="flex items-center gap-2 font-bold text-xs">
-                        <CheckCircle2 size={20} className="text-green-600" />
-                        <span>Lote Concluído! Total: {resultado.total} SKUs</span>
-                      </div>
-                      <div className="flex gap-2 text-xs font-black">
-                        <span className="bg-green-600 text-white px-2.5 py-1 rounded-full">{resultado.sucessos} Sucessos</span>
-                        {resultado.erros > 0 && <span className="bg-red-600 text-white px-2.5 py-1 rounded-full">{resultado.erros} Erros</span>}
-                      </div>
-                    </div>
-
-                    {/* Detalhamento por Item */}
-                    {resultado.resultados && (
-                      <div className="max-h-48 overflow-y-auto space-y-1.5 border border-gray-200 rounded-2xl p-3 bg-gray-50 text-xs">
-                        {resultado.resultados.map((r: any, idx: number) => (
-                          <div key={idx} className="flex items-center justify-between p-2 bg-white rounded-xl border border-gray-100">
-                            <span className="font-mono font-bold text-gray-800">{r.sku}</span>
-                            <span className={`font-bold flex items-center gap-1 ${r.status === 'sucesso' ? 'text-green-600' : 'text-red-500'}`}>
-                              {r.status === 'sucesso' ? <CheckCircle2 size={14} /> : <AlertCircle size={14} />}
-                              {r.mensagem}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
 
           </div>
         </div>
