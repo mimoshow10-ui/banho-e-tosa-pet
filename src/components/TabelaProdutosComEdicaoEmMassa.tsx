@@ -125,9 +125,12 @@ export default function TabelaProdutosComEdicaoEmMassa({ produtos, categorias, p
       let catPayload = null;
 
       if (acaoMassa === 'categoria') {
-        const subCatObj = categorias.find((c) => categoriasSelecionadasMassa.includes(c.id) && c.parent_id);
-        if (subCatObj) {
-          catPayload = subCatObj.id;
+        const lastSelectedSub = [...categoriasSelecionadasMassa].reverse().find(id => {
+          const cat = categorias.find(c => c.id === id);
+          return cat && cat.parent_id;
+        });
+        if (lastSelectedSub) {
+          catPayload = lastSelectedSub;
         } else if (subgrupoIdMassa) {
           catPayload = subgrupoIdMassa;
         } else if (categoriasSelecionadasMassa.length > 0) {
@@ -263,11 +266,24 @@ export default function TabelaProdutosComEdicaoEmMassa({ produtos, categorias, p
                   className="bg-white text-secondary border border-gray-300 rounded-xl px-3.5 py-2 text-xs font-bold focus:outline-none cursor-pointer flex items-center justify-between gap-2 min-w-[260px] max-w-[340px] shadow-2xs hover:bg-gray-50 transition"
                 >
                   <span className="truncate">
-                    {categoriasSelecionadasMassa.length === 0
-                      ? (subgrupoIdMassa || grupoIdMassa
-                          ? `🏷️ ${categorias.find(c => c.id === (subgrupoIdMassa || grupoIdMassa))?.nome || '1 Categoria Selecionada'}`
-                          : '🏷️ [Selecione o Grupo ou Subgrupo]')
-                      : `🏷️ ${categoriasSelecionadasMassa.length} Categoria(s) Selecionada(s)`}
+                    {(() => {
+                      if (categoriasSelecionadasMassa.length === 0) {
+                        const activeId = subgrupoIdMassa || grupoIdMassa;
+                        return activeId
+                          ? `🏷️ ${categorias.find(c => c.id === activeId)?.nome || '1 Categoria Selecionada'}`
+                          : '🏷️ [Selecione o Grupo ou Subgrupo]';
+                      }
+                      const subCat = [...categoriasSelecionadasMassa].reverse().find(id => {
+                        const cat = categorias.find(c => c.id === id);
+                        return cat && cat.parent_id;
+                      });
+                      if (subCat) {
+                        const catObj = categorias.find(c => c.id === subCat);
+                        return `🏷️ ${catObj?.nome || 'Subgrupo Selecionado'}`;
+                      }
+                      const groupCat = categorias.find(c => c.id === categoriasSelecionadasMassa[0]);
+                      return `📁 ${groupCat?.nome || `${categoriasSelecionadasMassa.length} Categoria(s)`}`;
+                    })()}
                   </span>
                   <ChevronDown size={14} className="text-gray-500 flex-shrink-0" />
                 </button>
