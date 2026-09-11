@@ -95,16 +95,36 @@ export async function getCategoriasComProdutosAtivos(): Promise<{
       return { pais: [], all: [] };
     }
 
-    const { data: produtosAtivos } = await supabase
-      .from('produtos')
-      .select('id, categoria_id')
-      .eq('ativo', true);
+    // Busca TODOS os produtos ativos usando paginação (evita o limite de 1000 da API do Supabase)
+    let produtosAtivos: { id: string; categoria_id: string | null }[] = [];
+    let page = 0;
+    const pageSize = 1000;
+    let hasMore = true;
 
-    const activeProdIds = new Set((produtosAtivos || []).map(p => p.id));
-    const catIdsComProdutos = new Set<string>();
+    while (hasMore) {
+      const { data: chunk } = await supabase
+        .from('produtos')
+        .select('id, categoria_id')
+        .eq('ativo', true)
+        .range(page * pageSize, (page + 1) * pageSize - 1);
 
-    (produtosAtivos || []).forEach(p => {
-      if (p.categoria_id) catIdsComProdutos.add(p.categoria_id);
+      if (chunk && chunk.length > 0) {
+        produtosAtivos.push(...chunk);
+        if (chunk.length < pageSize) {
+          hasMore = false;
+        } else {
+          page++;
+        }
+      } else {
+        hasMore = false;
+      }
+    }
+
+    const activeProdIds = new Set(produtosAtivos.map(p => p.id));
+    const catIdsComProdutosDirect = new Set<string>();
+
+    produtosAtivos.forEach(p => {
+      if (p.categoria_id) catIdsComProdutosDirect.add(p.categoria_id);
     });
 
     const { data: cfgMap } = await supabase
@@ -124,32 +144,39 @@ export async function getCategoriasComProdutosAtivos(): Promise<{
 
     for (const [pId, catIds] of Object.entries(map1)) {
       if (activeProdIds.has(pId) && Array.isArray(catIds)) {
-        catIds.forEach(cId => catIdsComProdutos.add(cId));
+        catIds.forEach(cId => catIdsComProdutosDirect.add(cId));
       }
     }
     for (const [pId, catIds] of Object.entries(map2)) {
       if (activeProdIds.has(pId) && Array.isArray(catIds)) {
-        catIds.forEach(cId => catIdsComProdutos.add(cId));
+        catIds.forEach(cId => catIdsComProdutosDirect.add(cId));
+      }
+    }
+
+    const allCatsMap = new Map<string, CategoriaItem>(
+      categoriasAll.map(c => [c.id, c as CategoriaItem])
+    );
+
+    // Coleta todas as categorias ativas incluindo pais/ancestrais
+    const activeCatIdsAll = new Set<string>();
+
+    for (const directCatId of catIdsComProdutosDirect) {
+      let currId: string | null = directCatId;
+      while (currId) {
+        activeCatIdsAll.add(currId);
+        const cat = allCatsMap.get(currId);
+        currId = cat ? cat.parent_id : null;
       }
     }
 
     const allCats = (categoriasAll || []) as CategoriaItem[];
+    const activeCatsList = allCats.filter(c => activeCatIdsAll.has(c.id));
 
-    // Subgrupos com produtos ativos
-    const subgruposAtivos = allCats.filter(c => c.parent_id !== null && catIdsComProdutos.has(c.id));
-    const parentIdsComSubgruposAtivos = new Set(subgruposAtivos.map(s => s.parent_id));
-
-    // Grupos pai com produtos ativos (diretos ou via subgrupo)
-    const paisAtivos = allCats.filter(
-      c => c.parent_id === null && (catIdsComProdutos.has(c.id) || parentIdsComSubgruposAtivos.has(c.id))
-    );
-
-    const paisIdsSet = new Set(paisAtivos.map(p => p.id));
-    const subgruposFiltrados = subgruposAtivos.filter(s => s.parent_id && paisIdsSet.has(s.parent_id));
+    const paisAtivos = activeCatsList.filter(c => c.parent_id === null);
 
     return {
       pais: paisAtivos,
-      all: [...paisAtivos, ...subgruposFiltrados]
+      all: activeCatsList
     };
   } catch (err) {
     console.error('Erro ao buscar categorias ativas:', err);
