@@ -32,53 +32,35 @@ export default async function CategoriaPage({
     const { data } = await supabase.from('produtos').select('*').eq('ativo', true).order('criado_em', { ascending: false });
     if (data) produtos = data;
   } else if (catAtual) {
-    const isGrupo = !catAtual.parent_id;
-    let idsRelacionados: string[] = [catAtual.id];
+    const { getCategoriasComProdutosAtivos } = await import('@/lib/categoria-vincular');
+    const { data: allCategories } = await supabase
+      .from('categorias')
+      .select('*')
+      .order('nome');
 
-    if (isGrupo) {
-      // 1. É um Grupo Principal — buscar seus Subgrupos
-      const { data: subs } = await supabase
-        .from('categorias')
-        .select('*')
-        .eq('parent_id', catAtual.id)
-        .order('nome');
+    const allCats = allCategories || [];
+    const allCatsMap = new Map(allCats.map(c => [c.id, c]));
 
-      const rawSubs = subs || [];
+    if (catAtual.parent_id) {
+      grupoPai = allCatsMap.get(catAtual.parent_id) || null;
+    }
 
-      // Filtrar subgrupos para exibir APENAS os que possuem produtos ativos vinculados
-      const { data: prodsAtivos } = await supabase
-        .from('produtos')
-        .select('id, categoria_id')
-        .eq('ativo', true);
-
-      const activeProdIds = new Set((prodsAtivos || []).map(p => p.id));
-      const catIdsComProdutos = new Set<string>();
-      (prodsAtivos || []).forEach(p => { if (p.categoria_id) catIdsComProdutos.add(p.categoria_id); });
-
-      const { data: cfgMap } = await supabase.from('configuracoes').select('valor').eq('chave', 'produto_categorias_map').maybeSingle();
-      const { data: cfgAdic } = await supabase.from('configuracoes').select('valor').eq('chave', 'produtos_categorias_adicionais').maybeSingle();
-
-      const m1: Record<string, string[]> = cfgMap?.valor || {};
-      const m2: Record<string, string[]> = cfgAdic?.valor || {};
-
-      for (const [pId, catIds] of Object.entries(m1)) {
-        if (activeProdIds.has(pId) && Array.isArray(catIds)) catIds.forEach(cId => catIdsComProdutos.add(cId));
+    function getDescendantIds(catId: string): string[] {
+      const ids: string[] = [catId];
+      const children = allCats.filter(c => c.parent_id === catId);
+      for (const child of children) {
+        ids.push(...getDescendantIds(child.id));
       }
-      for (const [pId, catIds] of Object.entries(m2)) {
-        if (activeProdIds.has(pId) && Array.isArray(catIds)) catIds.forEach(cId => catIdsComProdutos.add(cId));
-      }
+      return Array.from(new Set(ids));
+    }
 
-      subgrupos = rawSubs.filter(s => catIdsComProdutos.has(s.id));
-      idsRelacionados = [catAtual.id, ...rawSubs.map(s => s.id)];
-    } else {
-      // 2. É um Subgrupo — buscar o Grupo Pai
-      const { data: pai } = await supabase
-        .from('categorias')
-        .select('*')
-        .eq('id', catAtual.parent_id)
-        .single();
+    const idsRelacionados = getDescendantIds(catAtual.id);
+    const directChildCats = allCats.filter(c => c.parent_id === catAtual.id);
 
-      grupoPai = pai;
+    if (directChildCats.length > 0) {
+      const activeRes = await getCategoriasComProdutosAtivos();
+      const activeCatIds = new Set(activeRes.all.map(c => c.id));
+      subgrupos = directChildCats.filter(s => activeCatIds.has(s.id));
     }
 
     // Buscar produtos com categorias adicionais vinculadas em configuracoes
