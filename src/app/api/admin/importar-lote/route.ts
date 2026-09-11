@@ -3,10 +3,25 @@ import { supabase } from '@/lib/supabase';
 
 export async function POST(req: Request) {
   try {
-    const { skus } = await req.json();
+    const body = await req.json();
+    const { skus, textoCsv } = body;
 
-    if (!Array.isArray(skus) || skus.length === 0) {
-      return NextResponse.json({ erro: 'Nenhum SKU fornecido para importação.' }, { status: 400 });
+    let listaSkus: string[] = [];
+
+    if (Array.isArray(skus)) {
+      listaSkus = skus;
+    } else if (typeof skus === 'string') {
+      listaSkus = skus.split(/[\r\n,;\t]+/);
+    } else if (typeof textoCsv === 'string') {
+      listaSkus = textoCsv.split(/[\r\n,;\t]+/);
+    }
+
+    const skusLimpos = Array.from(
+      new Set(listaSkus.map(s => String(s).trim()).filter(Boolean))
+    );
+
+    if (skusLimpos.length === 0) {
+      return NextResponse.json({ erro: 'Nenhum SKU válido fornecido para importação.' }, { status: 400 });
     }
 
     const { data: cfg } = await supabase.from('configuracoes').select('*').eq('chave', 'bling_tokens').single();
@@ -18,7 +33,7 @@ export async function POST(req: Request) {
 
     const resultados: any[] = [];
 
-    for (const rawSku of skus) {
+    for (const rawSku of skusLimpos) {
       const sku = String(rawSku).trim();
       if (!sku) continue;
 
@@ -142,7 +157,15 @@ export async function POST(req: Request) {
       }
     }
 
-    return NextResponse.json({ resultados });
+    const sucessos = resultados.filter(r => r.status === 'sucesso').length;
+    const erros = resultados.filter(r => r.status === 'erro').length;
+
+    return NextResponse.json({
+      total: resultados.length,
+      sucessos,
+      erros,
+      resultados
+    });
   } catch (err: any) {
     return NextResponse.json({ erro: err.message || 'Erro interno na importação.' }, { status: 500 });
   }

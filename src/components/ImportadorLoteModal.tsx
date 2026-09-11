@@ -30,10 +30,15 @@ export default function ImportadorLoteModal() {
     setResultado(null);
 
     try {
+      const skusArray = skusTexto
+        .split(/[\r\n,;\t]+/)
+        .map(s => s.trim())
+        .filter(Boolean);
+
       const res = await fetch('/api/admin/importar-lote', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ textoCsv: skusTexto }),
+        body: JSON.stringify({ skus: skusArray, textoCsv: skusTexto }),
       });
 
       const data = await res.json();
