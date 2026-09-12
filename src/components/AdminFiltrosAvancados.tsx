@@ -293,7 +293,7 @@ export default function AdminFiltrosAvancados({ categorias }: Props) {
             />
             <span className="flex items-center gap-1 text-rose-800">
               <Flame size={14} className="text-rose-600" />
-              <span>🔥 Em Promoção</span>
+              <span>🔥 Vitrine Promoção</span>
             </span>
           </label>
 

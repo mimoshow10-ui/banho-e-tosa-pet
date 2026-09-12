@@ -84,10 +84,10 @@ export default async function AdminProdutos(props: {
     }
   }
 
-  // Filter by Promotion
+  // Filter by Promotion (Vitrine Promoção)
   if (promocao === 'sim') {
-    countQuery = countQuery.not('preco_promocional', 'is', null).gt('preco_promocional', 0);
-    query = query.not('preco_promocional', 'is', null).gt('preco_promocional', 0);
+    countQuery = countQuery.eq('destaque_super_promocao', true);
+    query = query.eq('destaque_super_promocao', true);
   }
 
   // Filter by Status (Ativo vs Inativo)

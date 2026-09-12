@@ -701,6 +701,12 @@ export default function TabelaProdutosComEdicaoEmMassa({ produtos, categorias, p
                                 🟡 Sem Foto (Não Publicado)
                               </span>
                             )}
+
+                            {item.destaque_super_promocao && (
+                              <span title="Produto destacado na Vitrine de Promoção" className="bg-rose-100 text-rose-800 border border-rose-300 text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-1 shadow-2xs">
+                                🔥 Vitrine Promoção
+                              </span>
+                            )}
                           </div>
 
                           <Link
