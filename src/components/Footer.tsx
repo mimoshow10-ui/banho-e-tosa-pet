@@ -97,8 +97,25 @@ export default function Footer() {
             </p>
           </div>
 
-          {/* Badges de Certificado SSL e Site Seguro */}
+          {/* Badges de Mercado Pago, Certificado SSL e Segurança */}
           <div className="flex items-center gap-3 flex-wrap justify-center flex-shrink-0">
+            
+            {/* Selo 0: Mercado Pago Oficial */}
+            <div className="bg-[#009EE3]/15 border border-[#009EE3]/50 rounded-xl px-3.5 py-1.5 flex items-center gap-2.5 shadow-2xs hover:bg-[#009EE3]/25 transition cursor-default">
+              <div className="w-7 h-7 rounded-lg bg-[#009EE3] flex items-center justify-center flex-shrink-0 shadow-xs text-white">
+                <svg className="w-4 h-4 fill-white" viewBox="0 0 24 24">
+                  {/* Mercado Pago iconic emblem */}
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.5v-3.5H9.5v-2H11V9c0-1.1.9-2 2-2h2v2h-2v2h2v2h-2v3.5h-2z" />
+                </svg>
+              </div>
+              <div className="text-left">
+                <span className="block text-[10px] font-black text-[#00B1EA] uppercase tracking-tight leading-none">PAGAMENTO SEGURO</span>
+                <span className="block text-[9px] font-bold text-white/95 leading-tight flex items-center gap-1">
+                  Mercado Pago <span className="text-[8px] bg-[#009EE3]/40 text-[#00B1EA] px-1 py-0.5 rounded font-mono">PIX & CARTÃO</span>
+                </span>
+              </div>
+            </div>
+
             {/* Selo 1: Certificado SSL 256-Bit */}
             <div className="bg-emerald-950/80 border border-emerald-500/40 rounded-xl px-3 py-1.5 flex items-center gap-2 shadow-2xs">
               <div className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center flex-shrink-0 border border-emerald-500/30">
