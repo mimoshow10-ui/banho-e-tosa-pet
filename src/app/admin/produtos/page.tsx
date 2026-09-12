@@ -52,15 +52,53 @@ export default async function AdminProdutos(props: {
     query = query.or(`nome.ilike.%${q}%,codigo_barras.ilike.%${q}%`);
   }
 
-  // Filter by Subgrupo or Grupo
-  if (subgrupo_id) {
-    countQuery = countQuery.eq('categoria_id', subgrupo_id);
-    query = query.eq('categoria_id', subgrupo_id);
-  } else if (grupo_id) {
-    const subcats = (todasCategorias || []).filter(c => c.parent_id === grupo_id).map(c => c.id);
-    const categoryIds = [grupo_id, ...subcats];
-    countQuery = countQuery.in('categoria_id', categoryIds);
-    query = query.in('categoria_id', categoryIds);
+  // Buscar ambos os mapas de categorias adicionais em configuracoes
+  const { data: addCatDb1 } = await supabase.from('configuracoes').select('valor').eq('chave', 'produtos_categorias_adicionais').maybeSingle();
+  const { data: addCatDb2 } = await supabase.from('configuracoes').select('valor').eq('chave', 'produto_categorias_map').maybeSingle();
+  const map1: Record<string, string[]> = addCatDb1?.valor || {};
+  const map2: Record<string, string[]> = addCatDb2?.valor || {};
+
+  const adicionaisMap: Record<string, string[]> = {};
+  for (const [pId, cats] of Object.entries(map1)) {
+    adicionaisMap[pId] = Array.isArray(cats) ? [...cats] : [];
+  }
+  for (const [pId, cats] of Object.entries(map2)) {
+    if (Array.isArray(cats)) {
+      adicionaisMap[pId] = Array.from(new Set([...(adicionaisMap[pId] || []), ...cats]));
+    }
+  }
+
+  // Filter by Subgrupo or Grupo (incluindo categorias principais e adicionais)
+  if (subgrupo_id || grupo_id) {
+    const targetCatIds = subgrupo_id
+      ? [subgrupo_id]
+      : [grupo_id, ...(todasCategorias || []).filter(c => c.parent_id === grupo_id).map(c => c.id)];
+
+    const matchingIds = new Set<string>();
+
+    // 1. Produtos com categoria_id direta
+    const { data: directProds } = await supabase
+      .from('produtos')
+      .select('id')
+      .in('categoria_id', targetCatIds);
+
+    (directProds || []).forEach(p => matchingIds.add(p.id));
+
+    // 2. Produtos vinculados nas categorias adicionais
+    for (const [pId, catIdsArr] of Object.entries(adicionaisMap)) {
+      if (Array.isArray(catIdsArr) && catIdsArr.some(cId => targetCatIds.includes(cId))) {
+        matchingIds.add(pId);
+      }
+    }
+
+    const finalCatProdIds = Array.from(matchingIds);
+    if (finalCatProdIds.length > 0) {
+      countQuery = countQuery.in('id', finalCatProdIds);
+      query = query.in('id', finalCatProdIds);
+    } else {
+      countQuery = countQuery.eq('id', '00000000-0000-0000-0000-000000000000');
+      query = query.eq('id', '00000000-0000-0000-0000-000000000000');
+    }
   }
 
   // Filter by Com Foto vs Sem Foto
@@ -127,9 +165,6 @@ export default async function AdminProdutos(props: {
       parent_id: null,
     };
   });
-
-  const { data: addCatDb } = await supabase.from('configuracoes').select('valor').eq('chave', 'produtos_categorias_adicionais').maybeSingle();
-  const adicionaisMap: Record<string, string[]> = addCatDb?.valor || {};
 
   let produtosFormatados = (produtos || []).map(p => {
     let catNome = 'Sem Categoria';

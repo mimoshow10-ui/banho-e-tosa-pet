@@ -132,12 +132,7 @@ export default async function Home() {
       {/* 1. FAIXA DE CUPONS NO TOPO */}
       {posicaoCupons === 'topo' && <HomeCouponsBanner />}
 
-      {/* BANNER PRINCIPAL COM CARROSEL */}
-      <section className="w-full">
-        <BannerCarousel banners={banners} />
-      </section>
-
-      {/* 2. FAIXA DE CUPONS LOGO ABAIXO DO BANNER */}
+      {/* 2. FAIXA DE CUPONS LOGO ABAIXO DO NAVEGADOR */}
       {posicaoCupons === 'abaixo_banner' && <HomeCouponsBanner />}
 
       {/* BARRA DE BENEFÍCIOS E DIFERENCIAIS */}
@@ -227,6 +222,11 @@ export default async function Home() {
               </div>
             )}
           </div>
+        </section>
+
+        {/* BANNER PRINCIPAL DO DISTRIBUIDOR ABAIXO DOS ÚLTIMOS PRODUTOS (COM 40% MENOR ALTURA) */}
+        <section className="w-full rounded-3xl overflow-hidden border border-gray-200 shadow-sm">
+          <BannerCarousel banners={banners} />
         </section>
 
       </div>

@@ -94,18 +94,22 @@ export async function POST(req: Request) {
     // ── 4. VITRINES E DESTAQUES ──
     } else if (acao === 'destaque') {
       const isSuperPromo = valor === 'super_promocao';
-      const updateData: any = { destaque_super_promocao: isSuperPromo };
-
+      
       if (isSuperPromo) {
-        if (promocao_expira_em) {
-          const pExp = new Date(promocao_expira_em);
-          updateData.promocao_expira_em = isNaN(pExp.getTime()) ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() : pExp.toISOString();
-        } else {
-          updateData.promocao_expira_em = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-        }
-      }
+        // Desmarca produtos anteriores para garantir que APENAS os selecionados fiquem na vitrine de promoção
+        await supabase.from('produtos').update({ destaque_super_promocao: false }).eq('destaque_super_promocao', true);
 
-      await supabase.from('produtos').update(updateData).in('id', ids);
+        const expiraIso = promocao_expira_em
+          ? (isNaN(new Date(promocao_expira_em).getTime()) ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() : new Date(promocao_expira_em).toISOString())
+          : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+
+        await supabase.from('produtos').update({
+          destaque_super_promocao: true,
+          promocao_expira_em: expiraIso,
+        }).in('id', ids);
+      } else {
+        await supabase.from('produtos').update({ destaque_super_promocao: false }).in('id', ids);
+      }
 
       const { data: currentConfig } = await supabase
         .from('configuracoes')

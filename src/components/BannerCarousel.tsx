@@ -8,7 +8,7 @@ export interface BannerItem {
   link_url?: string;
 }
 
-export default function BannerCarousel({ banners }: { banners: (BannerItem | string)[] }) {
+export default function BannerCarousel({ banners, className }: { banners: (BannerItem | string)[]; className?: string }) {
   const [current, setCurrent] = useState(0);
 
   const items: BannerItem[] = (banners || []).map(b => {
@@ -27,7 +27,7 @@ export default function BannerCarousel({ banners }: { banners: (BannerItem | str
   if (!items || items.length === 0) return null;
 
   return (
-    <div className="w-full h-[160px] sm:h-[220px] md:h-[270px] lg:h-[300px] relative overflow-hidden bg-gray-900 group shadow-inner">
+    <div className={className || "w-full h-[96px] sm:h-[132px] md:h-[162px] lg:h-[180px] relative overflow-hidden bg-gray-900 group shadow-inner"}>
       {items.map((item, i) => {
         const hasLink = !!item.link_url?.trim();
         const isVideo = item.link_url?.includes('youtube') || item.link_url?.includes('youtu.be') || item.link_url?.includes('vimeo') || item.link_url?.endsWith('.mp4');

@@ -66,18 +66,32 @@ export default async function CategoriaPage({
     // Buscar produtos com categorias adicionais vinculadas em configuracoes
     let prodIdsAdicionais: string[] = [];
     try {
-      const { data: configAdicionais } = await supabase
+      const { data: cfgAdic1 } = await supabase
         .from('configuracoes')
         .select('valor')
         .eq('chave', 'produtos_categorias_adicionais')
-        .single();
-      
-      const mapAdicionais: Record<string, string[]> = configAdicionais?.valor || {};
-      for (const [pId, catIds] of Object.entries(mapAdicionais)) {
+        .maybeSingle();
+
+      const { data: cfgAdic2 } = await supabase
+        .from('configuracoes')
+        .select('valor')
+        .eq('chave', 'produto_categorias_map')
+        .maybeSingle();
+
+      const map1: Record<string, string[]> = cfgAdic1?.valor || {};
+      const map2: Record<string, string[]> = cfgAdic2?.valor || {};
+
+      for (const [pId, catIds] of Object.entries(map1)) {
         if (Array.isArray(catIds) && catIds.some((cId: string) => idsRelacionados.includes(cId))) {
           prodIdsAdicionais.push(pId);
         }
       }
+      for (const [pId, catIds] of Object.entries(map2)) {
+        if (Array.isArray(catIds) && catIds.some((cId: string) => idsRelacionados.includes(cId))) {
+          prodIdsAdicionais.push(pId);
+        }
+      }
+      prodIdsAdicionais = Array.from(new Set(prodIdsAdicionais));
     } catch {}
 
     let query = supabase.from('produtos').select('*').eq('ativo', true);
