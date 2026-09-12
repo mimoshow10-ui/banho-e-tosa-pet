@@ -70,12 +70,20 @@ export async function POST(req: Request) {
 
     // ── 3. PREÇO PROMOCIONAL (R$ / % / REMOVER) ──
     } else if (acao === 'preco_promocional') {
+      const expira7DiasIso = promocao_expira_em
+        ? (isNaN(new Date(promocao_expira_em).getTime()) ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() : new Date(promocao_expira_em).toISOString())
+        : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+
       if (modo === 'remover') {
-        await supabase.from('produtos').update({ preco_promocional: null, destaque_super_promocao: false }).in('id', ids);
+        await supabase.from('produtos').update({ preco_promocional: null, destaque_super_promocao: false, promocao_expira_em: null }).in('id', ids);
       } else if (modo === 'fixo') {
         const rawVal = parseFloat(String(valor || '0').replace(',', '.'));
         const pVal = isNaN(rawVal) ? null : rawVal;
-        await supabase.from('produtos').update({ preco_promocional: pVal, destaque_super_promocao: true }).in('id', ids);
+        await supabase.from('produtos').update({
+          preco_promocional: pVal,
+          destaque_super_promocao: true,
+          promocao_expira_em: expira7DiasIso
+        }).in('id', ids);
       } else if (modo === 'desconto_pct') {
         const rawVal = parseFloat(String(valor || '0').replace(',', '.'));
         if (isNaN(rawVal) || rawVal <= 0 || rawVal >= 100) {
@@ -86,7 +94,11 @@ export async function POST(req: Request) {
           for (const p of prods) {
             const precoAtual = Number(p.preco || 0);
             const promoPreco = Number((precoAtual * (1 - rawVal / 100)).toFixed(2));
-            await supabase.from('produtos').update({ preco_promocional: Math.max(0, promoPreco), destaque_super_promocao: true }).eq('id', p.id);
+            await supabase.from('produtos').update({
+              preco_promocional: Math.max(0, promoPreco),
+              destaque_super_promocao: true,
+              promocao_expira_em: expira7DiasIso
+            }).eq('id', p.id);
           }
         }
       }
