@@ -147,9 +147,6 @@ export default async function Home() {
         {/* 4. FAIXA DE CUPONS ACIMA DAS OFERTAS */}
         {posicaoCupons === 'acima_ofertas' && <HomeCouponsBanner />}
 
-        {/* DISTRIBUIDOR OFICIAL MIMOSHOW - SEÇÃO DE AUTORIDADE PARA TODAS AS TELAS */}
-        <OfficialDistributorSection />
-
         {/* 1. Super Promoção do Dia (APENAS DENTRO DO PERÍODO) */}
         {produtosPromocao.length > 0 && (
           <section className="py-8 px-6 bg-red-50/60 rounded-3xl border border-red-100 shadow-xs">
@@ -224,10 +221,13 @@ export default async function Home() {
           </div>
         </section>
 
-        {/* BANNER PRINCIPAL DO DISTRIBUIDOR ABAIXO DOS ÚLTIMOS PRODUTOS (COM 40% MENOR ALTURA) */}
+        {/* BANNER PRINCIPAL COM CARROSEL (Abaixo dos últimos produtos com 40% menor altura) */}
         <section className="w-full rounded-3xl overflow-hidden border border-gray-200 shadow-sm">
           <BannerCarousel banners={banners} />
         </section>
+
+        {/* DISTRIBUIDOR OFICIAL MIMOSHOW - SEÇÃO COMPACTA ABAIXO DE TODOS OS PRODUTOS */}
+        <OfficialDistributorSection />
 
       </div>
     </div>
