@@ -42,22 +42,14 @@ export default function TabelaProdutosComEdicaoEmMassa({ produtos, categorias, p
   const [selecionados, setSelecionados] = useState<string[]>([]);
   const [isLoadedFromStorage, setIsLoadedFromStorage] = useState(false);
 
-  // Restaura itens selecionados anteriormente ao navegar entre páginas ou editar um produto
+  // Reset selecionados quando os filtros da URL mudarem para evitar seleções presas
   useEffect(() => {
+    setSelecionados([]);
     try {
-      const saved = sessionStorage.getItem('admin_produtos_selecionados');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setSelecionados(parsed);
-        }
-      }
-    } catch (e) {
-      console.error('Erro ao ler selecionados do sessionStorage:', e);
-    } finally {
-      setIsLoadedFromStorage(true);
-    }
-  }, []);
+      sessionStorage.removeItem('admin_produtos_selecionados');
+    } catch {}
+    setIsLoadedFromStorage(true);
+  }, [currentParamsStr]);
 
   // Mantém sessionStorage sincronizado com a seleção atual
   useEffect(() => {
