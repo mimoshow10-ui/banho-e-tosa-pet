@@ -178,6 +178,21 @@ function gerarRespostaLocal(pergunta: string, prod: Props['produto']): string {
   const precoStr = `R$ ${Number(val).toFixed(2).replace('.', ',')}`;
   const descClean = (prod.descricao_curta || prod.descricao || '').replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').trim();
 
+  // ── 0. SAUDAÇÕES, AGRADECIMENTOS E APRESENTAÇÃO ──
+  const saudacoes = ['oi', 'olá', 'ola', 'oie', 'bom dia', 'boa tarde', 'boa noite', 'tudo bem', 'opa', 'salve', 'alô', 'alo', 'ajuda', 'socorro'];
+  if (saudacoes.some(s => q === s || q.startsWith(s + ' ') || q.endsWith(' ' + s))) {
+    return `Olá! Sou o assistente da MIMO Show. Como posso te ajudar com o "${nome}" hoje? Pode me perguntar sobre prazo de entrega, material, quantidade ou como aplicar! 🐾`;
+  }
+
+  const agradecimentos = ['obrigado', 'obrigada', 'valeu', 'vlw', 'obg', 'valew', 'show', 'ok', 'perfeito', 'tks', 'muito obrigado', 'muito obrigada'];
+  if (agradecimentos.some(a => q.includes(a))) {
+    return `Por nada! Se precisar de qualquer outra informação sobre o "${nome}", estou à disposição. Boas compras! 🐾`;
+  }
+
+  if (q.includes('quem é') || q.includes('quem e') || q.includes('robô') || q.includes('robo') || q.includes('bot') || q.includes('ia')) {
+    return `Sou o assistente virtual da MIMO Show, especializado em tirar dúvidas sobre o produto "${nome}"! Como posso te ajudar? ✨`;
+  }
+
   const qtdMatch = (nome + ' ' + descClean).match(/(?:kit|pct|pacote|jogo)?\s*(?:c\/|com)?\s*(\d+)\s*(?:unidades|unidade|un|peças|pcs|laços|gravatas|adesivos|pares|par)?/i);
   const quantidade = qtdMatch ? qtdMatch[1] : null;
 
@@ -250,8 +265,9 @@ function gerarRespostaLocal(pergunta: string, prod: Props['produto']): string {
     return `Postamos nos Correios/transportadora em até 24h úteis! Digite seu CEP no campo de frete acima para ver prazos exatos! 🚚`;
   }
 
-  return `Sobre a sua pergunta ("${pergunta}") em relação ao "${nome}": O item está disponível por ${precoStr}. Para maiores esclarecimentos, nosso suporte humano está à disposição via WhatsApp! 🐾`;
+  return `Como posso te ajudar sobre o produto "${nome}" (${precoStr})? Pode me perguntar sobre prazo de frete, quantidade do pacote, material ou modo de uso! 🐾`;
 }
+
 
 
 

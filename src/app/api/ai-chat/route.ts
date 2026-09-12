@@ -131,6 +131,21 @@ function extrairRespostaEspecífica(
   tamanhosArr: string,
   faq: string
 ): string {
+  // ── 0. SAUDAÇÕES, AGRADECIMENTOS E APRESENTAÇÃO ──
+  const saudacoes = ['oi', 'olá', 'ola', 'oie', 'bom dia', 'boa tarde', 'boa noite', 'tudo bem', 'opa', 'salve', 'alô', 'alo', 'ajuda', 'socorro'];
+  if (saudacoes.some(s => q === s || q.startsWith(s + ' ') || q.endsWith(' ' + s))) {
+    return `Olá! Sou o assistente da MIMO Show. Como posso te ajudar com o "${nome}" hoje? Pode me perguntar sobre prazo de entrega, material, quantidade ou como aplicar! 🐾`;
+  }
+
+  const agradecimentos = ['obrigado', 'obrigada', 'valeu', 'vlw', 'obg', 'valew', 'show', 'ok', 'perfeito', 'tks', 'muito obrigado', 'muito obrigada'];
+  if (agradecimentos.some(a => q.includes(a))) {
+    return `Por nada! Se precisar de qualquer outra informação sobre o "${nome}", estou à disposição. Boas compras! 🐾`;
+  }
+
+  if (q.includes('quem é') || q.includes('quem e') || q.includes('robô') || q.includes('robo') || q.includes('bot') || q.includes('ia')) {
+    return `Sou o assistente virtual da MIMO Show, especializado em tirar dúvidas sobre o produto "${nome}"! Como posso te ajudar? ✨`;
+  }
+
   // 1. FAQ Cadastrado no Admin
   if (faq) {
     const blocos = faq.split(/\n\s*\n/);
@@ -150,9 +165,7 @@ function extrairRespostaEspecífica(
     }
   }
 
-  const textoGeral = (nome + ' ' + descClean).toLowerCase();
-
-  // Extrações específicas
+  // 2. Extrações de atributos específicos do produto
   const qtdMatch = (nome + ' ' + descClean).match(/(?:kit|pct|pacote|jogo)?\s*(?:c\/|com)?\s*(\d+)\s*(?:unidades|unidade|un|peças|pcs|laços|gravatas|adesivos|pares|par)?/i);
   const quantidade = qtdMatch ? qtdMatch[1] : null;
 
@@ -269,9 +282,10 @@ function extrairRespostaEspecífica(
     }
   }
 
-  // FALLBACK HONESTO E RECONHECIMENTO DA PERGUNTA EXATA
-  return `Sobre a sua pergunta ("${perguntaOriginal}") em relação ao produto "${nome}": O item é entregue com garantia da loja pelo valor de ${precoStr}. Para detalhes específicos, você pode nos chamar no suporte via WhatsApp! 🐾`;
+  // RESPOSTA AMIGÁVEL SEM REPETIR A DESCRIÇÃO GERAL
+  return `Como posso te ajudar sobre o produto "${nome}" (${precoStr})? Pode me perguntar sobre prazo de frete, quantidade do pacote, material ou modo de uso! 🐾`;
 }
+
 
 
 
