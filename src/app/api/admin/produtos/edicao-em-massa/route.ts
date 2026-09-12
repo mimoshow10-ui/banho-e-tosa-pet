@@ -75,7 +75,7 @@ export async function POST(req: Request) {
       } else if (modo === 'fixo') {
         const rawVal = parseFloat(String(valor || '0').replace(',', '.'));
         const pVal = isNaN(rawVal) ? null : rawVal;
-        await supabase.from('produtos').update({ preco_promocional: pVal }).in('id', ids);
+        await supabase.from('produtos').update({ preco_promocional: pVal, destaque_super_promocao: true }).in('id', ids);
       } else if (modo === 'desconto_pct') {
         const rawVal = parseFloat(String(valor || '0').replace(',', '.'));
         if (isNaN(rawVal) || rawVal <= 0 || rawVal >= 100) {
@@ -86,7 +86,7 @@ export async function POST(req: Request) {
           for (const p of prods) {
             const precoAtual = Number(p.preco || 0);
             const promoPreco = Number((precoAtual * (1 - rawVal / 100)).toFixed(2));
-            await supabase.from('produtos').update({ preco_promocional: Math.max(0, promoPreco) }).eq('id', p.id);
+            await supabase.from('produtos').update({ preco_promocional: Math.max(0, promoPreco), destaque_super_promocao: true }).eq('id', p.id);
           }
         }
       }

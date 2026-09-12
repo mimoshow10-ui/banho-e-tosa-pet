@@ -61,11 +61,11 @@ export default async function Home() {
     .eq('ativo', true)
     .order('criado_em', { ascending: false });
 
-  // Buscar apenas produtos marcados EXPLICITAMENTE como destaque_super_promocao pelo usuario
+  // Buscar todos os produtos em promoção (destaque super promoção ou com preço promocional ativo)
   const { data: superPromocoes } = await supabase
     .from('produtos')
     .select('*')
-    .eq('destaque_super_promocao', true)
+    .or('destaque_super_promocao.eq.true,and(preco_promocional.not.is.null,preco_promocional.gt.0)')
     .eq('ativo', true)
     .order('criado_em', { ascending: false });
 
