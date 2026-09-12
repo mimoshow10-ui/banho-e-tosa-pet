@@ -105,7 +105,8 @@ export default function Footer() {
             <div className="bg-[#009EE3] text-white rounded-xl px-3.5 py-1.5 flex items-center gap-2.5 shadow-md border border-[#00B1EA]/60 hover:brightness-110 transition cursor-default">
               <div className="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center flex-shrink-0">
                 <svg className="w-5 h-5 fill-white" viewBox="0 0 24 24">
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.5v-3.5H9.5v-2H11V9c0-1.1.9-2 2-2h2v2h-2v2h2v2h-2v3.5h-2z" />
+                  {/* Mercado Pago Handshake Icon */}
+                  <path d="M19.4 8.7L15 4.3c-.4-.4-1-.4-1.4 0l-3.3 3.3c-.4.4-.4 1 0 1.4l.7.7-1.7 1.7-1.4-1.4c-.4-.4-1-.4-1.4 0L3.1 13.3c-.4.4-.4 1 0 1.4l4.4 4.4c.4.4 1 .4 1.4 0l3.3-3.3c.4-.4.4-1 0-1.4l-.7-.7 1.7-1.7 1.4 1.4c.4.4 1 .4 1.4 0l3.3-3.3c.5-.4.5-1.1.1-1.4zM7.5 17.7L4.5 14.7l2.8-2.8 3 3-2.8 2.8zm9-9l-2.8 2.8-3-3 2.8-2.8 3 3z" />
                 </svg>
               </div>
               <div className="text-left">
