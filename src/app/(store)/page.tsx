@@ -124,7 +124,7 @@ export default async function Home() {
 
   return (
     <div className="flex flex-col min-h-screen relative">
-      {/* BANNERS LATERAIS PARA COMPUTADOR (DISTRIBUIDOR OFICIAL NA ESQUERDA + OFERTAS ROTATIVAS 3S NA DIREITA) */}
+      {/* BANNERS LATERAIS PARA COMPUTADOR (DISTRIBUIDOR OFICIAL NA DIREITA + OFERTAS ROTATIVAS 3S NA ESQUERDA) */}
       <DesktopSideBanners 
         produtosPromocao={produtosPromocao.length > 0 ? produtosPromocao : (produtosNovidades.length > 0 ? produtosNovidades : produtosMaisVendidos)} 
       />
@@ -132,7 +132,12 @@ export default async function Home() {
       {/* 1. FAIXA DE CUPONS NO TOPO */}
       {posicaoCupons === 'topo' && <HomeCouponsBanner />}
 
-      {/* 2. FAIXA DE CUPONS LOGO ABAIXO DO NAVEGADOR */}
+      {/* BANNER PRINCIPAL COM CARROSEL (FOTOS DOS ANIMAIS NO TAMANHO ORIGINAL) */}
+      <section className="w-full">
+        <BannerCarousel banners={banners} />
+      </section>
+
+      {/* 2. FAIXA DE CUPONS LOGO ABAIXO DO BANNER */}
       {posicaoCupons === 'abaixo_banner' && <HomeCouponsBanner />}
 
       {/* BARRA DE BENEFÍCIOS E DIFERENCIAIS */}
@@ -219,11 +224,6 @@ export default async function Home() {
               </div>
             )}
           </div>
-        </section>
-
-        {/* BANNER PRINCIPAL COM CARROSEL (Abaixo dos últimos produtos com 40% menor altura) */}
-        <section className="w-full rounded-3xl overflow-hidden border border-gray-200 shadow-sm">
-          <BannerCarousel banners={banners} />
         </section>
 
         {/* DISTRIBUIDOR OFICIAL MIMOSHOW - SEÇÃO COMPACTA ABAIXO DE TODOS OS PRODUTOS */}
