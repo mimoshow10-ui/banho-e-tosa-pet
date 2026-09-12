@@ -82,99 +82,14 @@ export default function DesktopSideBanners({ produtosPromocao }: DesktopSideBann
   return (
     <>
       {/* ========================================================= */}
-      {/* 1. LATERAL ESQUERDA: DISTRIBUIDOR OFICIAL MIMOSHOW        */}
-      {/* ========================================================= */}
-      <aside 
-        aria-label="Distribuidor Oficial Mimoshow"
-        className="hidden xl:block fixed left-2 2xl:left-4 top-[215px] z-40 select-none animate-in fade-in slide-in-from-left-4 duration-300"
-      >
-        {leftOpen ? (
-          <div className="w-44 2xl:w-48 bg-white/95 backdrop-blur-md rounded-2xl border-2 border-amber-200 shadow-2xl p-3 space-y-2.5 transition-all hover:border-amber-300">
-            {/* Header do Card com Botão de Minimizar */}
-            <div className="flex items-center justify-between pb-1.5 border-b border-amber-100">
-              <span className="flex items-center gap-1 text-[10px] font-black tracking-wider uppercase bg-amber-50 text-amber-800 px-2 py-0.5 rounded-full border border-amber-200">
-                <Award size={12} className="text-amber-600" />
-                Oficial
-              </span>
-              <button
-                onClick={() => setLeftOpen(false)}
-                title="Minimizar banner"
-                className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-1 rounded-lg transition"
-              >
-                <X size={14} />
-              </button>
-            </div>
-
-            {/* Logo e Selo Oficial */}
-            <div className="text-center space-y-1.5">
-              <div className="relative w-full h-14 2xl:h-16 flex items-center justify-center bg-gray-50/80 rounded-xl p-2 border border-gray-100">
-                <Image
-                  src="/logo-mimoshow.png"
-                  alt="Mimoshow Distribuidor Oficial"
-                  width={130}
-                  height={45}
-                  className="object-contain max-h-11 2xl:max-h-12 w-auto"
-                  priority
-                />
-              </div>
-              <div>
-                <h3 className="text-[11px] 2xl:text-xs font-heading font-black text-secondary uppercase tracking-tight flex items-center justify-center gap-1">
-                  Distribuidor Oficial
-                  <ShieldCheck size={13} className="text-green-600" />
-                </h3>
-                <p className="text-[9px] 2xl:text-[10px] font-bold text-amber-700">MIMOSHOW Indústria & Pet</p>
-              </div>
-            </div>
-
-            {/* Diferenciais e Garantias */}
-            <div className="space-y-1 pt-1 text-[10px] 2xl:text-[11px] font-medium text-gray-700">
-              <div className="flex items-center gap-1.5 bg-amber-50/60 p-1.5 rounded-lg border border-amber-100/80">
-                <PackageCheck size={13} className="text-amber-700 flex-shrink-0" />
-                <span>100% Direto da Fábrica</span>
-              </div>
-              <div className="flex items-center gap-1.5 bg-blue-50/60 p-1.5 rounded-lg border border-blue-100/80">
-                <Sparkles size={13} className="text-blue-700 flex-shrink-0" />
-                <span>Preço Especial Pet Shop</span>
-              </div>
-              <div className="flex items-center gap-1.5 bg-green-50/60 p-1.5 rounded-lg border border-green-100/80">
-                <Truck size={13} className="text-green-700 flex-shrink-0" />
-                <span>Pronta Entrega</span>
-              </div>
-            </div>
-
-            {/* Botão de Ação */}
-            <Link
-              href="/categoria/todas"
-              className="block w-full text-center text-[10px] 2xl:text-xs font-black uppercase py-2 px-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-md hover:shadow-lg transition-all"
-            >
-              Ver Catálogo Oficial
-            </Link>
-          </div>
-        ) : (
-          /* Aba Minimizado */
-          <button
-            onClick={() => setLeftOpen(true)}
-            className="flex items-center gap-1.5 bg-white/95 backdrop-blur-md border-2 border-amber-300 text-secondary hover:text-amber-700 font-black text-xs px-2.5 py-2 rounded-r-2xl shadow-xl hover:shadow-2xl transition-all hover:translate-x-1"
-            title="Expandir Distribuidor Oficial"
-          >
-            <Award size={15} className="text-amber-600" />
-            <span className="[writing-mode:vertical-lr] rotate-180 text-[10px] 2xl:text-[11px] tracking-widest font-black uppercase">
-              Distribuidor Mimoshow
-            </span>
-            <Maximize2 size={11} className="text-gray-400" />
-          </button>
-        )}
-      </aside>
-
-      {/* ========================================================= */}
-      {/* 2. LATERAL DIREITA: OFERTAS RELÂMPAGO (ROTAÇÃO 3S)        */}
+      {/* 1. LATERAL ESQUERDA: OFERTAS RELÂMPAGO (ROTAÇÃO 3S)        */}
       {/* ========================================================= */}
       {total > 0 && currentProduct && (
         <aside 
           aria-label="Ofertas Relâmpago"
-          className="hidden xl:block fixed right-2 2xl:right-4 top-[215px] z-40 select-none animate-in fade-in slide-in-from-right-4 duration-300"
+          className="hidden xl:block fixed left-2 2xl:left-4 top-[215px] z-40 select-none animate-in fade-in slide-in-from-left-4 duration-300"
         >
-          {rightOpen ? (
+          {leftOpen ? (
             <div 
               onMouseEnter={() => setIsPaused(true)}
               onMouseLeave={() => setIsPaused(false)}
@@ -201,7 +116,7 @@ export default function DesktopSideBanners({ produtosPromocao }: DesktopSideBann
                   </h3>
                 </div>
                 <button
-                  onClick={() => setRightOpen(false)}
+                  onClick={() => setLeftOpen(false)}
                   title="Minimizar ofertas"
                   className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-1 rounded-lg transition"
                 >
@@ -306,21 +221,106 @@ export default function DesktopSideBanners({ produtosPromocao }: DesktopSideBann
               </div>
             </div>
           ) : (
-            /* Aba Minimizado */
+            /* Aba Minimizado na Esquerda */
             <button
-              onClick={() => setRightOpen(true)}
-              className="flex items-center gap-2 bg-white/95 backdrop-blur-md border-2 border-orange-400 text-red-600 hover:text-orange-700 font-black text-xs px-3 py-2 rounded-l-2xl shadow-xl hover:shadow-2xl transition-all hover:-translate-x-1"
+              onClick={() => setLeftOpen(true)}
+              className="flex items-center gap-2 bg-white/95 backdrop-blur-md border-2 border-orange-400 text-red-600 hover:text-orange-700 font-black text-xs px-3 py-2 rounded-r-2xl shadow-xl hover:shadow-2xl transition-all hover:translate-x-1"
               title="Expandir Ofertas Relâmpago"
             >
-              <Maximize2 size={12} className="text-gray-400" />
+              <Flame size={16} className="text-orange-500 fill-orange-500" />
               <span className="[writing-mode:vertical-lr] rotate-180 text-[11px] tracking-widest font-black uppercase">
                 🔥 Ofertas Relâmpago
               </span>
-              <Flame size={16} className="text-orange-500 fill-orange-500" />
+              <Maximize2 size={12} className="text-gray-400" />
             </button>
           )}
         </aside>
       )}
+
+      {/* ========================================================= */}
+      {/* 2. LATERAL DIREITA: DISTRIBUIDOR OFICIAL MIMOSHOW        */}
+      {/* ========================================================= */}
+      <aside 
+        aria-label="Distribuidor Oficial Mimoshow"
+        className="hidden xl:block fixed right-2 2xl:right-4 top-[215px] z-40 select-none animate-in fade-in slide-in-from-right-4 duration-300"
+      >
+        {rightOpen ? (
+          <div className="w-44 2xl:w-48 bg-white/95 backdrop-blur-md rounded-2xl border-2 border-amber-200 shadow-2xl p-3 space-y-2.5 transition-all hover:border-amber-300">
+            {/* Header do Card com Botão de Minimizar */}
+            <div className="flex items-center justify-between pb-1.5 border-b border-amber-100">
+              <span className="flex items-center gap-1 text-[10px] font-black tracking-wider uppercase bg-amber-50 text-amber-800 px-2 py-0.5 rounded-full border border-amber-200">
+                <Award size={12} className="text-amber-600" />
+                Oficial
+              </span>
+              <button
+                onClick={() => setRightOpen(false)}
+                title="Minimizar banner"
+                className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-1 rounded-lg transition"
+              >
+                <X size={14} />
+              </button>
+            </div>
+
+            {/* Logo e Selo Oficial */}
+            <div className="text-center space-y-1.5">
+              <div className="relative w-full h-14 2xl:h-16 flex items-center justify-center bg-gray-50/80 rounded-xl p-2 border border-gray-100">
+                <Image
+                  src="/logo-mimoshow.png"
+                  alt="Mimoshow Distribuidor Oficial"
+                  width={130}
+                  height={45}
+                  className="object-contain max-h-11 2xl:max-h-12 w-auto"
+                  priority
+                />
+              </div>
+              <div>
+                <h3 className="text-[11px] 2xl:text-xs font-heading font-black text-secondary uppercase tracking-tight flex items-center justify-center gap-1">
+                  Distribuidor Oficial
+                  <ShieldCheck size={13} className="text-green-600" />
+                </h3>
+                <p className="text-[9px] 2xl:text-[10px] font-bold text-amber-700">MIMOSHOW Indústria & Pet</p>
+              </div>
+            </div>
+
+            {/* Diferenciais e Garantias */}
+            <div className="space-y-1 pt-1 text-[10px] 2xl:text-[11px] font-medium text-gray-700">
+              <div className="flex items-center gap-1.5 bg-amber-50/60 p-1.5 rounded-lg border border-amber-100/80">
+                <PackageCheck size={13} className="text-amber-700 flex-shrink-0" />
+                <span>100% Direto da Fábrica</span>
+              </div>
+              <div className="flex items-center gap-1.5 bg-blue-50/60 p-1.5 rounded-lg border border-blue-100/80">
+                <Sparkles size={13} className="text-blue-700 flex-shrink-0" />
+                <span>Preço Especial Pet Shop</span>
+              </div>
+              <div className="flex items-center gap-1.5 bg-green-50/60 p-1.5 rounded-lg border border-green-100/80">
+                <Truck size={13} className="text-green-700 flex-shrink-0" />
+                <span>Pronta Entrega</span>
+              </div>
+            </div>
+
+            {/* Botão de Ação */}
+            <Link
+              href="/categoria/todas"
+              className="block w-full text-center text-[10px] 2xl:text-xs font-black uppercase py-2 px-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-md hover:shadow-lg transition-all"
+            >
+              Ver Catálogo Oficial
+            </Link>
+          </div>
+        ) : (
+          /* Aba Minimizado na Direita */
+          <button
+            onClick={() => setRightOpen(true)}
+            className="flex items-center gap-1.5 bg-white/95 backdrop-blur-md border-2 border-amber-300 text-secondary hover:text-amber-700 font-black text-xs px-2.5 py-2 rounded-l-2xl shadow-xl hover:shadow-2xl transition-all hover:-translate-x-1"
+            title="Expandir Distribuidor Oficial"
+          >
+            <Award size={15} className="text-amber-600" />
+            <span className="[writing-mode:vertical-lr] rotate-180 text-[10px] 2xl:text-[11px] tracking-widest font-black uppercase">
+              Distribuidor Mimoshow
+            </span>
+            <Maximize2 size={11} className="text-gray-400" />
+          </button>
+        )}
+      </aside>
     </>
   );
 }
