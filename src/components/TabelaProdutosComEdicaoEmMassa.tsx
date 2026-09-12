@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { ExternalLink, Trash2, Edit, CheckSquare, Square, Zap, RefreshCw, CheckCircle2, AlertCircle, AlertTriangle, XCircle, ChevronDown, Search } from 'lucide-react';
@@ -40,6 +40,39 @@ export default function TabelaProdutosComEdicaoEmMassa({ produtos, categorias, p
   const currentParamsStr = searchParams.toString();
 
   const [selecionados, setSelecionados] = useState<string[]>([]);
+  const [isLoadedFromStorage, setIsLoadedFromStorage] = useState(false);
+
+  // Restaura itens selecionados anteriormente ao navegar entre páginas ou editar um produto
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem('admin_produtos_selecionados');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setSelecionados(parsed);
+        }
+      }
+    } catch (e) {
+      console.error('Erro ao ler selecionados do sessionStorage:', e);
+    } finally {
+      setIsLoadedFromStorage(true);
+    }
+  }, []);
+
+  // Mantém sessionStorage sincronizado com a seleção atual
+  useEffect(() => {
+    if (!isLoadedFromStorage) return;
+    try {
+      if (selecionados.length > 0) {
+        sessionStorage.setItem('admin_produtos_selecionados', JSON.stringify(selecionados));
+      } else {
+        sessionStorage.removeItem('admin_produtos_selecionados');
+      }
+    } catch (e) {
+      console.error('Erro ao salvar selecionados no sessionStorage:', e);
+    }
+  }, [selecionados, isLoadedFromStorage]);
+
   // Inicia em neutro por padrão
   const [acaoMassa, setAcaoMassa] = useState<string>('');
 
@@ -167,6 +200,7 @@ export default function TabelaProdutosComEdicaoEmMassa({ produtos, categorias, p
 
       const data = await res.json();
       if (res.ok) {
+        try { sessionStorage.removeItem('admin_produtos_selecionados'); } catch {}
         setMensagem({ tipo: 'sucesso', texto: data.mensagem || 'Edição em massa concluída com sucesso!' });
         setSelecionados([]);
         window.location.reload();
@@ -213,6 +247,17 @@ export default function TabelaProdutosComEdicaoEmMassa({ produtos, categorias, p
             <span className="bg-primary text-white font-black text-xs px-3 py-1 rounded-full shadow-2xs">
               {selecionados.length} Selecionado(s)
             </span>
+            <button
+              type="button"
+              onClick={() => {
+                setSelecionados([]);
+                try { sessionStorage.removeItem('admin_produtos_selecionados'); } catch {}
+              }}
+              className="text-[11px] font-bold text-red-300 hover:text-red-100 hover:underline cursor-pointer transition"
+              title="Desmarcar todos os produtos selecionados"
+            >
+              (Limpar seleção)
+            </button>
             <span className="text-xs font-bold text-gray-200 hidden sm:inline">
               Ação em massa:
             </span>
