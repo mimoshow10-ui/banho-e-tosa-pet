@@ -113,8 +113,21 @@ export default function AdminFiltrosAvancados({ categorias }: Props) {
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="Pesquisar por Nome do Produto, Código SKU ou Código de Barras..."
-              className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl text-xs font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full pl-10 pr-8 py-2.5 border border-gray-300 rounded-xl text-xs font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-primary"
             />
+            {q && (
+              <button
+                type="button"
+                onClick={() => {
+                  setQ('');
+                  aplicarFiltrosDireto({ q: '' });
+                }}
+                className="absolute right-3 top-2.5 text-gray-400 hover:text-red-600 font-black text-xs cursor-pointer p-0.5"
+                title="Limpar pesquisa por texto"
+              >
+                ✕
+              </button>
+            )}
           </div>
           <button
             type="submit"
@@ -287,7 +300,8 @@ export default function AdminFiltrosAvancados({ categorias }: Props) {
               onChange={(e) => {
                 const val = e.target.checked ? 'sim' : '';
                 setPromocao(val);
-                aplicarFiltrosDireto({ promocao: val });
+                setQ('');
+                aplicarFiltrosDireto({ promocao: val, q: '' });
               }}
               className="accent-rose-600 w-4 h-4 cursor-pointer"
             />
