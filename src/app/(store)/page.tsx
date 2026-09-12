@@ -6,6 +6,8 @@ import BannerCarousel from "@/components/BannerCarousel";
 import HomeCouponsBanner from "@/components/HomeCouponsBanner";
 import ProductCard from "@/components/ProductCard";
 import BenefitsBar from "@/components/BenefitsBar";
+import DesktopSideBanners from "@/components/DesktopSideBanners";
+import OfficialDistributorSection from "@/components/OfficialDistributorSection";
 
 import { hasValidPhoto } from "@/lib/productFilter";
 
@@ -121,7 +123,12 @@ export default async function Home() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen relative">
+      {/* BANNERS LATERAIS PARA COMPUTADOR (DISTRIBUIDOR OFICIAL NA ESQUERDA + OFERTAS ROTATIVAS 3S NA DIREITA) */}
+      <DesktopSideBanners 
+        produtosPromocao={produtosPromocao.length > 0 ? produtosPromocao : (produtosNovidades.length > 0 ? produtosNovidades : produtosMaisVendidos)} 
+      />
+
       {/* 1. FAIXA DE CUPONS NO TOPO */}
       {posicaoCupons === 'topo' && <HomeCouponsBanner />}
 
@@ -140,10 +147,13 @@ export default async function Home() {
       {posicaoCupons === 'abaixo_beneficios' && <HomeCouponsBanner />}
 
       {/* SEÇÃO PRINCIPAL DE VITRINE DA LOJA */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-12 w-full">
+      <div className="max-w-7xl xl:max-w-5xl 2xl:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-12 w-full">
         
         {/* 4. FAIXA DE CUPONS ACIMA DAS OFERTAS */}
         {posicaoCupons === 'acima_ofertas' && <HomeCouponsBanner />}
+
+        {/* DISTRIBUIDOR OFICIAL MIMOSHOW - SEÇÃO DE AUTORIDADE PARA TODAS AS TELAS */}
+        <OfficialDistributorSection />
 
         {/* 1. Super Promoção do Dia (APENAS DENTRO DO PERÍODO) */}
         {produtosPromocao.length > 0 && (

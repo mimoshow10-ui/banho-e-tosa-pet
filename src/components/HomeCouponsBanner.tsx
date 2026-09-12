@@ -46,7 +46,7 @@ export default function HomeCouponsBanner() {
 
   return (
     <div className="w-full bg-gradient-to-r from-orange-600 via-amber-500 to-orange-500 py-3.5 px-4 text-white shadow-sm border-b border-orange-600/30">
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-7xl xl:max-w-[980px] 2xl:max-w-6xl min-[1800px]:max-w-7xl mx-auto">
         {/* Grid Ampliado (+1/3 em tamanho) de Cupons */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {listaExibida.map((c) => {

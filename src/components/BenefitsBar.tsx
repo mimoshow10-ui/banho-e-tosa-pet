@@ -28,7 +28,7 @@ export default function BenefitsBar() {
 
   return (
     <div className="w-full bg-white border-y border-gray-200 py-4 px-4 shadow-2xs">
-      <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6">
+      <div className="max-w-7xl xl:max-w-[980px] 2xl:max-w-6xl min-[1800px]:max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6">
         {diferenciais.map((item, index) => {
           const Icone = item.icon;
           return (
