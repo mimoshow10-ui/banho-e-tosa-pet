@@ -76,7 +76,6 @@ export default async function Home() {
   const agora = Date.now();
   const produtosPromocao = (superPromocoes || []).filter((prod) => {
     if (prod.estoque !== null && prod.estoque !== undefined && Number(prod.estoque) <= 0) return false;
-    if (novidadesSet.has(prod.id) || maisVendidosSet.has(prod.id) || (prod.sku && (novidadesSet.has(prod.sku) || maisVendidosSet.has(prod.sku)))) return false;
     
     // Checagem do Inicio da Promocao (se cadastrado)
     if (prod.promocao_inicio_em) {
