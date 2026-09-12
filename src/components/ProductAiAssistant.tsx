@@ -172,22 +172,58 @@ export default function ProductAiAssistant({ produto }: Props) {
 }
 
 function gerarRespostaLocal(pergunta: string, prod: Props['produto']): string {
-  const q = pergunta.toLowerCase();
+  const q = pergunta.toLowerCase().trim();
+  const nome = prod.nome || 'Produto';
   const val = prod.preco_promocional || prod.preco;
   const precoStr = `R$ ${Number(val).toFixed(2).replace('.', ',')}`;
+  const descClean = (prod.descricao_curta || prod.descricao || '').replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').trim();
 
-  if (q.includes('preço') || q.includes('quanto custa') || q.includes('valor')) {
-    return `O valor atual do "${prod.nome}" é ${precoStr}.`;
+  const qtdMatch = (nome + ' ' + descClean).match(/(?:kit|pct|pacote|jogo)?\s*(?:c\/|com)?\s*(\d+)\s*(?:unidades|unidade|un|peças|pcs|laços|gravatas|adesivos|pares|par)?/i);
+  const quantidade = qtdMatch ? qtdMatch[1] : null;
+
+  const matMatch = (nome + ' ' + descClean).match(/(eva glitter|eva|cetim|feltro|silicone|algodão|tecido|pelúcia|couro|nylon)/i);
+  const material = matMatch ? matMatch[1].toUpperCase() : null;
+
+  const fixMatch = (nome + ' ' + descClean).match(/(adesivo|autocolante|elástico|elastico|anilha|fita de cetim|fita|presilha|tic-tac|velcro)/i);
+  const fixacao = fixMatch ? fixMatch[1].toLowerCase() : null;
+
+  if (q.includes('quantos') || q.includes('quantidade') || q.includes('vem') || q.includes('pacote') || q.includes('kit') || q.includes('unidade')) {
+    if (quantidade) {
+      return `Este produto ("${nome}") vem com ${quantidade} unidade(s) na embalagem! 📦`;
+    }
+    return `O item "${nome}" refere-se à quantidade do anúncio/opção selecionada. Você pode escolher a quantidade no carrinho! 📦`;
   }
-  if (q.includes('estoque') || q.includes('disponível') || q.includes('pronta')) {
-    return `Temos o "${prod.nome}" disponível em estoque para pronta entrega!`;
+
+  if (q.includes('material') || q.includes('feito') || q.includes('eva') || q.includes('glitter') || q.includes('atóxico') || q.includes('atoxico')) {
+    if (material) {
+      return `O "${nome}" é fabricado em ${material}, garantindo um produto super leve, durável e 100% atóxico. 🛡️`;
+    }
+    return `O "${nome}" é fabricado com materiais atóxicos de excelente qualidade para banho e tosa. 🛡️`;
   }
-  if (q.includes('frete') || q.includes('entrega') || q.includes('prazo')) {
-    return `Digitando seu CEP no campo de frete acima você calcula o prazo exato de entrega para a sua cidade!`;
+
+  if (q.includes('como usar') || q.includes('como aplicar') || q.includes('fixar') || q.includes('prender') || q.includes('adesivo') || q.includes('elástico')) {
+    if (fixacao === 'adesivo' || fixacao === 'autocolante') {
+      return `O "${nome}" é autocolante! Retire a fita de proteção e aplique diretamente nos pelos limpos e secos do pet. ✨`;
+    }
+    if (fixacao === 'elástico' || fixacao === 'elastico' || fixacao === 'anilha') {
+      return `O "${nome}" acompanha anilha elástica de silicone para fixação prática no pelo do pet! 🎀`;
+    }
+    return `Aplique o "${nome}" sobre a pelagem limpa e seca do pet para um acabamento perfeito ao finalizar o banho e tosa! ✨`;
   }
-  if (q.includes('seguro') || q.includes('material') || q.includes('eva')) {
-    return `Todos os nossos produtos são atóxicos e projetados para total segurança no banho e tosa!`;
+
+  if (q.includes('preço') || q.includes('quanto custa') || q.includes('valor') || q.includes('promoção') || q.includes('desconto')) {
+    return `O valor atual do "${nome}" é de ${precoStr}. ✨`;
   }
-  return `O "${prod.nome}" (${precoStr}) é um excelente item para estética pet. Se precisar de mais informações, estamos à disposição!`;
+
+  if (q.includes('frete') || q.includes('entrega') || q.includes('prazo') || q.includes('envio')) {
+    return `Postamos nos Correios/transportadora em até 24h úteis! Digite seu CEP no campo de frete acima para ver prazos exatos! 🚚`;
+  }
+
+  if (descClean.length > 20) {
+    return `Sobre "${nome}": ${descClean.slice(0, 160)}... Preço: ${precoStr}.`;
+  }
+
+  return `O "${nome}" (${precoStr}) é um excelente item para estética pet. ${material ? `Fabricado em ${material}. ` : ''}Estamos à disposição para dúvidas! 🐾`;
 }
+
 
