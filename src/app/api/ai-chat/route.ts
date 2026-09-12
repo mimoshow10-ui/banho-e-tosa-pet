@@ -146,8 +146,9 @@ function extrairRespostaEspecífica(
     return `Sou o assistente virtual da MIMO Show, especializado em tirar dúvidas sobre o produto "${nome}"! Como posso te ajudar? ✨`;
   }
 
-  // 1. FAQ Cadastrado no Admin
+  // ── 1. FAQ CADASTRADO NO ADMIN (com filtro de Palavras de Parada & Palavra Inteira) ──
   if (faq) {
+    const STOP_WORDS = new Set(['qual', 'como', 'onde', 'quando', 'quanto', 'quais', 'para', 'com', 'tem', 'nos', 'das', 'dos', 'por', 'que', 'tipo', 'serve', 'este', 'esse', 'essa']);
     const blocos = faq.split(/\n\s*\n/);
     for (const bloco of blocos) {
       const linhas = bloco.split('\n').map(l => l.trim()).filter(Boolean);
@@ -157,15 +158,21 @@ function extrairRespostaEspecífica(
       if (linhaPergunta && linhaResposta) {
         const pTexto = linhaPergunta.replace(/^p:\s*/i, '').toLowerCase();
         const rTexto = linhaResposta.replace(/^r:\s*/i, '');
-        const palavrasChave = pTexto.split(/\s+/).filter(w => w.length > 3);
-        if (palavrasChave.some(p => q.includes(p))) {
+        const palavrasChave = pTexto
+          .split(/[^\wáéíóúâêôãõç]+/i)
+          .map(w => w.toLowerCase())
+          .filter(w => w.length > 3 && !STOP_WORDS.has(w));
+        
+        // Verifica se a pergunta do cliente contiver a palavra INTEIRA (usando regex \\b)
+        const bateu = palavrasChave.some(p => new RegExp(`\\b${p}\\b`, 'i').test(q));
+        if (bateu) {
           return rTexto;
         }
       }
     }
   }
 
-  // 2. Extrações de atributos específicos do produto
+  // ── 2. EXTRAÇÃO DE ATRIBUTOS ESPECÍFICOS DO PRODUTO ──
   const qtdMatch = (nome + ' ' + descClean).match(/(?:kit|pct|pacote|jogo)?\s*(?:c\/|com)?\s*(\d+)\s*(?:unidades|unidade|un|peças|pcs|laços|gravatas|adesivos|pares|par)?/i);
   const quantidade = qtdMatch ? qtdMatch[1] : null;
 
@@ -181,7 +188,18 @@ function extrairRespostaEspecífica(
   const medMatch = descClean.match(/(?:medidas?|tamanho|dimensõ?e?s?|largura|comprimento|diâmetro)[:\s]+([^.!?\n]+)/i);
   const medidaDesc = medMatch ? medMatch[1].trim() : null;
 
-  // ── INTENTS DA PERGUNTA DO CLIENTE ──
+  // ── 3. INTENTS DA PERGUNTA DO CLIENTE ──
+
+  // TIPO DE PELO / PELAGEM / ADERÊNCIA / GRUDA
+  if (q.includes('pelo') || q.includes('pelagem') || q.includes('pelos') || q.includes('ader') || q.includes('gruda')) {
+    if (fixacao === 'adesivo' || fixacao === 'autocolante') {
+      return `Sim! Os adesivos da MIMO Show grudam perfeitamente em qualquer tipo de pelo (curto, longo, liso ou crespo)! A cola especial foi desenvolvida para fixar com segurança sobre pelos limpos e secos sem machucar o animal. ✨`;
+    }
+    if (fixacao === 'elástico' || fixacao === 'elastico' || fixacao === 'anilha') {
+      return `Sim! A anilha elástica de silicone se ajusta com facilidade a qualquer tipo de pelo no banho e tosa. 🎀`;
+    }
+    return `Sim! O "${nome}" é projetado para excelente fixação e acabamento em qualquer pelagem de cães e gatos. 🐾`;
+  }
 
   // CORES / ESTAMPAS / SORTIDO
   if (q.includes('cor') || q.includes('cores') || q.includes('estampa') || q.includes('modelo') || q.includes('sortid')) {
@@ -285,6 +303,7 @@ function extrairRespostaEspecífica(
   // RESPOSTA AMIGÁVEL SEM REPETIR A DESCRIÇÃO GERAL
   return `Como posso te ajudar sobre o produto "${nome}" (${precoStr})? Pode me perguntar sobre prazo de frete, quantidade do pacote, material ou modo de uso! 🐾`;
 }
+
 
 
 

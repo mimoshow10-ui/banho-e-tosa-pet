@@ -205,6 +205,14 @@ function gerarRespostaLocal(pergunta: string, prod: Props['produto']): string {
   const coresEncontradas = (nome + ' ' + descClean).match(/(azul|rosa|vermelho|amarelo|verde|roxo|preto|branco|dourado|prata|colorido|sortido)/gi);
   const cores = coresEncontradas ? Array.from(new Set(coresEncontradas.map(c => c.toLowerCase()))).join(', ') : null;
 
+  // TIPO DE PELO / PELAGEM
+  if (q.includes('pelo') || q.includes('pelagem') || q.includes('pelos') || q.includes('ader') || q.includes('gruda')) {
+    if (fixacao === 'adesivo' || fixacao === 'autocolante') {
+      return `Sim! Os adesivos da MIMO Show grudam perfeitamente em qualquer tipo de pelo (curto, longo, liso ou crespo)! A cola especial fixa nos pelos limpos e secos sem machucar. ✨`;
+    }
+    return `Sim! O "${nome}" foi projetado para excelente fixação em qualquer pelagem de cães e gatos! 🐾`;
+  }
+
   // CORES
   if (q.includes('cor') || q.includes('cores') || q.includes('estampa') || q.includes('modelo') || q.includes('sortid')) {
     if (cores) {
@@ -267,6 +275,7 @@ function gerarRespostaLocal(pergunta: string, prod: Props['produto']): string {
 
   return `Como posso te ajudar sobre o produto "${nome}" (${precoStr})? Pode me perguntar sobre prazo de frete, quantidade do pacote, material ou modo de uso! 🐾`;
 }
+
 
 
 
