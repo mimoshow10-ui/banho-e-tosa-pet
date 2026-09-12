@@ -103,11 +103,14 @@ export default function Footer() {
             
             {/* Selo 1: Mercado Pago Oficial */}
             <div className="bg-[#009EE3] text-white rounded-xl px-3.5 py-1.5 flex items-center gap-2.5 shadow-md border border-[#00B1EA]/60 hover:brightness-110 transition cursor-default">
-              <div className="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center flex-shrink-0">
-                <svg className="w-5 h-5 fill-white" viewBox="0 0 24 24">
-                  {/* Mercado Pago Handshake Icon */}
-                  <path d="M19.4 8.7L15 4.3c-.4-.4-1-.4-1.4 0l-3.3 3.3c-.4.4-.4 1 0 1.4l.7.7-1.7 1.7-1.4-1.4c-.4-.4-1-.4-1.4 0L3.1 13.3c-.4.4-.4 1 0 1.4l4.4 4.4c.4.4 1 .4 1.4 0l3.3-3.3c.4-.4.4-1 0-1.4l-.7-.7 1.7-1.7 1.4 1.4c.4.4 1 .4 1.4 0l3.3-3.3c.5-.4.5-1.1.1-1.4zM7.5 17.7L4.5 14.7l2.8-2.8 3 3-2.8 2.8zm9-9l-2.8 2.8-3-3 2.8-2.8 3 3z" />
-                </svg>
+              <div className="w-8 h-8 rounded-lg bg-white p-1 flex items-center justify-center flex-shrink-0 shadow-2xs">
+                <Image
+                  src="/logo-mercadopago-handshake.png"
+                  alt="Mercado Pago Handshake"
+                  width={28}
+                  height={28}
+                  className="object-contain"
+                />
               </div>
               <div className="text-left">
                 <span className="block text-[10px] font-black uppercase tracking-wider leading-none text-white/90">PAGAMENTO SEGURO</span>
