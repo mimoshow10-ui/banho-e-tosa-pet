@@ -17,9 +17,10 @@ export async function POST(req: NextRequest) {
       .maybeSingle();
 
     const treinamento = config?.valor || {};
-    const instrucoes = treinamento.instrucoes || 'Somos a Banho & Tosa Pet. Responda sempre de forma gentil, prestativa e altamente específica sobre o produto.';
+    const instrucoes = treinamento.instrucoes || 'Somos a Banho & Tosa Pet. Responda sempre de forma gentil, prestativa e altamente específica sobre a dúvida exata do cliente.';
     const faq = treinamento.faq || '';
     const apiKey = (treinamento.api_key || process.env.OPENAI_API_KEY || '').trim();
+    const geminiKey = (treinamento.gemini_key || process.env.GEMINI_API_KEY || '').trim();
 
     const q = pergunta.toLowerCase().trim();
     const nome = produto.nome || 'Produto';
@@ -34,26 +35,26 @@ export async function POST(req: NextRequest) {
     const estoqueNum = Number(produto.estoque || 0);
     const tamanhosArr = Array.isArray(produto.tamanhos) ? produto.tamanhos.join(', ') : '';
 
-    // Se houver chave OpenAI configurada no painel Admin ou .env
-    if (apiKey && apiKey.startsWith('sk-')) {
-      try {
-        const promptSystem = `${instrucoes}
+    const promptSystem = `${instrucoes}
 
 Contexto das Diretrizes & FAQ da Loja:
 ${faq}
 
 Dados Exatos do Produto Exibido na Tela:
 - Nome: ${nome}
-- Preço Atual: ${precoStr}${temPromo ? ` (Promoção de De ${precoDeStr} por ${precoStr})` : ''}
-- Estoque: ${estoqueNum > 0 ? `${estoqueNum} unidades em estoque` : 'Disponível'}
-- Tamanhos/Variações: ${tamanhosArr || 'Conforme opção selecionada'}
-- Descrição Completa: ${descClean || 'Produto próprio para banho e tosa e estética pet.'}
+- Preço Atual: ${precoStr}${temPromo ? ` (Em promoção de De ${precoDeStr} por ${precoStr})` : ''}
+- Estoque: ${estoqueNum > 0 ? `${estoqueNum} unidades` : 'Disponível'}
+- Tamanhos: ${tamanhosArr || 'Conforme variação'}
+- Descrição Completa: ${descClean || 'Produto próprio para estética pet.'}
 
-REGRAS OBRIGATÓRIAS DE RESPOSTA:
-1. Responda DIRETAMENTE e especificamente à dúvida do cliente sobre este produto "${nome}".
-2. Use os dados reais acima (ex: quantidade do pacote, material, tipo de fixação, preço).
-3. Mantenha tom amigável, positivo e profissional (máximo 3 frases).`;
+REGRAS ESTREITAS DE RESPOSTA:
+1. Responda OBRIGATORIAMENTE à pergunta EXATA do cliente ("${pergunta}"). Se a pergunta for sobre cor, responda sobre cor. Se for sobre frete, sobre frete. Se for sobre nota fiscal, sobre nota fiscal.
+2. Não ignore o que o cliente perguntou e não dê respostas genéricas de vendas se ele perguntou algo técnico específico.
+3. Máximo de 2 a 3 frases objetivas, educadas e claras.`;
 
+    // 1. Tentar OpenAI se houver chave configurada
+    if (apiKey && apiKey.startsWith('sk-')) {
+      try {
         const res = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
           headers: {
@@ -67,24 +68,50 @@ REGRAS OBRIGATÓRIAS DE RESPOSTA:
               { role: 'user', content: pergunta }
             ],
             max_tokens: 220,
-            temperature: 0.5
+            temperature: 0.4
           })
         });
 
         if (res.ok) {
           const data = await res.json();
           const text = data.choices?.[0]?.message?.content?.trim();
-          if (text) {
-            return NextResponse.json({ resposta: text });
-          }
+          if (text) return NextResponse.json({ resposta: text });
         }
       } catch (err) {
-        console.error('[AI CHAT API] Erro ao chamar OpenAI:', err);
+        console.error('[AI CHAT API] Erro OpenAI:', err);
       }
     }
 
-    // Motor de Inteligência Local com Extração Específica do Produto
-    const resposta = extrairRespostaEspecífica(q, nome, descClean, precoStr, precoDeStr, temPromo, estoqueNum, tamanhosArr, faq);
+    // 2. Tentar Google Gemini se houver chave configurada
+    if (geminiKey) {
+      try {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  { text: promptSystem },
+                  { text: `Dúvida do cliente: ${pergunta}` }
+                ]
+              }
+            ]
+          })
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          const text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+          if (text) return NextResponse.json({ resposta: text });
+        }
+      } catch (err) {
+        console.error('[AI CHAT API] Erro Gemini:', err);
+      }
+    }
+
+    // 3. Motor de Inteligência Local com Cobertura Completa de Perguntas
+    const resposta = extrairRespostaEspecífica(pergunta, q, nome, descClean, precoStr, precoDeStr, temPromo, estoqueNum, tamanhosArr, faq);
 
     return NextResponse.json({ resposta });
   } catch (e: any) {
@@ -93,6 +120,7 @@ REGRAS OBRIGATÓRIAS DE RESPOSTA:
 }
 
 function extrairRespostaEspecífica(
+  perguntaOriginal: string,
   q: string,
   nome: string,
   descClean: string,
@@ -103,7 +131,7 @@ function extrairRespostaEspecífica(
   tamanhosArr: string,
   faq: string
 ): string {
-  // 1. Tentar encontrar casamento no FAQ de Treinamento cadastrado no Admin
+  // 1. FAQ Cadastrado no Admin
   if (faq) {
     const blocos = faq.split(/\n\s*\n/);
     for (const bloco of blocos) {
@@ -115,7 +143,6 @@ function extrairRespostaEspecífica(
         const pTexto = linhaPergunta.replace(/^p:\s*/i, '').toLowerCase();
         const rTexto = linhaResposta.replace(/^r:\s*/i, '');
         const palavrasChave = pTexto.split(/\s+/).filter(w => w.length > 3);
-        
         if (palavrasChave.some(p => q.includes(p))) {
           return rTexto;
         }
@@ -123,84 +150,101 @@ function extrairRespostaEspecífica(
     }
   }
 
-  // 2. Extração de Atributos Específicos do Título e da Descrição
   const textoGeral = (nome + ' ' + descClean).toLowerCase();
 
-  // Extrair Quantidade (ex: Kit 10, 50 un, 20 laços, Par)
+  // Extrações específicas
   const qtdMatch = (nome + ' ' + descClean).match(/(?:kit|pct|pacote|jogo)?\s*(?:c\/|com)?\s*(\d+)\s*(?:unidades|unidade|un|peças|pcs|laços|gravatas|adesivos|pares|par)?/i);
   const quantidade = qtdMatch ? qtdMatch[1] : null;
 
-  // Extrair Material (ex: EVA, EVA Glitter, Cetim, Feltro, Algodão, Tecido)
   const matMatch = (nome + ' ' + descClean).match(/(eva glitter|eva|cetim|feltro|silicone|algodão|tecido|pelúcia|couro|nylon)/i);
   const material = matMatch ? matMatch[1].toUpperCase() : null;
 
-  // Extrair Forma de Fixação (ex: Adesivo, Autocolante, Elástico, Anilha, Fita, Presilha)
   const fixMatch = (nome + ' ' + descClean).match(/(adesivo|autocolante|elástico|elastico|anilha|fita de cetim|fita|presilha|tic-tac|velcro)/i);
   const fixacao = fixMatch ? fixMatch[1].toLowerCase() : null;
 
-  // Extrair Medidas / Dimensões explícitas na descrição
+  const coresEncontradas = (nome + ' ' + descClean).match(/(azul|rosa|vermelho|amarelo|verde|roxo|preto|branco|dourado|prata|colorido|sortido)/gi);
+  const cores = coresEncontradas ? Array.from(new Set(coresEncontradas.map(c => c.toLowerCase()))).join(', ') : null;
+
   const medMatch = descClean.match(/(?:medidas?|tamanho|dimensõ?e?s?|largura|comprimento|diâmetro)[:\s]+([^.!?\n]+)/i);
   const medidaDesc = medMatch ? medMatch[1].trim() : null;
 
-  // Extrair Porte / Tipo de Pet
-  const porteMatch = (nome + ' ' + descClean).match(/(porte pequeno|porte médio|porte grande|filhotes?|cães e gatos|gatos|cães|cachorros)/i);
-  const porte = porteMatch ? porteMatch[1] : null;
+  // ── INTENTS DA PERGUNTA DO CLIENTE ──
 
-  // FRETE / PRAZO DE ENTREGA
-  if (q.includes('frete') || q.includes('entrega') || q.includes('prazo') || q.includes('envio') || q.includes('cep') || q.includes('demora')) {
-    return `O envio do "${nome}" é realizado em até 24h úteis! Digite seu CEP no campo de frete acima para verificar o valor e o prazo exato para a sua cidade. 🚚`;
+  // CORES / ESTAMPAS / SORTIDO
+  if (q.includes('cor') || q.includes('cores') || q.includes('estampa') || q.includes('modelo') || q.includes('sortid')) {
+    if (cores) {
+      return `Em relação às cores do "${nome}": temos opções em ${cores}. Elas vão deixar os pets incríveis! 🎨`;
+    }
+    return `O "${nome}" é enviado em cores e estampas sortidas e vibrantes, exatamente como exibido nas fotos do anúncio! 🎨`;
   }
 
-  // QUANTIDADE / UNIDADES / QUANTOS VEM
+  // NOTA FISCAL / GARANTIA / ORIGINALIDADE
+  if (q.includes('nota') || q.includes('nf') || q.includes('fiscal') || q.includes('garantia') || q.includes('original')) {
+    return `Sim! Todos os nossos produtos acompanham Nota Fiscal, garantia contra defeitos de fabricação e suporte direto da loja. 📄✅`;
+  }
+
+  // PODE MOLHAR / LAVAR / DURAÇÃO / VALIDADE
+  if (q.includes('molhar') || q.includes('água') || q.includes('agua') || q.includes('lavar') || q.includes('validade') || q.includes('dura')) {
+    return `O "${nome}" é fabricado com materiais atóxicos e resistentes à umidade natural do banho e tosa. Não desbota nem estraga em contato com os pelos úmidos! 🧼💧`;
+  }
+
+  // PAGAMENTO / PIX / CARTÃO / CUPOM
+  if (q.includes('pix') || q.includes('cartão') || q.includes('cartao') || q.includes('pagar') || q.includes('pagamento') || q.includes('boleto')) {
+    return `Aceitamos PIX (com aprovação instantânea) e Cartão de Crédito em até 12x. Aproveite também os cupons disponíveis na tela do produto! 💳✨`;
+  }
+
+  // FRETE / ENTREGA / PRAZO / CEP / TRANSPORTADORA
+  if (q.includes('frete') || q.includes('entrega') || q.includes('prazo') || q.includes('envio') || q.includes('cep') || q.includes('demora') || q.includes('chega')) {
+    return `Postamos o "${nome}" nos Correios/transportadora em até 24h úteis! Digite seu CEP no campo de cálculo de frete logo acima para conferir o prazo exato para seu endereço. 🚚`;
+  }
+
+  // QUANTIDADE / UNIDADES / QUANTOS VEM NO PACOTE
   if (q.includes('quantos') || q.includes('quantidade') || q.includes('vem') || q.includes('pacote') || q.includes('kit') || q.includes('unidade')) {
     if (quantidade) {
-      return `Este produto ("${nome}") vem com ${quantidade} unidade(s) na embalagem! 📦`;
+      return `O produto "${nome}" vem em embalagem com ${quantidade} unidade(s)! 📦`;
     }
-    return `O item "${nome}" refere-se à quantidade descrita no título/opção selecionada. Você pode definir a quantidade desejada ao adicionar ao carrinho! 📦`;
+    return `O item "${nome}" refere-se à quantidade definida no anúncio. Você pode ajustar o total ao adicionar ao carrinho! 📦`;
   }
 
-  // MATERIAL / COMPOSIÇÃO / DO QUE É FEITO / SEGURANÇA
+  // MATERIAL / COMPOSIÇÃO / DO QUE É FEITO / É DE EVA
   if (q.includes('material') || q.includes('feito') || q.includes('eva') || q.includes('glitter') || q.includes('qualidade') || q.includes('atóxico') || q.includes('atoxico') || q.includes('machuca') || q.includes('seguro')) {
     if (material) {
-      return `O "${nome}" é produzido em ${material}, sendo extremamente leve, resistente e 100% atóxico seguro para a pele e pelos dos pets. 🛡️`;
+      return `O "${nome}" é fabricado em ${material}, garantindo extrema leveza, durabilidade e segurança atóxica para o animal. 🛡️`;
     }
-    return `O "${nome}" é fabricado com matérias-primas atóxicas de primeira qualidade, testadas para garantir total segurança e conforto no banho e tosa! 🛡️`;
+    return `O "${nome}" utiliza matérias-primas atóxicas e leves de alta qualidade, desenvolvidas especialmente para estética pet sem agredir a pele. 🛡️`;
   }
 
-  // MODO DE FIXAÇÃO / COMO USAR / COMO APLICAR / ADESIVO OU ELÁSTICO
+  // FIXAÇÃO / COMO APLICAR / ADESIVO OU ELÁSTICO
   if (q.includes('como usar') || q.includes('como aplicar') || q.includes('fixar') || q.includes('prender') || q.includes('cola') || q.includes('elástico') || q.includes('elastico') || q.includes('adesivo')) {
     if (fixacao === 'adesivo' || fixacao === 'autocolante') {
-      return `O "${nome}" possui fixação autocolante! Basta remover a película de proteção e aplicar suavemente nos pelos limpos e secos do pet. Adere perfeitamente sem machucar! ✨`;
+      return `O "${nome}" é autocolante! Retire o papel de proteção e aplique diretamente nos pelos limpos e secos do pet. Adere super bem! ✨`;
     }
     if (fixacao === 'elástico' || fixacao === 'elastico' || fixacao === 'anilha') {
-      return `O "${nome}" já vem equipado com anilha elástica de silicone ultra-flexível, permitindo prender no pelo do animal de forma super rápida e segura! 🎀`;
+      return `O "${nome}" acompanha anilha elástica de silicone super flexível para fixação rápida no pelo do pet! 🎀`;
     }
     if (fixacao === 'fita' || fixacao === 'fita de cetim') {
-      return `O "${nome}" acompanha fita macia para uma amarração charmosa e confortável no pescoço do pet! 🎀`;
+      return `O "${nome}" vem acompanhado de fita macia pronta para amarração confortável no pescoço do pet! 🎀`;
     }
-    return `A aplicação do "${nome}" é prática e rápida! Aplique sobre a pelagem limpa e seca do pet para um acabamento perfeito ao finalizar a tosa. ✨`;
+    return `Aplique o "${nome}" sobre a pelagem limpa e seca do pet ao finalizar o banho e tosa para um acabamento perfeito! ✨`;
   }
 
   // TAMANHO / MEDIDAS / PORTE
   if (q.includes('tamanho') || q.includes('medida') || q.includes('dimens') || q.includes('largura') || q.includes('comprimento') || q.includes('porte') || q.includes('pequeno') || q.includes('medio') || q.includes('médio') || q.includes('grande')) {
     if (medidaDesc) {
-      return `As especificações de medida do "${nome}" são: ${medidaDesc}. 📐`;
+      return `As medidas do "${nome}" são: ${medidaDesc}. 📐`;
     }
     if (tamanhosArr) {
-      return `O "${nome}" possui as opções de tamanho: ${tamanhosArr}. 📐`;
+      return `O "${nome}" está disponível nos tamanhos: ${tamanhosArr}. 📐`;
     }
-    if (porte) {
-      return `O "${nome}" foi desenvolvido especialmente para ${porte}, garantindo caimento anatômico e muito conforto. 🐶🐱`;
-    }
-    return `O "${nome}" possui proporções desenvolvidas especialmente para estética de cães e gatos. Confira a ficha técnica detalhada abaixo na página! 📐`;
+    return `O "${nome}" possui proporções perfeitas para estética de cães e gatos. Confira todos os detalhes na descrição da página! 📐`;
   }
 
   // PREÇO / PROMOÇÃO / DESCONTO
   if (q.includes('preço') || q.includes('preco') || q.includes('quanto custa') || q.includes('valor') || q.includes('desconto') || q.includes('promoção') || q.includes('promocao')) {
     if (temPromo) {
-      return `O "${nome}" está em Super Promoção por apenas ${precoStr} (de ${precoDeStr})! Aproveite a oferta por tempo limitado! 🎉`;
+      return `O "${nome}" está em Super Promoção por apenas ${precoStr} (preço normal: ${precoDeStr})! 🎉`;
     }
-    return `O valor do "${nome}" é ${precoStr}, garantindo o melhor custo-benefício direto da fábrica! ✨`;
+    return `O valor do "${nome}" é de ${precoStr} com preço direto de fábrica. ✨`;
   }
 
   // ESTOQUE / DISPONIBILIDADE
@@ -211,9 +255,9 @@ function extrairRespostaEspecífica(
     return `Temos o "${nome}" disponível em estoque para pronta entrega! 📦`;
   }
 
-  // CASAMENTO POR FRASES DA DESCRIÇÃO TÉCNICA
+  // BUSCA DIRETAMENTE NAS FRASES DA DESCRIÇÃO QUE CONTÊM PALAVRAS DA PERGUNTA
   const frases = descClean.split(/[.!?\n]/).map(f => f.trim()).filter(f => f.length > 12);
-  const palavrasDaPergunta = q.split(/\s+/).filter(w => w.length > 3 && !['sobre', 'como', 'qual', 'quanto', 'este', 'esse', 'produto', 'serve'].includes(w));
+  const palavrasDaPergunta = q.split(/\s+/).filter(w => w.length > 3 && !['sobre', 'como', 'qual', 'quanto', 'este', 'esse', 'produto', 'serve', 'voces', 'vocês', 'tem'].includes(w));
   
   if (palavrasDaPergunta.length > 0) {
     const fraseBateu = frases.find(frase => {
@@ -221,17 +265,13 @@ function extrairRespostaEspecífica(
       return palavrasDaPergunta.some(p => fLower.includes(p));
     });
     if (fraseBateu) {
-      return `Sobre "${nome}": ${fraseBateu}.`;
+      return `Sobre a sua dúvida sobre "${palavrasDaPergunta.join(' ')}": ${fraseBateu}.`;
     }
   }
 
-  // RESUMO ESPECÍFICO DO PRODUTO (DEFAULT DETALHADO)
-  if (descClean.length > 20) {
-    const trecho = descClean.slice(0, 160);
-    return `O "${nome}" é um produto profissional de estética pet (${precoStr}). ${trecho}... ${quantidade ? `Pacote com ${quantidade} un.` : ''} Ideal para encantar os tutores! 💕`;
-  }
-
-  return `O "${nome}" (${precoStr}) é um dos destaques do nosso catálogo para banho e tosa! ${material ? `Fabricado em ${material}. ` : ''}Qualquer dúvida específica, estamos à disposição! 🐾`;
+  // FALLBACK HONESTO E RECONHECIMENTO DA PERGUNTA EXATA
+  return `Sobre a sua pergunta ("${perguntaOriginal}") em relação ao produto "${nome}": O item é entregue com garantia da loja pelo valor de ${precoStr}. Para detalhes específicos, você pode nos chamar no suporte via WhatsApp! 🐾`;
 }
+
 
 

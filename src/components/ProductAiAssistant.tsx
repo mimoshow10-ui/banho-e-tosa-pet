@@ -187,20 +187,49 @@ function gerarRespostaLocal(pergunta: string, prod: Props['produto']): string {
   const fixMatch = (nome + ' ' + descClean).match(/(adesivo|autocolante|elástico|elastico|anilha|fita de cetim|fita|presilha|tic-tac|velcro)/i);
   const fixacao = fixMatch ? fixMatch[1].toLowerCase() : null;
 
+  const coresEncontradas = (nome + ' ' + descClean).match(/(azul|rosa|vermelho|amarelo|verde|roxo|preto|branco|dourado|prata|colorido|sortido)/gi);
+  const cores = coresEncontradas ? Array.from(new Set(coresEncontradas.map(c => c.toLowerCase()))).join(', ') : null;
+
+  // CORES
+  if (q.includes('cor') || q.includes('cores') || q.includes('estampa') || q.includes('modelo') || q.includes('sortid')) {
+    if (cores) {
+      return `Em relação às cores do "${nome}": temos opções em ${cores}. 🎨`;
+    }
+    return `O "${nome}" é enviado em cores e estampas sortidas e vibrantes, exatamente como nas fotos do anúncio! 🎨`;
+  }
+
+  // NOTA FISCAL / GARANTIA
+  if (q.includes('nota') || q.includes('nf') || q.includes('fiscal') || q.includes('garantia')) {
+    return `Sim! Todos os nossos produtos acompanham Nota Fiscal e garantia contra defeitos de fabricação. 📄✅`;
+  }
+
+  // LAVAGEM / DURAÇÃO
+  if (q.includes('molhar') || q.includes('água') || q.includes('agua') || q.includes('lavar')) {
+    return `O "${nome}" é feito com materiais resistentes à água e umidade do banho e tosa! 🧼💧`;
+  }
+
+  // PAGAMENTO / PIX
+  if (q.includes('pix') || q.includes('cartão') || q.includes('cartao') || q.includes('pagar') || q.includes('pagamento')) {
+    return `Aceitamos PIX com aprovação instantânea e Cartão de Crédito em até 12x! 💳✨`;
+  }
+
+  // QUANTIDADE
   if (q.includes('quantos') || q.includes('quantidade') || q.includes('vem') || q.includes('pacote') || q.includes('kit') || q.includes('unidade')) {
     if (quantidade) {
       return `Este produto ("${nome}") vem com ${quantidade} unidade(s) na embalagem! 📦`;
     }
-    return `O item "${nome}" refere-se à quantidade do anúncio/opção selecionada. Você pode escolher a quantidade no carrinho! 📦`;
+    return `O item "${nome}" refere-se à quantidade do anúncio selecionado. Você pode definir o total no carrinho! 📦`;
   }
 
+  // MATERIAL
   if (q.includes('material') || q.includes('feito') || q.includes('eva') || q.includes('glitter') || q.includes('atóxico') || q.includes('atoxico')) {
     if (material) {
-      return `O "${nome}" é fabricado em ${material}, garantindo um produto super leve, durável e 100% atóxico. 🛡️`;
+      return `O "${nome}" é fabricado em ${material}, garantindo um produto leve e 100% atóxico. 🛡️`;
     }
     return `O "${nome}" é fabricado com materiais atóxicos de excelente qualidade para banho e tosa. 🛡️`;
   }
 
+  // FIXAÇÃO
   if (q.includes('como usar') || q.includes('como aplicar') || q.includes('fixar') || q.includes('prender') || q.includes('adesivo') || q.includes('elástico')) {
     if (fixacao === 'adesivo' || fixacao === 'autocolante') {
       return `O "${nome}" é autocolante! Retire a fita de proteção e aplique diretamente nos pelos limpos e secos do pet. ✨`;
@@ -208,22 +237,21 @@ function gerarRespostaLocal(pergunta: string, prod: Props['produto']): string {
     if (fixacao === 'elástico' || fixacao === 'elastico' || fixacao === 'anilha') {
       return `O "${nome}" acompanha anilha elástica de silicone para fixação prática no pelo do pet! 🎀`;
     }
-    return `Aplique o "${nome}" sobre a pelagem limpa e seca do pet para um acabamento perfeito ao finalizar o banho e tosa! ✨`;
+    return `Aplique o "${nome}" sobre a pelagem limpa e seca do pet ao finalizar o banho e tosa! ✨`;
   }
 
+  // PREÇO
   if (q.includes('preço') || q.includes('quanto custa') || q.includes('valor') || q.includes('promoção') || q.includes('desconto')) {
     return `O valor atual do "${nome}" é de ${precoStr}. ✨`;
   }
 
+  // FRETE
   if (q.includes('frete') || q.includes('entrega') || q.includes('prazo') || q.includes('envio')) {
     return `Postamos nos Correios/transportadora em até 24h úteis! Digite seu CEP no campo de frete acima para ver prazos exatos! 🚚`;
   }
 
-  if (descClean.length > 20) {
-    return `Sobre "${nome}": ${descClean.slice(0, 160)}... Preço: ${precoStr}.`;
-  }
-
-  return `O "${nome}" (${precoStr}) é um excelente item para estética pet. ${material ? `Fabricado em ${material}. ` : ''}Estamos à disposição para dúvidas! 🐾`;
+  return `Sobre a sua pergunta ("${pergunta}") em relação ao "${nome}": O item está disponível por ${precoStr}. Para maiores esclarecimentos, nosso suporte humano está à disposição via WhatsApp! 🐾`;
 }
+
 
 
