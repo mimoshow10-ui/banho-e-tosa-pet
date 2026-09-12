@@ -7,16 +7,17 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           
-          {/* Sobre com Logomarca MimoShow */}
+          {/* Sobre com Logomarca MimoShow Transparente Oficial */}
           <div className="space-y-3">
             <h3 className="text-xl font-heading font-bold text-accent">Grupo MimoShow</h3>
             <Link href="/">
-              <div className="relative w-48 h-14 cursor-pointer">
+              <div className="relative w-56 h-20 cursor-pointer py-1">
                 <Image
                   src="/logo-mimoshow.png"
                   alt="Logomarca Grupo MimoShow"
                   fill
-                  className="object-contain object-left mix-blend-multiply"
+                  className="object-contain object-left"
+                  priority
                 />
               </div>
             </Link>
@@ -80,7 +81,7 @@ export default function Footer() {
 
         </div>
 
-        {/* SELOS DE SEGURANÇA E CERTIFICADO SSL NA BARRA FINAL */}
+        {/* BARRA FINAL: SELOS OFICIAIS MERCADO PAGO, MERCADO LIVRE E SSL */}
         <div className="mt-10 pt-6 border-t border-blue-800 flex flex-col md:flex-row items-center justify-between gap-6 text-xs text-gray-300">
           
           {/* Dados da Empresa & Direitos Autorais */}
@@ -97,27 +98,41 @@ export default function Footer() {
             </p>
           </div>
 
-          {/* Badges de Mercado Pago, Certificado SSL e Segurança */}
+          {/* Badges de Destaque: Mercado Pago, Mercado Livre e SSL */}
           <div className="flex items-center gap-3 flex-wrap justify-center flex-shrink-0">
             
-            {/* Selo 0: Mercado Pago Oficial */}
-            <div className="bg-[#009EE3]/15 border border-[#009EE3]/50 rounded-xl px-3.5 py-1.5 flex items-center gap-2.5 shadow-2xs hover:bg-[#009EE3]/25 transition cursor-default">
-              <div className="w-7 h-7 rounded-lg bg-[#009EE3] flex items-center justify-center flex-shrink-0 shadow-xs text-white">
-                <svg className="w-4 h-4 fill-white" viewBox="0 0 24 24">
-                  {/* Mercado Pago iconic emblem */}
+            {/* Selo 1: Mercado Pago Oficial */}
+            <div className="bg-[#009EE3] text-white rounded-xl px-3.5 py-1.5 flex items-center gap-2.5 shadow-md border border-[#00B1EA]/60 hover:brightness-110 transition cursor-default">
+              <div className="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center flex-shrink-0">
+                <svg className="w-5 h-5 fill-white" viewBox="0 0 24 24">
                   <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.5v-3.5H9.5v-2H11V9c0-1.1.9-2 2-2h2v2h-2v2h2v2h-2v3.5h-2z" />
                 </svg>
               </div>
               <div className="text-left">
-                <span className="block text-[10px] font-black text-[#00B1EA] uppercase tracking-tight leading-none">PAGAMENTO SEGURO</span>
-                <span className="block text-[9px] font-bold text-white/95 leading-tight flex items-center gap-1">
-                  Mercado Pago <span className="text-[8px] bg-[#009EE3]/40 text-[#00B1EA] px-1 py-0.5 rounded font-mono">PIX & CARTÃO</span>
+                <span className="block text-[10px] font-black uppercase tracking-wider leading-none text-white/90">PAGAMENTO SEGURO</span>
+                <span className="block text-[11px] font-black text-white leading-tight">
+                  Mercado Pago <span className="text-[9px] font-semibold bg-white/20 px-1 py-0.5 rounded ml-0.5">PIX & CARTÃO</span>
                 </span>
               </div>
             </div>
 
-            {/* Selo 1: Certificado SSL 256-Bit */}
-            <div className="bg-emerald-950/80 border border-emerald-500/40 rounded-xl px-3 py-1.5 flex items-center gap-2 shadow-2xs">
+            {/* Selo 2: Mercado Livre Oficial */}
+            <div className="bg-[#FFF159] text-[#2D3277] rounded-xl px-3.5 py-1.5 flex items-center gap-2.5 shadow-md border border-amber-300 hover:brightness-105 transition cursor-default">
+              <div className="w-7 h-7 rounded-lg bg-[#2D3277]/10 flex items-center justify-center flex-shrink-0 text-[#2D3277]">
+                <svg className="w-4 h-4 fill-[#2D3277]" viewBox="0 0 24 24">
+                  <path d="M12 2L3 6v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V6l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z" />
+                </svg>
+              </div>
+              <div className="text-left">
+                <span className="block text-[10px] font-black uppercase tracking-wider leading-none text-[#2D3277]/80">COMPRA GARANTIDA</span>
+                <span className="block text-[11px] font-black text-[#2D3277] leading-tight">
+                  Mercado Livre <span className="text-[9px] font-semibold bg-[#2D3277]/10 px-1 py-0.5 rounded ml-0.5">PARCEIRO</span>
+                </span>
+              </div>
+            </div>
+
+            {/* Selo 3: Certificado SSL 256-Bit */}
+            <div className="bg-emerald-950/90 border border-emerald-500/50 rounded-xl px-3 py-1.5 flex items-center gap-2 shadow-2xs">
               <div className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center flex-shrink-0 border border-emerald-500/30">
                 <svg className="w-4 h-4 fill-emerald-400" viewBox="0 0 24 24">
                   <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
@@ -129,31 +144,6 @@ export default function Footer() {
               </div>
             </div>
 
-            {/* Selo 2: Google Safe Browsing / Blindado */}
-            <div className="bg-blue-950/80 border border-blue-500/40 rounded-xl px-3 py-1.5 flex items-center gap-2 shadow-2xs">
-              <div className="w-7 h-7 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center flex-shrink-0 border border-blue-500/30">
-                <svg className="w-4 h-4 fill-blue-400" viewBox="0 0 24 24">
-                  <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/>
-                </svg>
-              </div>
-              <div className="text-left">
-                <span className="block text-[10px] font-black text-blue-300 uppercase tracking-tight leading-none">NAVEGAÇÃO SEGURA</span>
-                <span className="block text-[9px] font-bold text-blue-400/90 leading-tight">Google Verified SSL</span>
-              </div>
-            </div>
-
-            {/* Selo 3: Compra Garantida */}
-            <div className="bg-amber-950/80 border border-amber-500/40 rounded-xl px-3 py-1.5 flex items-center gap-2 shadow-2xs">
-              <div className="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center flex-shrink-0 border border-amber-500/30">
-                <svg className="w-4 h-4 fill-amber-400" viewBox="0 0 24 24">
-                  <path d="M12 2L1 21h22L12 2zm1 14h-2v-2h2v2zm0-4h-2V8h2v4z"/>
-                </svg>
-              </div>
-              <div className="text-left">
-                <span className="block text-[10px] font-black text-amber-300 uppercase tracking-tight leading-none">COMPRA GARANTIDA</span>
-                <span className="block text-[9px] font-bold text-amber-400/90 leading-tight">Satisfação ou Reembolso</span>
-              </div>
-            </div>
           </div>
 
         </div>
