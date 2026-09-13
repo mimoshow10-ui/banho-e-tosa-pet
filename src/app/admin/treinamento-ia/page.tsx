@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { Bot, Sparkles, Save, HelpCircle } from 'lucide-react';
+import { Bot, Sparkles, Save, HelpCircle, Key, Zap } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -12,18 +12,20 @@ async function salvarTreinamento(formData: FormData) {
   const instrucoes = formData.get('instrucoes') as string;
   const faq = formData.get('faq') as string;
   const apiKey = formData.get('api_key') as string;
+  const geminiKey = formData.get('gemini_key') as string;
 
   const payload = {
     instrucoes,
     faq,
-    api_key: apiKey
+    api_key: apiKey,
+    gemini_key: geminiKey
   };
 
   const { data: existente } = await supabase
     .from('configuracoes')
     .select('id')
     .eq('chave', 'treinamento_ia')
-    .single();
+    .maybeSingle();
 
   if (existente) {
     await supabase.from('configuracoes').update({ valor: payload }).eq('chave', 'treinamento_ia');
@@ -47,12 +49,13 @@ export default async function TreinamentoIAPage({
     .from('configuracoes')
     .select('valor')
     .eq('chave', 'treinamento_ia')
-    .single();
+    .maybeSingle();
 
   const valor = config?.valor || {
-    instrucoes: 'Somos a Banho e Tosa Pet. Responda sempre de forma gentil, profissional e voltada a tirar dúvidas dos clientes de pet shop e estética animal.',
-    faq: 'P: Qual o prazo de envio?\nR: Postamos os pedidos em até 24h úteis após a confirmação.\n\nP: Os adesivos grudam bem?\nR: Sim! Nossos adesivos em EVA usam cola especial própria para fixação nos pelos sem machucar o animal.',
-    api_key: ''
+    instrucoes: 'Somos a Banho & Tosa Pet. Responda sempre de forma gentil, profissional, entusiasmada e focada no bem-estar animal.',
+    faq: 'P: Os adesivos grudam bem?\nR: Sim! Nossos adesivos em EVA usam cola atóxica especial própria para fixação nos pelos limpos e secos sem machucar o animal.\n\nP: Qual o prazo de envio?\nR: Postamos os pedidos em até 24h úteis após a confirmação do pagamento.',
+    api_key: '',
+    gemini_key: ''
   };
 
   return (
@@ -61,10 +64,10 @@ export default async function TreinamentoIAPage({
         <div>
           <h1 className="text-3xl font-heading font-bold text-secondary flex items-center gap-3">
             <Bot size={32} className="text-purple-600" />
-            Treinamento do Robô assistente (IA)
+            Treinamento da IA e Assistente Virtual
           </h1>
           <p className="text-sm text-gray-500 mt-1">
-            Configure o conhecimento, tom de voz e respostas do assistente virtual da loja.
+            Configure o conhecimento, tom de voz e chaves de IA gerativa para respostas 100% humanas.
           </p>
         </div>
       </div>
@@ -74,6 +77,17 @@ export default async function TreinamentoIAPage({
           ✅ {params.msg}
         </div>
       )}
+
+      {/* Dica de Ouro de Desempenho da IA */}
+      <div className="bg-gradient-to-r from-purple-900 to-indigo-900 text-white p-5 rounded-2xl shadow-md space-y-2">
+        <div className="flex items-center gap-2 font-bold text-base text-yellow-300">
+          <Zap size={20} />
+          Como obter respostas 100% inteligentes e humanas sobre qualquer pergunta?
+        </div>
+        <p className="text-xs text-purple-100 leading-relaxed">
+          Para que o assistente responda a <strong>qualquer pergunta complexa</strong> do cliente sobre qualquer produto de forma fluída e natural, você pode inserir uma <strong>Chave do Google Gemini (100% Gratuita)</strong> ou <strong>OpenAI (GPT-4o-mini)</strong> nos campos abaixo. Sem chave configurada, a loja utilizará o motor local básico de palavras-chave.
+        </p>
+      </div>
 
       <form action={salvarTreinamento} className="bg-white p-8 rounded-2xl shadow-sm border border-border space-y-6">
         
@@ -85,7 +99,7 @@ export default async function TreinamentoIAPage({
           </label>
           <textarea
             name="instrucoes"
-            rows={4}
+            rows={3}
             defaultValue={valor.instrucoes}
             placeholder="Ex: Responda de forma amigável, destacando que nossos produtos são fabricados em EVA atóxico..."
             className="w-full border border-border rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
@@ -103,41 +117,70 @@ export default async function TreinamentoIAPage({
           </label>
           <textarea
             name="faq"
-            rows={6}
+            rows={5}
             defaultValue={valor.faq}
             placeholder="P: Como aplicar os laços?\nR: Nossos laços já vêm com anilha elástica de silicone..."
             className="w-full border border-border rounded-xl p-3 text-sm font-mono text-xs focus:outline-none focus:ring-2 focus:ring-purple-500"
           />
           <p className="text-xs text-gray-400 mt-1">
-            Digite perguntas e respostas em formato livre. O robô usará estas informações para responder os clientes.
+            Formato: <code>P: Pergunta? \n R: Resposta.</code> (Separe blocos por uma linha em branco).
           </p>
         </div>
 
-        {/* Chave de API OpenAI (Opcional) */}
-        <div className="bg-purple-50/60 p-4 rounded-xl border border-purple-100">
-          <label className="block text-xs font-bold text-purple-900 mb-1">
-            Chave de API OpenAI (Opcional - GPT-3.5/4)
+        {/* Chave de API Google Gemini (Gratuita) */}
+        <div className="bg-purple-50 p-5 rounded-xl border border-purple-200 space-y-2">
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-bold text-purple-950 flex items-center gap-1.5">
+              <Key size={14} className="text-purple-600" />
+              Chave de API Google Gemini (Recomendado - 100% Gratuito)
+            </label>
+            <a
+              href="https://aistudio.google.com/app/apikey"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[11px] font-bold text-purple-700 underline hover:text-purple-900"
+            >
+              Criar Chave Grátis no Google AI Studio ↗
+            </a>
+          </div>
+          <input
+            name="gemini_key"
+            type="password"
+            defaultValue={valor.gemini_key || ''}
+            placeholder="AIzaSy..."
+            className="w-full border border-purple-200 rounded-lg p-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+          />
+          <p className="text-[11px] text-purple-700">
+            Recomendado! O modelo <strong>Gemini 1.5/2.0 Flash</strong> é 100% gratuito e gera respostas instantâneas e super detalhadas.
+          </p>
+        </div>
+
+        {/* Chave de API OpenAI */}
+        <div className="bg-gray-50 p-5 rounded-xl border border-gray-200 space-y-2">
+          <label className="block text-xs font-bold text-gray-800">
+            Chave de API OpenAI (Opcional - GPT-4o-mini)
           </label>
           <input
             name="api_key"
             type="password"
             defaultValue={valor.api_key || ''}
             placeholder="sk-..."
-            className="w-full border border-purple-200 rounded-lg p-2 text-xs focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+            className="w-full border border-gray-300 rounded-lg p-2.5 text-xs focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white"
           />
-          <p className="text-[11px] text-purple-700 mt-1">
-            Se preenchida, o assistente usará o modelo GPT da OpenAI. Caso fique em branco, utilizará a inteligência integrada padrão do sistema sem custo extra.
+          <p className="text-[11px] text-gray-500">
+            Se preenchida, utilizará o modelo GPT-4o-mini da OpenAI.
           </p>
         </div>
 
         <button
           type="submit"
-          className="bg-purple-600 hover:bg-purple-700 text-white font-bold px-6 py-3 rounded-xl transition flex items-center gap-2 text-sm shadow-md"
+          className="bg-purple-600 hover:bg-purple-700 text-white font-bold px-6 py-3.5 rounded-xl transition flex items-center gap-2 text-sm shadow-md cursor-pointer"
         >
           <Save size={18} />
-          Salvar Treinamento da IA
+          Salvar Configurações da IA
         </button>
       </form>
     </div>
   );
 }
+
