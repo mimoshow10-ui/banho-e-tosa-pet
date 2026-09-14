@@ -1,0 +1,128 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { Ticket, CheckCircle2, Sparkles } from 'lucide-react';
+import { Cupom } from '@/lib/types/coupon';
+
+interface Props {
+  produtoId: string;
+  categoriaId?: string | null;
+  sku?: string | null;
+}
+
+export default function ProductCouponsBanner({ produtoId, categoriaId, sku }: Props) {
+  const [cupons, setCupons] = useState<Cupom[]>([]);
+  const [coletados, setColetados] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('cupons_coletados');
+      if (raw) {
+        setColetados(JSON.parse(raw));
+      }
+    } catch {}
+
+    async function carregarCupons() {
+      try {
+        const res = await fetch('/api/cupons/disponiveis');
+        if (res.ok) {
+          const data = await res.json();
+          const disponiveis: Cupom[] = Array.isArray(data?.cupons) ? data.cupons : [];
+
+          const elegiveis = disponiveis.filter(c => {
+            if (!c || !c.ativo) return false;
+            if (c.tipo_elegibilidade === 'todos') return true;
+
+            const elegIds = Array.isArray(c.elegiveis_ids) ? c.elegiveis_ids : [];
+            if (c.tipo_elegibilidade === 'produtos' && produtoId && elegIds.includes(produtoId)) return true;
+            if (c.tipo_elegibilidade === 'subgrupos' && categoriaId && elegIds.includes(categoriaId)) return true;
+            if (c.tipo_elegibilidade === 'skus' && sku && elegIds.includes(sku)) return true;
+            return false;
+          });
+
+          setCupons(elegiveis);
+        }
+      } catch {}
+      finally {
+        setLoading(false);
+      }
+    }
+
+    carregarCupons();
+  }, [produtoId, categoriaId, sku]);
+
+  function coletarCupom(codigo: string) {
+    if (!codigo || coletados.includes(codigo)) return;
+    const novos = [...coletados, codigo];
+    setColetados(novos);
+    try {
+      localStorage.setItem('cupons_coletados', JSON.stringify(novos));
+    } catch {}
+  }
+
+  if (loading || !Array.isArray(cupons) || cupons.length === 0) return null;
+
+  return (
+    <div className="border border-orange-200 bg-gradient-to-r from-orange-50/80 to-amber-50/50 rounded-2xl p-4 shadow-2xs my-4">
+      <div className="flex items-center gap-2 mb-3">
+        <Ticket size={20} className="text-primary" />
+        <h3 className="font-bold text-secondary text-sm flex items-center gap-1.5">
+          Cupons da Loja Disponíveis
+          <Sparkles size={14} className="text-primary animate-pulse" />
+        </h3>
+      </div>
+
+      <div className="flex gap-3 overflow-x-auto pb-1 no-scrollbar">
+        {cupons.map((c) => {
+          if (!c || !c.codigo) return null;
+          const isColetado = coletados.includes(c.codigo);
+          const valorDesc = Number(c.valor_desconto || 0);
+          const minReais = c.compra_minima_reais ? Number(c.compra_minima_reais) : null;
+
+          return (
+            <div
+              key={c.id || c.codigo}
+              className="bg-white border border-orange-200 rounded-xl p-3 flex items-center justify-between gap-4 min-w-[240px] flex-shrink-0 shadow-2xs relative overflow-hidden"
+            >
+              <div className="flex-1">
+                <div className="font-black text-primary text-sm flex items-center gap-1">
+                  {c.tipo_desconto === 'percentual' && `${valorDesc}% OFF`}
+                  {c.tipo_desconto === 'fixo' && `R$ ${valorDesc.toFixed(2).replace('.', ',')} OFF`}
+                  {c.tipo_desconto === 'frete_gratis' && `FRETE GRÁTIS`}
+                </div>
+                {minReais !== null && !isNaN(minReais) && (
+                  <p className="text-[10px] text-gray-500 font-medium mt-0.5">
+                    Mínimo: R$ {minReais.toFixed(2).replace('.', ',')}
+                  </p>
+                )}
+                <span className="text-[10px] font-mono font-bold text-gray-400 block mt-0.5 uppercase">
+                  Cupom: {c.codigo}
+                </span>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => coletarCupom(c.codigo)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 flex-shrink-0 cursor-pointer ${
+                  isColetado
+                    ? 'bg-green-100 text-green-800 cursor-default'
+                    : 'bg-primary hover:bg-orange-600 text-white shadow-2xs'
+                }`}
+              >
+                {isColetado ? (
+                  <>
+                    <CheckCircle2 size={12} />
+                    <span>COLETADO</span>
+                  </>
+                ) : (
+                  <span>PEGAR CUPOM</span>
+                )}
+              </button>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
