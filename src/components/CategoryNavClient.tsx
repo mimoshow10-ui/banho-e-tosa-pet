@@ -56,7 +56,7 @@ export default function CategoryNavClient({ pais, all }: Props) {
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const navRef = useRef<HTMLDivElement>(null);
 
-  const BANNED_SLUGS = new Set(['decoracao', 'quadros', 'quadros-mdf', 'quadros-impressos', 'mascaras', 'decor-ambientes']);
+  const BANNED_SLUGS = new Set(['decoracao', 'quadros', 'quadros-mdf', 'quadros-impressos', 'mascaras', 'decor-ambientes', 'faixas-decorativas', 'infantil']);
 
   // Categorias normais (produtos fixos: Adesivos, Gravatinhas, Lacinhos, etc.)
   const padraoPais = pais
