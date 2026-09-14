@@ -1,20 +1,37 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { 
   Flame, 
-  ShieldCheck, 
   ChevronRight, 
   ChevronLeft, 
   X, 
   Maximize2, 
-  Award, 
-  Sparkles,
-  Truck,
-  PackageCheck
+  Heart, 
+  ExternalLink 
 } from 'lucide-react';
+
+function InstagramIcon({ size = 16, className = "" }: { size?: number; className?: string }) {
+  return (
+    <svg 
+      width={size} 
+      height={size} 
+      viewBox="0 0 24 24" 
+      fill="none" 
+      stroke="currentColor" 
+      strokeWidth="2" 
+      strokeLinecap="round" 
+      strokeLinejoin="round" 
+      className={className}
+    >
+      <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
+      <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+      <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
+    </svg>
+  );
+}
 
 interface PromoProduct {
   id: string;
@@ -41,6 +58,20 @@ export default function DesktopSideBanners({ produtosPromocao }: DesktopSideBann
 
   const total = produtosPromocao?.length || 0;
   const currentProduct = total > 0 ? produtosPromocao[currentIndex] : null;
+
+  // Coleção de fotos para o grid do celular (Instagram)
+  const promoImages = (produtosPromocao || [])
+    .flatMap(p => p.imagens || [])
+    .filter(img => img && typeof img === 'string' && img.length > 5);
+
+  const defaultPhotos = [
+    '/logo-mimoshow.png',
+    '/banner-pet.jpg',
+    '/logo-luxo.jpg',
+    '/logo-mimoshow.jpg'
+  ];
+
+  const instaPhotos = Array.from(new Set([...promoImages, ...defaultPhotos]));
 
   // Timer para rotação de 3 segundos com barra de progresso suave
   useEffect(() => {
@@ -87,7 +118,7 @@ export default function DesktopSideBanners({ produtosPromocao }: DesktopSideBann
       {total > 0 && currentProduct && (
         <aside 
           aria-label="Ofertas Relâmpago"
-          className="hidden xl:block fixed left-2 2xl:left-4 top-[215px] z-40 select-none animate-in fade-in slide-in-from-left-4 duration-300"
+          className="hidden xl:block fixed left-2 2xl:left-4 top-[200px] z-40 select-none animate-in fade-in slide-in-from-left-4 duration-300"
         >
           {leftOpen ? (
             <div 
@@ -118,7 +149,7 @@ export default function DesktopSideBanners({ produtosPromocao }: DesktopSideBann
                 <button
                   onClick={() => setLeftOpen(false)}
                   title="Minimizar ofertas"
-                  className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-1 rounded-lg transition"
+                  className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-1 rounded-lg transition cursor-pointer"
                 >
                   <X size={14} />
                 </button>
@@ -203,7 +234,7 @@ export default function DesktopSideBanners({ produtosPromocao }: DesktopSideBann
                   <button
                     onClick={handlePrev}
                     title="Oferta anterior"
-                    className="p-1 hover:bg-gray-100 rounded-lg transition text-gray-600 hover:text-secondary font-bold"
+                    className="p-1 hover:bg-gray-100 rounded-lg transition text-gray-600 hover:text-secondary font-bold cursor-pointer"
                   >
                     <ChevronLeft size={14} />
                   </button>
@@ -213,7 +244,7 @@ export default function DesktopSideBanners({ produtosPromocao }: DesktopSideBann
                   <button
                     onClick={handleNext}
                     title="Próxima oferta"
-                    className="p-1 hover:bg-gray-100 rounded-lg transition text-gray-600 hover:text-secondary font-bold"
+                    className="p-1 hover:bg-gray-100 rounded-lg transition text-gray-600 hover:text-secondary font-bold cursor-pointer"
                   >
                     <ChevronRight size={14} />
                   </button>
@@ -224,7 +255,7 @@ export default function DesktopSideBanners({ produtosPromocao }: DesktopSideBann
             /* Aba Minimizado na Esquerda */
             <button
               onClick={() => setLeftOpen(true)}
-              className="flex items-center gap-2 bg-white/95 backdrop-blur-md border-2 border-orange-400 text-red-600 hover:text-orange-700 font-black text-xs px-3 py-2 rounded-r-2xl shadow-xl hover:shadow-2xl transition-all hover:translate-x-1"
+              className="flex items-center gap-2 bg-white/95 backdrop-blur-md border-2 border-orange-400 text-red-600 hover:text-orange-700 font-black text-xs px-3 py-2.5 rounded-r-2xl shadow-xl hover:shadow-2xl transition-all hover:translate-x-1 cursor-pointer"
               title="Expandir Ofertas Relâmpago"
             >
               <Flame size={16} className="text-orange-500 fill-orange-500" />
@@ -238,86 +269,137 @@ export default function DesktopSideBanners({ produtosPromocao }: DesktopSideBann
       )}
 
       {/* ========================================================= */}
-      {/* 2. LATERAL DIREITA: DISTRIBUIDOR OFICIAL MIMOSHOW        */}
+      {/* 2. LATERAL DIREITA: SMARTPHONE INSTAGRAM (@mimoshoweva)     */}
       {/* ========================================================= */}
       <aside 
-        aria-label="Distribuidor Oficial Mimoshow"
-        className="hidden xl:block fixed right-2 2xl:right-4 top-[215px] z-40 select-none animate-in fade-in slide-in-from-right-4 duration-300"
+        aria-label="Instagram Mimoshow Oficial"
+        className="hidden xl:block fixed right-2 2xl:right-4 top-[170px] z-40 select-none animate-in fade-in slide-in-from-right-4 duration-300"
       >
         {rightOpen ? (
-          <div className="w-44 2xl:w-48 bg-white/95 backdrop-blur-md rounded-2xl border-2 border-amber-200 shadow-2xl p-3 space-y-2.5 transition-all hover:border-amber-300">
-            {/* Header do Card com Botão de Minimizar */}
-            <div className="flex items-center justify-between pb-1.5 border-b border-amber-100">
-              <span className="flex items-center gap-1 text-[10px] font-black tracking-wider uppercase bg-amber-50 text-amber-800 px-2 py-0.5 rounded-full border border-amber-200">
-                <Award size={12} className="text-amber-600" />
-                Oficial
-              </span>
-              <button
-                onClick={() => setRightOpen(false)}
-                title="Minimizar banner"
-                className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-1 rounded-lg transition"
-              >
-                <X size={14} />
-              </button>
+          <div className="w-52 2xl:w-56 bg-slate-950 rounded-[38px] p-2.5 shadow-2xl border-4 border-slate-800 relative transition-all hover:scale-[1.02] group">
+            
+            {/* Notch / Dynamic Island do Smartphone */}
+            <div className="absolute top-3 left-1/2 -translate-x-1/2 w-16 h-3 bg-black rounded-full z-20 flex items-center justify-center gap-1.5 shadow-xs">
+              <div className="w-1.5 h-1.5 rounded-full bg-slate-800"></div>
+              <div className="w-2 h-2 rounded-full bg-slate-900 border border-slate-700"></div>
             </div>
 
-            {/* Logo e Selo Oficial */}
-            <div className="text-center space-y-1.5">
-              <div className="relative w-full h-14 2xl:h-16 flex items-center justify-center bg-gray-50/80 rounded-xl p-2 border border-gray-100">
-                <Image
-                  src="/logo-mimoshow.png"
-                  alt="Mimoshow Distribuidor Oficial"
-                  width={130}
-                  height={45}
-                  className="object-contain max-h-11 2xl:max-h-12 w-auto"
-                  priority
-                />
-              </div>
-              <div>
-                <h3 className="text-[11px] 2xl:text-xs font-heading font-black text-secondary uppercase tracking-tight flex items-center justify-center gap-1">
-                  Distribuidor Oficial
-                  <ShieldCheck size={13} className="text-green-600" />
-                </h3>
-                <p className="text-[9px] 2xl:text-[10px] font-bold text-amber-700">MIMOSHOW Indústria & Pet</p>
-              </div>
-            </div>
-
-            {/* Diferenciais e Garantias */}
-            <div className="space-y-1 pt-1 text-[10px] 2xl:text-[11px] font-medium text-gray-700">
-              <div className="flex items-center gap-1.5 bg-amber-50/60 p-1.5 rounded-lg border border-amber-100/80">
-                <PackageCheck size={13} className="text-amber-700 flex-shrink-0" />
-                <span>100% Direto da Fábrica</span>
-              </div>
-              <div className="flex items-center gap-1.5 bg-blue-50/60 p-1.5 rounded-lg border border-blue-100/80">
-                <Sparkles size={13} className="text-blue-700 flex-shrink-0" />
-                <span>Preço Especial Pet Shop</span>
-              </div>
-              <div className="flex items-center gap-1.5 bg-green-50/60 p-1.5 rounded-lg border border-green-100/80">
-                <Truck size={13} className="text-green-700 flex-shrink-0" />
-                <span>Pronta Entrega</span>
-              </div>
-            </div>
-
-            {/* Botão de Ação */}
-            <Link
-              href="/categoria/todas"
-              className="block w-full text-center text-[10px] 2xl:text-xs font-black uppercase py-2 px-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-md hover:shadow-lg transition-all"
+            {/* Botão de Minimizar */}
+            <button
+              onClick={() => setRightOpen(false)}
+              title="Minimizar Instagram"
+              className="absolute top-2.5 right-3 bg-black/70 hover:bg-black text-white p-1 rounded-full z-30 transition cursor-pointer"
             >
-              Ver Catálogo Oficial
-            </Link>
+              <X size={12} />
+            </button>
+
+            {/* Tela do Celular */}
+            <div className="bg-white rounded-[28px] overflow-hidden pt-4 pb-2 border border-slate-200 shadow-inner flex flex-col text-slate-800">
+              
+              {/* Header da Conta do Instagram */}
+              <a 
+                href="https://instagram.com/mimoshoweva" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex items-center justify-between px-3 py-2 border-b border-gray-100 bg-gradient-to-r from-purple-50 via-pink-50 to-amber-50 hover:bg-pink-100 transition cursor-pointer"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="w-8 h-8 rounded-full p-[1.5px] bg-gradient-to-tr from-amber-500 via-pink-500 to-purple-600 flex-shrink-0 shadow-xs">
+                    <div className="w-full h-full bg-white rounded-full p-0.5 flex items-center justify-center overflow-hidden">
+                      <Image 
+                        src="/logo-mimoshow.png" 
+                        alt="MimoShow Instagram" 
+                        width={24} 
+                        height={24} 
+                        className="object-contain" 
+                      />
+                    </div>
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-black text-slate-900 truncate leading-tight flex items-center gap-0.5">
+                      mimoshoweva
+                      <span className="text-blue-500 font-black text-[9px]">✓</span>
+                    </p>
+                    <p className="text-[8px] font-bold text-gray-500 leading-none">Instagram Oficial</p>
+                  </div>
+                </div>
+
+                <span className="text-[9px] font-black text-white bg-gradient-to-r from-purple-600 via-pink-600 to-amber-500 px-2.5 py-1 rounded-full shadow-xs hover:brightness-110 transition">
+                  Seguir
+                </span>
+              </a>
+
+              {/* Título de Fotos do Feed */}
+              <div className="px-3 pt-2 pb-1 flex items-center justify-between">
+                <span className="text-[9px] font-black text-slate-700 uppercase tracking-tight flex items-center gap-1">
+                  <InstagramIcon size={11} className="text-pink-600" /> Nossas Postagens
+                </span>
+                <span className="text-[8px] font-bold text-pink-600 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-pink-500 animate-ping"></span> Ao vivo
+                </span>
+              </div>
+
+              {/* Grid 2x2 de Publicações do Instagram */}
+              <div className="px-2 py-1">
+                <a 
+                  href="https://instagram.com/mimoshoweva" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="grid grid-cols-2 gap-1.5 group/grid cursor-pointer"
+                >
+                  {instaPhotos.slice(0, 4).map((imgUrl, idx) => (
+                    <div key={idx} className="relative h-20 bg-gray-100 rounded-xl overflow-hidden border border-gray-100 group/post">
+                      <Image 
+                        src={imgUrl} 
+                        alt={`Post Instagram ${idx + 1}`} 
+                        fill 
+                        className="object-cover group-hover/post:scale-110 transition duration-300" 
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover/post:opacity-100 transition flex items-end justify-center p-1.5 text-white">
+                        <span className="flex items-center gap-1 text-[9px] text-white font-black">
+                          <Heart size={10} className="fill-red-500 text-red-500" /> {124 + (idx * 47)}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </a>
+              </div>
+
+              {/* Subtítulo & Chamada de Ação */}
+              <div className="px-2.5 pt-1.5 pb-1 text-center space-y-1.5">
+                <p className="text-[9.5px] font-bold text-slate-600 leading-tight">
+                  Veja os novos lançamentos & bastidores no Instagram! 📸✨
+                </p>
+
+                <a
+                  href="https://instagram.com/mimoshoweva"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block w-full text-center text-[10px] font-black uppercase py-2 px-2 rounded-xl bg-gradient-to-r from-purple-600 via-pink-600 to-amber-500 hover:brightness-110 text-white shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <InstagramIcon size={13} />
+                  <span>Siga @mimoshoweva</span>
+                  <ExternalLink size={10} />
+                </a>
+              </div>
+
+            </div>
+
+            {/* Home Bar do Celular */}
+            <div className="w-14 h-1 bg-slate-700 rounded-full mx-auto mt-2.5"></div>
           </div>
         ) : (
-          /* Aba Minimizado na Direita */
+          /* Aba Minimizado na Direita com Visual Instagram */
           <button
             onClick={() => setRightOpen(true)}
-            className="flex items-center gap-1.5 bg-white/95 backdrop-blur-md border-2 border-amber-300 text-secondary hover:text-amber-700 font-black text-xs px-2.5 py-2 rounded-l-2xl shadow-xl hover:shadow-2xl transition-all hover:-translate-x-1"
-            title="Expandir Distribuidor Oficial"
+            className="flex items-center gap-1.5 bg-gradient-to-b from-purple-600 via-pink-600 to-amber-500 text-white font-black text-xs px-2.5 py-3 rounded-l-2xl shadow-xl hover:shadow-2xl transition-all hover:-translate-x-1 cursor-pointer"
+            title="Expandir Instagram @mimoshoweva"
           >
-            <Award size={15} className="text-amber-600" />
+            <InstagramIcon size={16} className="text-white animate-pulse" />
             <span className="[writing-mode:vertical-lr] rotate-180 text-[10px] 2xl:text-[11px] tracking-widest font-black uppercase">
-              Distribuidor Mimoshow
+              📲 Instagram @mimoshoweva
             </span>
-            <Maximize2 size={11} className="text-gray-400" />
+            <Maximize2 size={11} className="text-white/80" />
           </button>
         )}
       </aside>
