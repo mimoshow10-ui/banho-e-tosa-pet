@@ -96,19 +96,19 @@ export default async function AdminMarketing({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
           
           <div className="bg-white/10 p-4 rounded-xl border border-white/10 space-y-1">
-            <span className="bg-amber-400 text-purple-950 font-black px-2 py-0.5 rounded text-[10px] uppercase block w-fit mb-1">
-              💻 Carrossel Desktop (Oficial)
+            <span className="bg-amber-400 text-purple-950 font-black px-2 py-0.5 rounded text-[10px] uppercase block w-fit mb-1 flex items-center gap-1">
+              💻 CARROSSEL DESKTOP (OFICIAL)
             </span>
-            <p className="text-base font-mono font-bold text-amber-200">1920 x 300 px</p>
-            <p className="text-purple-200">Proporção 16:2.5 (Slim Elegante). Formatos: PNG, JPG ou WebP até 500 KB.</p>
+            <p className="text-base font-mono font-bold text-amber-200">1920 x 600 px</p>
+            <p className="text-purple-200">Proporção 16:5. Formatos: PNG, JPG ou WebP até 500 KB.</p>
           </div>
 
           <div className="bg-white/10 p-4 rounded-xl border border-white/10 space-y-1">
-            <span className="bg-amber-400 text-purple-950 font-black px-2 py-0.5 rounded text-[10px] uppercase block w-fit mb-1">
-              📱 Carrossel Mobile (Oficial)
+            <span className="bg-amber-400 text-purple-950 font-black px-2 py-0.5 rounded text-[10px] uppercase block w-fit mb-1 flex items-center gap-1">
+              📱 CARROSSEL MOBILE
             </span>
-            <p className="text-base font-mono font-bold text-amber-200">800 x 600 px</p>
-            <p className="text-purple-200">Proporção 4:3 retangular para ótima visualização em celulares.</p>
+            <p className="text-base font-mono font-bold text-amber-200">1080 x 1350 px</p>
+            <p className="text-purple-200">Proporção 4:5. Formatos: PNG, JPG ou WebP até 500 KB.</p>
           </div>
 
           <div className="bg-white/10 p-4 rounded-xl border border-white/10 space-y-1">
