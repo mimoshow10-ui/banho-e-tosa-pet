@@ -56,9 +56,11 @@ export default function CategoryNavClient({ pais, all }: Props) {
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const navRef = useRef<HTMLDivElement>(null);
 
+  const BANNED_SLUGS = new Set(['decoracao', 'quadros', 'quadros-mdf', 'quadros-impressos', 'mascaras', 'decor-ambientes']);
+
   // Categorias normais (produtos fixos: Adesivos, Gravatinhas, Lacinhos, etc.)
   const padraoPais = pais
-    .filter(c => !THEMATIC_SLUGS.has(c.slug))
+    .filter(c => !THEMATIC_SLUGS.has(c.slug) && !BANNED_SLUGS.has(c.slug))
     .sort((a, b) => (a.nome || '').localeCompare(b.nome || '', 'pt-BR', { sensitivity: 'base' }));
 
   // Categorias de eventos/datas comemorativas para agrupar apenas no visual do topo
