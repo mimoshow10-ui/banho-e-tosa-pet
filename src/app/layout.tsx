@@ -14,8 +14,8 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: "Mimo Show Pet - Banho e Tosa",
-  description: "Acessórios premium para cães e gatos",
+  title: "Banho e Tosa Pet - Acessórios Pet Shop",
+  description: "Acessórios premium para banho e tosa, pet shop, cães e gatos",
 };
 
 export default function RootLayout({
