@@ -16,6 +16,14 @@ const poppins = Poppins({
 export const metadata: Metadata = {
   title: "Banho e Tosa Pet - Acessórios Pet Shop",
   description: "Acessórios premium para banho e tosa, pet shop, cães e gatos",
+  icons: {
+    icon: [
+      { url: "/logo-luxo.png", type: "image/png" },
+      { url: "/icon.png", type: "image/png" },
+    ],
+    shortcut: "/logo-luxo.png",
+    apple: "/logo-luxo.png",
+  },
 };
 
 export default function RootLayout({

@@ -6,6 +6,7 @@ import BannerCarousel from "@/components/BannerCarousel";
 import HomeCouponsBanner from "@/components/HomeCouponsBanner";
 import ProductCard from "@/components/ProductCard";
 import BenefitsBar from "@/components/BenefitsBar";
+import DesktopSideBanners from "@/components/DesktopSideBanners";
 
 import { hasValidPhoto } from "@/lib/productFilter";
 
@@ -121,7 +122,12 @@ export default async function Home() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen relative">
+      {/* BANNERS LATERAIS PARA COMPUTADOR (OFERTAS RELÂMPAGO NA ESQUERDA + INSTAGRAM NA DIREITA) */}
+      <DesktopSideBanners 
+        produtosPromocao={produtosPromocao.length > 0 ? produtosPromocao : (produtosNovidades.length > 0 ? produtosNovidades : produtosMaisVendidos)} 
+      />
+
       {/* 1. FAIXA DE CUPONS NO TOPO */}
       {posicaoCupons === 'topo' && <HomeCouponsBanner />}
 
