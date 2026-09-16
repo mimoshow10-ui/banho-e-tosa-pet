@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
@@ -112,7 +112,7 @@ export default function DesktopSideBanners({ produtosPromocao }: DesktopSideBann
       {total > 0 && currentProduct && (
         <aside 
           aria-label="Ofertas Relâmpago"
-          className="hidden lg:block fixed left-1 xl:left-2 2xl:left-4 top-[160px] 2xl:top-[180px] z-40 select-none animate-in fade-in slide-in-from-left-4 duration-300"
+          className="hidden lg:block fixed left-1 xl:left-2 2xl:left-4 top-[160px] 2xl:top-[180px] z-[70] select-none animate-in fade-in slide-in-from-left-4 duration-300"
         >
           {leftOpen ? (
             <div 
@@ -277,7 +277,7 @@ export default function DesktopSideBanners({ produtosPromocao }: DesktopSideBann
       {/* ========================================================= */}
       <aside 
         aria-label="Instagram Oficial"
-        className="hidden lg:block fixed right-1 xl:right-2 2xl:right-4 top-[150px] 2xl:top-[170px] z-40 select-none animate-in fade-in slide-in-from-right-4 duration-300"
+        className="hidden lg:block fixed right-1 xl:right-2 2xl:right-4 top-[150px] 2xl:top-[170px] z-[70] select-none animate-in fade-in slide-in-from-right-4 duration-300"
       >
         {rightOpen ? (
           <div className="w-44 xl:w-48 2xl:w-56 bg-slate-950 rounded-[32px] 2xl:rounded-[38px] p-2 2xl:p-2.5 shadow-2xl border-3 2xl:border-4 border-slate-800 relative transition-all hover:scale-[1.01] group">
