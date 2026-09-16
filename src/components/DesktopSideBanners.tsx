@@ -105,7 +105,7 @@ export default function DesktopSideBanners({ produtosPromocao }: DesktopSideBann
       {total > 0 && currentProduct && (
         <aside 
           aria-label="Ofertas Relâmpago"
-          className="hidden xl:block fixed left-2 2xl:left-3 top-[220px] z-40 select-none animate-in fade-in slide-in-from-left-4 duration-300"
+          className="hidden xl:block fixed left-2 2xl:left-3 top-[220px] z-[70] select-none animate-in fade-in slide-in-from-left-4 duration-300"
         >
           {leftOpen ? (
             <div 
@@ -260,7 +260,7 @@ export default function DesktopSideBanners({ produtosPromocao }: DesktopSideBann
       {/* ========================================================= */}
       <aside 
         aria-label="Instagram Mimoshow Oficial"
-        className="hidden xl:block fixed right-2 2xl:left-auto 2xl:right-3 top-[190px] z-40 select-none animate-in fade-in slide-in-from-right-4 duration-300"
+        className="hidden xl:block fixed right-2 2xl:left-auto 2xl:right-3 top-[190px] z-[70] select-none animate-in fade-in slide-in-from-right-4 duration-300"
       >
         {rightOpen ? (
           <div className="w-42 2xl:w-46 bg-slate-950 rounded-[30px] p-2 shadow-xl border-2 border-slate-800 relative transition-all hover:scale-[1.02] group">
