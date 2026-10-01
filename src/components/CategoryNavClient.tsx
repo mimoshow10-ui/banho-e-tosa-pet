@@ -87,7 +87,7 @@ export default function CategoryNavClient({ pais, all }: Props) {
   return (
     <nav className="w-full bg-white border-t border-gray-100 shadow-2xs z-40 relative" ref={navRef}>
       <div className="max-w-7xl mx-auto px-4 py-2">
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex md:flex-wrap items-center gap-2 overflow-x-auto md:overflow-visible no-scrollbar py-1">
           {/* Grupos de Produtos Padrão */}
           {padraoPais.map((cat) => {
             const subs = getSubcategorias(cat.id);
@@ -98,7 +98,7 @@ export default function CategoryNavClient({ pais, all }: Props) {
             return (
               <div
                 key={cat.id}
-                className="relative group"
+                className="relative group flex-shrink-0"
                 onMouseEnter={() => setOpenDropdownId(cat.id)}
                 onMouseLeave={() => setOpenDropdownId(null)}
               >
@@ -150,7 +150,7 @@ export default function CategoryNavClient({ pais, all }: Props) {
           {/* BOTÃO VISUAL FRONT-END "TEMÁTICOS" (Não altera a estrutura do banco) */}
           {tematicosCats.length > 0 && (
             <div
-              className="relative group"
+              className="relative group flex-shrink-0"
               onMouseEnter={() => setOpenDropdownId('tematicos-ui-dropdown')}
               onMouseLeave={() => setOpenDropdownId(null)}
             >
@@ -215,7 +215,7 @@ export default function CategoryNavClient({ pais, all }: Props) {
           {/* Botão Ver Tudo */}
           <Link
             href="/categoria/todas"
-            className="flex items-center gap-1.5 bg-primary text-white border border-primary rounded-full px-5 py-1.5 text-xs md:text-sm font-bold hover:bg-orange-600 transition shadow-2xs"
+            className="flex items-center gap-1.5 bg-primary text-white border border-primary rounded-full px-5 py-1.5 text-xs md:text-sm font-bold hover:bg-orange-600 transition shadow-2xs flex-shrink-0"
           >
             <span>Ver Tudo</span>
           </Link>

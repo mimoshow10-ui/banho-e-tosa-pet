@@ -70,7 +70,7 @@ export default function SearchBar() {
   }
 
   return (
-    <div ref={wrapperRef} className="relative flex-1 max-w-lg mx-4 md:mx-8">
+    <div ref={wrapperRef} className="relative w-full flex-1 max-w-lg mx-auto">
       <form onSubmit={handleSubmit} className="relative">
         <input
           type="text"
